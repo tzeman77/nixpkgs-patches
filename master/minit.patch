@@ -2,10 +2,10 @@ minit-0.10: a small yet feature-complete init
 
 diff --git a/pkgs/os-specific/linux/minit/default.nix b/pkgs/os-specific/linux/minit/default.nix
 new file mode 100644
-index 0000000..aaa98a2
+index 0000000..dcb75ee
 --- /dev/null
 +++ b/pkgs/os-specific/linux/minit/default.nix
-@@ -0,0 +1,39 @@
+@@ -0,0 +1,50 @@
 +{ stdenv, fetchurl, dietlibc, libowfat }:
 +
 +let
@@ -15,10 +15,18 @@ index 0000000..aaa98a2
 +in stdenv.mkDerivation rec {
 +  name = "${pkg}-${ver}";
 +
-+  src = fetchurl {
-+    url = "http://dl.fefe.de/${name}.tar.bz2";
-+    sha256 = "1kgsvn173i84zbyw108cvnn90xkf6s4y83xiwvbjh66s89ir4xp9";
-+  };
++  srcs = [
++    (fetchurl {
++      url = "http://dl.fefe.de/${name}.tar.bz2";
++      sha256 = "1kgsvn173i84zbyw108cvnn90xkf6s4y83xiwvbjh66s89ir4xp9";
++    })
++    (fetchurl {
++      url = http://icculus.org/~boris/data/minit-scripts.tar.bz2;
++      sha256 = "1krfkkmd9dxk2cxdr5drbp0b3jabzp9jambzlayd4888dv7x7v1q";
++    })
++  ];
++
++  sourceRoot = name;
 +
 +  buildInputs = [dietlibc libowfat];
 +
@@ -27,11 +35,14 @@ index 0000000..aaa98a2
 +    install -m 700 killall5 $out/sbin/killall5.minit
 +    mv $out/sbin/shutdown $out/sbin/shutdown.minit
 +    rm $out/sbin/init
++    mkdir $out/share
++    mv $NIX_BUILD_TOP/${pkg}-scripts $out/share
 +  '';
 +
 +  allowedReferences = ["out"];
 +  dontStrip = true; # diet does not need stripping
 +  dontPatchELF = true; # we produce static binaries
++  dontPatchShebangs = true; # example scripts don't need it
 +
 +  meta = {
 +    description = "a small yet feature-complete init";
