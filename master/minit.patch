@@ -1,0 +1,56 @@
+minit-0.10: a small yet feature-complete init
+
+diff --git a/pkgs/os-specific/linux/minit/default.nix b/pkgs/os-specific/linux/minit/default.nix
+new file mode 100644
+index 0000000..5817369
+--- /dev/null
++++ b/pkgs/os-specific/linux/minit/default.nix
+@@ -0,0 +1,35 @@
++{ stdenv, fetchurl, dietlibc }:
++
++let
++  pkg = "minit";
++  ver = "0.10";
++  homepage = http://www.fefe.de/minit;
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  src = fetchurl {
++    url = "http://dl.fefe.de/${name}.tar.bz2";
++    sha256 = "1kgsvn173i84zbyw108cvnn90xkf6s4y83xiwvbjh66s89ir4xp9";
++  };
++
++  buildInputs = [dietlibc];
++
++  patches = [
++  ];
++
++  allowedReferences = ["out"];
++  dontStrip = true; # diet does not need stripping
++  dontPatchELF = true; # we produce static binaries
++
++  meta = {
++    description = "a small yet feature-complete init";
++    homepage = homepage;
++    license = stdenv.lib.licenses.gpl2;
++    platforms = stdenv.lib.platforms.linux;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++
++}
++
++# vim: et ts=2 sw=2 
++
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 4572632..a564536 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -6730,6 +6730,8 @@ let
+ 
+   mingetty = callPackage ../os-specific/linux/mingetty { };
+ 
++  minit = callPackage ../os-specific/linux/minit { };
++
+   module_init_tools = callPackage ../os-specific/linux/module-init-tools { };
+ 
+   mountall = callPackage ../os-specific/linux/mountall { };
