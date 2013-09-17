@@ -1,0 +1,23 @@
+From: Tomas Zeman <tzeman@volny.cz>
+Subject: [PATCH] tg/maintainer-tzeman
+
+Added tzeman to maintainer list
+
+---
+ pkgs/lib/maintainers.nix | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/pkgs/lib/maintainers.nix b/pkgs/lib/maintainers.nix
+index cd4242b..ef129ef 100644
+--- a/pkgs/lib/maintainers.nix
++++ b/pkgs/lib/maintainers.nix
+@@ -52,6 +52,7 @@
+   smironov = "Sergey Mironov <ierton@gmail.com>";
+   thammers = "Tobias Hammerschmidt <jawr@gmx.de>";
+   the-kenny = "Moritz Ulrich <moritz@tarn-vedra.de>";
++  tzeman = "Tomáš Zeman <tzeman@volny.cz>";
+   urkud = "Yury G. Kudryashov <urkud+nix@ya.ru>";
+   vcunat = "Vladimír Čunát <vcunat@gmail.com>";
+   viric = "Lluís Batlle i Rossell <viric@viric.name>";
+-- 
+tg: (bb6b423..) tg/maintainer-tzeman (depends on: master)

@@ -1,0 +1,87 @@
+From: Tomas Zeman <tzeman@volny.cz>
+Subject: [PATCH] tg/vmailmgr
+
+vmailmgr-0.97
+
+---
+ pkgs/tools/networking/vmailmgr/checkvpw.patch | 20 ++++++++++++++++++
+ pkgs/tools/networking/vmailmgr/default.nix    | 29 +++++++++++++++++++++++++++
+ pkgs/top-level/all-packages.nix               |  2 ++
+ 3 files changed, 51 insertions(+)
+
+diff --git a/pkgs/tools/networking/vmailmgr/checkvpw.patch b/pkgs/tools/networking/vmailmgr/checkvpw.patch
+new file mode 100644
+index 0000000..476b85c
+--- /dev/null
++++ b/pkgs/tools/networking/vmailmgr/checkvpw.patch
+@@ -0,0 +1,20 @@
++--- vmailmgr-0.97.orig/authenticate/checkvpw.cc.orig	2002-11-20 16:54:49.000000000 +0100
+++++ vmailmgr-0.97/authenticate/checkvpw.cc	2013-09-05 15:49:55.117393963 +0200
++@@ -105,7 +105,7 @@
++   return new auth_data(name, pass, stamp);
++ }
++ 
++-char* strcasestr(const char* haystack, const char* needle)
+++char* __strcasestr(const char* haystack, const char* needle)
++ {
++   for(size_t hlength = strlen(haystack), nlength = strlen(needle);
++       hlength >= nlength; hlength--, haystack++)
++@@ -117,7 +117,7 @@
++ unsigned find_maildir(int argc, const char* args[])
++ {
++   for(int arg = 0; arg < argc; arg++) {
++-    if(strcasestr(args[arg], config->maildir_arg_str().c_str()))
+++    if(__strcasestr(args[arg], config->maildir_arg_str().c_str()))
++       return arg;
++   }
++   return argc-1;
+diff --git a/pkgs/tools/networking/vmailmgr/default.nix b/pkgs/tools/networking/vmailmgr/default.nix
+new file mode 100644
+index 0000000..0d59108
+--- /dev/null
++++ b/pkgs/tools/networking/vmailmgr/default.nix
+@@ -0,0 +1,29 @@
++{ stdenv, fetchurl }:
++
++let
++  pkg = "vmailmgr";
++  ver = "0.97";
++  homepage = http://www.vmailmgr.org;
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  src = fetchurl {
++    url = "${homepage}/archive/${pkg}-${ver}.tar.gz";
++    sha256 = "1hlrqcs5ddynh8v43sj4p6ri3gsyxqy45s0jr5sbz4crn8yqfrk2";
++  };
++
++  patches = [ ./checkvpw.patch ]; # compile (strcasestr redefined)
++
++  preConfigure = ''
++    sed -i -e "s@phpdir=.*\$@phpdir=\"$out/lib/php\"@" configure
++  '';
++
++  meta = {
++    description = "Virtual e-mail domains/users management programs";
++    homepage = homepage;
++    license = stdenv.lib.licenses.gpl2;
++    #platforms = stdenv.lib.platforms.gnu;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++}
++
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index cc942c3..a1243b0 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -1871,6 +1871,8 @@ let
+     inherit (gnome) scrollkeeper;
+   };
+ 
++  vmailmgr = callPackage ../tools/networking/vmailmgr {};
++
+   vnc2flv = callPackage ../tools/video/vnc2flv {};
+ 
+   vncrec = builderDefsPackage ../tools/video/vncrec {
+-- 
+tg: (28739e5..) tg/vmailmgr (depends on: tg/maintainer-tzeman)

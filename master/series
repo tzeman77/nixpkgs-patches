@@ -1,0 +1,9 @@
+maintainer-tzeman.patch
+dietlibc-update.patch
+ucspi-tcp.patch
+daemontools.patch
+bglibs.patch
+cvm.patch
+mailfront.patch
+bincimap.patch
+vmailmgr.patch

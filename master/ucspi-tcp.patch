@@ -1,0 +1,87 @@
+From: Tomas Zeman <tzeman@volny.cz>
+Subject: [PATCH] tg/ucspi-tcp
+
+ucspi-tcp-0.88
+
+---
+ pkgs/tools/networking/ucspi-tcp/default.nix | 56 +++++++++++++++++++++++++++++
+ pkgs/top-level/all-packages.nix             |  2 ++
+ 2 files changed, 58 insertions(+)
+
+diff --git a/pkgs/tools/networking/ucspi-tcp/default.nix b/pkgs/tools/networking/ucspi-tcp/default.nix
+new file mode 100644
+index 0000000..7e1db02
+--- /dev/null
++++ b/pkgs/tools/networking/ucspi-tcp/default.nix
+@@ -0,0 +1,56 @@
++{ stdenv, fetchurl, dietlibc }:
++
++let
++  pkg = "ucspi-tcp";
++  ver = "0.88";
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  srcs = [
++    (fetchurl {
++      url = "http://cr.yp.to/ucspi-tcp/${pkg}-${ver}.tar.gz";
++      sha256 = "171yl9kfm8w7l17dfxild99mbf877a9k5zg8yysgb1j8nz51a1ja";
++    })
++    (fetchurl {
++      url = "http://smarden.org/pape/djb/manpages/${pkg}-${ver}-man.tar.gz";
++      sha256 = "1vq8nibyjq8cirif8iv2bpzp5jv0jpgjgfqa0cnbc8ipr9lxvc89";
++    })
++  ];
++  sourceRoot = "${pkg}-${ver}";
++
++  ipv6patch = fetchurl {
++    url = "http://www.fefe.de/ucspi/${pkg}-${ver}-ipv6.diff19.bz2";
++    sha256 = "1kls3xysv3wwmikxychnbfv8vbnb0ih15005hhn4a56pj392r59m";
++  };
++
++  patches = ipv6patch;
++
++  buildInputs = [dietlibc];
++
++  configurePhase = ''
++    echo $out > conf-home
++    echo "diet gcc" > conf-cc
++    echo "diet gcc -s -static" > conf-ld
++  '';
++
++  installTargets = "setup check";
++
++  allowedReferences = ["out"];
++  dontPatchShebangs = true; # /bin/sh
++  dontStrip = true; # diet does not need stripping
++  dontPatchELF = true; # we produce static binaries
++
++  # man pages
++  postInstall = ''
++    mkdir -p $out/man/man1
++    cp $NIX_BUILD_TOP/${pkg}-${ver}-man/*.1 $out/man/man1/
++  '';
++
++  meta = {
++    description = "Command-line tools for building TCP client-server applications";
++    homepage = http://cr.yp.to/ucspi-tcp.html;
++    license = stdenv.lib.licenses.publicDomain.shortName;
++    platforms = stdenv.lib.platforms.gnu;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++}
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index cc942c3..7d96b79 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -1833,6 +1833,8 @@ let
+ 
+   ucl = callPackage ../development/libraries/ucl { };
+ 
++  ucspi-tcp = callPackage ../tools/networking/ucspi-tcp { };
++
+   udftools = callPackage ../tools/filesystems/udftools {};
+ 
+   udptunnel = callPackage ../tools/networking/udptunnel { };
+-- 
+tg: (632b5ec..) tg/ucspi-tcp (depends on: master tg/maintainer-tzeman)

@@ -1,0 +1,143 @@
+From: Tomas Zeman <tzeman@volny.cz>
+Subject: [PATCH] tg/bglibs
+
+bglibs-1.106: One stop library package
+
+---
+ pkgs/development/libraries/bglibs/bglibs.patch | 14 ++++++++
+ pkgs/development/libraries/bglibs/default.nix  | 15 +++------
+ pkgs/development/libraries/bglibs/diet.nix     | 45 ++++++++++++++++++++++++++
+ pkgs/top-level/all-packages.nix                |  2 ++
+ 4 files changed, 66 insertions(+), 10 deletions(-)
+
+diff --git a/pkgs/development/libraries/bglibs/bglibs.patch b/pkgs/development/libraries/bglibs/bglibs.patch
+new file mode 100644
+index 0000000..a0b4111
+--- /dev/null
++++ b/pkgs/development/libraries/bglibs/bglibs.patch
+@@ -0,0 +1,14 @@
++diff -ru bglibs-1.106.orig/Makefile bglibs-1.106/Makefile
++--- bglibs-1.106.orig/Makefile	2009-02-19 18:11:51.000000000 +0100
+++++ bglibs-1.106/Makefile	2013-09-12 15:11:46.887246484 +0200
++@@ -145,8 +145,8 @@
++ 	) >compile
++ 	chmod 755 compile
++ 
++-crc-gentab: crc-gentab.o ltload libbg-msg.la libbg-iobuf.la libbg-sysdeps.la
++-	./ltload crc-gentab libbg-msg.la libbg-iobuf.la libbg-sysdeps.la -static 
+++crc-gentab: crc-gentab.o ltload libbg-msg.la libbg-iobuf.la libbg-fmt.la libbg-str.la libbg-sysdeps.la
+++	./ltload crc-gentab libbg-msg.la libbg-iobuf.la libbg-fmt.la libbg-str.la libbg-sysdeps.la -static 
++ 
++ crc-gentab.o: compile crc-gentab.c sysdeps.h iobuf/iobuf.h iobuf/common.h iobuf/ibuf.h iobuf/obuf.h msg/msg.h msg/debug.h
++ 	./compile crc-gentab.c
+diff --git a/pkgs/development/libraries/bglibs/default.nix b/pkgs/development/libraries/bglibs/default.nix
+index 6554768..5297117 100644
+--- a/pkgs/development/libraries/bglibs/default.nix
++++ b/pkgs/development/libraries/bglibs/default.nix
+@@ -1,4 +1,4 @@
+-{ stdenv, fetchurl, dietlibc, libtool, which, perl }:
++{ stdenv, fetchurl, libtool, which, perl }:
+ 
+ let
+   pkg = "bglibs";
+@@ -12,26 +12,20 @@ in stdenv.mkDerivation rec {
+     sha256 = "1w4dagl2h1gps2kbzdk9zn3ls1c81q0d6cnczkr8zrc85lffb2jw";
+   };
+ 
+-  buildInputs = [dietlibc libtool which perl];
++  buildInputs = [libtool which perl];
+ 
+   patches = [
+-    # libtool diet gcc... can't find main.o inside .a library
+-    ./bg-installer.patch
++    ./bglibs.patch
+   ];
+ 
+   configurePhase = ''
+-    echo "diet gcc" > conf-cc
+-    echo "diet gcc -s -static" > conf-ld
++    echo "gcc -s -static" > conf-ld
+     echo $out/include/bglibs > conf-include
+     echo $out/lib > conf-lib
+     echo $out/bin > conf-bin
+     echo $out/man > conf-man
+   '';
+ 
+-  allowedReferences = ["out" perl];
+-  dontStrip = true; # diet does not need stripping
+-  dontPatchELF = true; # we produce static binaries
+-
+   meta = {
+     description = "One stop library package";
+     homepage = homepage;
+@@ -43,3 +37,4 @@ in stdenv.mkDerivation rec {
+ }
+ 
+ # vim: et ts=2 sw=2 
++
+diff --git a/pkgs/development/libraries/bglibs/diet.nix b/pkgs/development/libraries/bglibs/diet.nix
+new file mode 100644
+index 0000000..6554768
+--- /dev/null
++++ b/pkgs/development/libraries/bglibs/diet.nix
+@@ -0,0 +1,45 @@
++{ stdenv, fetchurl, dietlibc, libtool, which, perl }:
++
++let
++  pkg = "bglibs";
++  ver = "1.106";
++  homepage = http://untroubled.org/bglibs;
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  src = fetchurl {
++    url = "${homepage}/${name}.tar.gz";
++    sha256 = "1w4dagl2h1gps2kbzdk9zn3ls1c81q0d6cnczkr8zrc85lffb2jw";
++  };
++
++  buildInputs = [dietlibc libtool which perl];
++
++  patches = [
++    # libtool diet gcc... can't find main.o inside .a library
++    ./bg-installer.patch
++  ];
++
++  configurePhase = ''
++    echo "diet gcc" > conf-cc
++    echo "diet gcc -s -static" > conf-ld
++    echo $out/include/bglibs > conf-include
++    echo $out/lib > conf-lib
++    echo $out/bin > conf-bin
++    echo $out/man > conf-man
++  '';
++
++  allowedReferences = ["out" perl];
++  dontStrip = true; # diet does not need stripping
++  dontPatchELF = true; # we produce static binaries
++
++  meta = {
++    description = "One stop library package";
++    homepage = homepage;
++    license = stdenv.lib.licenses.lgpl21Plus.fullName;
++    platforms = stdenv.lib.platforms.gnu;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++
++}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index ad2a0d6..2aa88db 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -515,6 +515,8 @@ let
+ 
+   bglibs = callPackage ../development/libraries/bglibs { };
+ 
++  diet-bglibs = callPackage ../development/libraries/bglibs/diet.nix { };
++
+   bmon = callPackage ../tools/misc/bmon { };
+ 
+   boomerang = callPackage ../development/tools/boomerang {
+-- 
+tg: (e299e12..) tg/bglibs (depends on: tg/maintainer-tzeman tg/dietlibc-update)

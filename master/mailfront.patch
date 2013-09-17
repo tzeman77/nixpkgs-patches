@@ -1,0 +1,88 @@
+From: Tomas Zeman <tzeman@volny.cz>
+Subject: [PATCH] tg/mailfront
+
+mailfront-2.01
+
+---
+ pkgs/tools/networking/mailfront/default.nix | 38 +++++++++++++++++++++++++++++
+ pkgs/tools/networking/mailfront/link.patch  | 12 +++++++++
+ pkgs/top-level/all-packages.nix             |  2 ++
+ 3 files changed, 52 insertions(+)
+
+diff --git a/pkgs/tools/networking/mailfront/default.nix b/pkgs/tools/networking/mailfront/default.nix
+new file mode 100644
+index 0000000..743afaf
+--- /dev/null
++++ b/pkgs/tools/networking/mailfront/default.nix
+@@ -0,0 +1,38 @@
++{ stdenv, fetchurl, bglibs, cvm }:
++
++let
++  pkg = "mailfront";
++  ver = "2.01";
++  web = http://untroubled.org;
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  src = fetchurl {
++    url = "${web}/${pkg}/${pkg}-${ver}.tar.gz";
++    sha256 = "0qrbqx5h9sc74dk87ddzznyzfdcgak2jl45sw63q9p1ngkpnkc0z";
++  };
++
++  buildInputs = [cvm bglibs];
++  inherit bglibs;
++
++  patches = [ ./link.patch ];
++
++  configurePhase = ''
++    echo $bglibs/include/bglibs > conf-bgincs
++    echo $bglibs/lib > conf-bglibs
++    echo $out/bin > conf-bin
++    echo $out/include > conf-include
++    echo $out/lib/mailfront > conf-modules
++  '';
++
++  meta = {
++    description = "Mail server network protocol front-ends";
++    homepage = "${web}/${pkg}";
++    license = stdenv.lib.licenses.gpl2Plus.fullName;
++    platforms = stdenv.lib.platforms.gnu;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++
++}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/tools/networking/mailfront/link.patch b/pkgs/tools/networking/mailfront/link.patch
+new file mode 100644
+index 0000000..49d844d
+--- /dev/null
++++ b/pkgs/tools/networking/mailfront/link.patch
+@@ -0,0 +1,12 @@
++diff -ru mailfront-2.01.orig/Makefile mailfront-2.01/Makefile
++--- mailfront-2.01.orig/Makefile	2013-07-16 04:36:34.000000000 +0200
+++++ mailfront-2.01/Makefile	2013-09-16 17:13:15.682406967 +0200
++@@ -170,7 +170,7 @@
++ 	./compile pop3front-auth.c
++ 
++ pop3front-maildir: pop3front-maildir.o load pop3.a
++-	./load pop3front-maildir pop3.a -lbg -lcvm-sasl -lcvm-v2client 
+++	./load pop3front-maildir pop3.a -lbg -lcvm-sasl -lcvm-v2client -lbg-net -lbg-crypto -lbg-str -lbg-base64 -lbg-misc
++ 
++ pop3front-maildir.o: compile pop3front-maildir.c pop3.h constants.h
++ 	./compile pop3front-maildir.c
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 5b806f5..684cbc6 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -1213,6 +1213,8 @@ let
+ 
+   maildrop = callPackage ../tools/networking/maildrop { };
+ 
++  mailfront = callPackage ../tools/networking/mailfront { };
++
+   mailutils = callPackage ../tools/networking/mailutils {
+     guile = guile_1_8;
+   };
+-- 
+tg: (1383fc2..) tg/mailfront (depends on: tg/cvm)
