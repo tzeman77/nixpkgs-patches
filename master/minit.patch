@@ -2,11 +2,11 @@ minit-0.10: a small yet feature-complete init
 
 diff --git a/pkgs/os-specific/linux/minit/default.nix b/pkgs/os-specific/linux/minit/default.nix
 new file mode 100644
-index 0000000..5817369
+index 0000000..aaa98a2
 --- /dev/null
 +++ b/pkgs/os-specific/linux/minit/default.nix
-@@ -0,0 +1,35 @@
-+{ stdenv, fetchurl, dietlibc }:
+@@ -0,0 +1,39 @@
++{ stdenv, fetchurl, dietlibc, libowfat }:
 +
 +let
 +  pkg = "minit";
@@ -20,10 +20,14 @@ index 0000000..5817369
 +    sha256 = "1kgsvn173i84zbyw108cvnn90xkf6s4y83xiwvbjh66s89ir4xp9";
 +  };
 +
-+  buildInputs = [dietlibc];
++  buildInputs = [dietlibc libowfat];
 +
-+  patches = [
-+  ];
++  installPhase = ''
++    make install-files DESTDIR=$out
++    install -m 700 killall5 $out/sbin/killall5.minit
++    mv $out/sbin/shutdown $out/sbin/shutdown.minit
++    rm $out/sbin/init
++  '';
 +
 +  allowedReferences = ["out"];
 +  dontStrip = true; # diet does not need stripping
@@ -42,10 +46,10 @@ index 0000000..5817369
 +# vim: et ts=2 sw=2 
 +
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 4572632..a564536 100644
+index 0fffc06..8a60647 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -6730,6 +6730,8 @@ let
+@@ -6732,6 +6732,8 @@ let
  
    mingetty = callPackage ../os-specific/linux/mingetty { };
  
