@@ -1,0 +1,57 @@
+libowfat-0.29: reimplement libdjb under GPL
+
+diff --git a/pkgs/os-specific/linux/libowfat/default.nix b/pkgs/os-specific/linux/libowfat/default.nix
+new file mode 100644
+index 0000000..81e03ef
+--- /dev/null
++++ b/pkgs/os-specific/linux/libowfat/default.nix
+@@ -0,0 +1,36 @@
++{ stdenv, fetchurl, dietlibc }:
++
++let
++  pkg = "libowfat";
++  ver = "0.29";
++  homepage = http://www.fefe.de/libowfat;
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  src = fetchurl {
++    url = "http://dl.fefe.de/${name}.tar.bz2";
++    sha256 = "09v4phf1d4y617fdqwn214jmkialf7xqcsyx3rzk7x5ysvpbvbab";
++  };
++
++  buildInputs = [dietlibc];
++
++  patches = [
++  ];
++
++  allowedReferences = ["out"];
++  dontStrip = true; # diet does not need stripping
++  dontPatchELF = true; # we produce static binaries
++
++  meta = {
++    description = "reimplement libdjb under GPL";
++    homepage = homepage;
++    license = stdenv.lib.licenses.gpl2;
++    platforms = stdenv.lib.platforms.linux;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++
++}
++
++# vim: et ts=2 sw=2 
++
++
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 4572632..0fffc06 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -6720,6 +6720,8 @@ let
+ 
+   libnotify = callPackage ../development/libraries/libnotify { };
+ 
++  libowfat = callPackage ../os-specific/linux/libowfat { };
++
+   libvolume_id = callPackage ../os-specific/linux/libvolume_id { };
+ 
+   lsscsi = callPackage ../os-specific/linux/lsscsi { };
