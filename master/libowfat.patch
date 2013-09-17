@@ -2,10 +2,10 @@ libowfat-0.29: reimplement libdjb under GPL
 
 diff --git a/pkgs/os-specific/linux/libowfat/default.nix b/pkgs/os-specific/linux/libowfat/default.nix
 new file mode 100644
-index 0000000..81e03ef
+index 0000000..6adaba3
 --- /dev/null
 +++ b/pkgs/os-specific/linux/libowfat/default.nix
-@@ -0,0 +1,36 @@
+@@ -0,0 +1,40 @@
 +{ stdenv, fetchurl, dietlibc }:
 +
 +let
@@ -22,8 +22,7 @@ index 0000000..81e03ef
 +
 +  buildInputs = [dietlibc];
 +
-+  patches = [
-+  ];
++  installPhase = "make install prefix=$out LIBDIR=$out/lib";
 +
 +  allowedReferences = ["out"];
 +  dontStrip = true; # diet does not need stripping
@@ -31,6 +30,11 @@ index 0000000..81e03ef
 +
 +  meta = {
 +    description = "reimplement libdjb under GPL";
++    longDescription = ''
++      libowfat is a library of general purpose APIs extracted from Dan
++      Bernstein's software, reimplemented and covered by the GNU General
++      Public License Version 2 (no later versions).
++    '';
 +    homepage = homepage;
 +    license = stdenv.lib.licenses.gpl2;
 +    platforms = stdenv.lib.platforms.linux;
