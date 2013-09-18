@@ -1,2 +1,101 @@
 djbdns-1.05: High-performant & secure DNS services
 
+diff --git a/pkgs/servers/dns/djbdns/compile.patch b/pkgs/servers/dns/djbdns/compile.patch
+new file mode 100644
+index 0000000..bfa14ba
+--- /dev/null
++++ b/pkgs/servers/dns/djbdns/compile.patch
+@@ -0,0 +1,29 @@
++diff -u djbdns-1.05.orig/Makefile djbdns-1.05/Makefile
++--- djbdns-1.05.orig/Makefile	2001-02-11 22:11:45.000000000 +0100
+++++ djbdns-1.05/Makefile	2013-09-18 15:43:24.673175881 +0200
++@@ -511,8 +511,7 @@
++ hasshsgr.h: \
++ choose compile load tryshsgr.c hasshsgr.h1 hasshsgr.h2 chkshsgr \
++ warn-shsgr
++-	./chkshsgr || ( cat warn-shsgr; exit 1 )
++-	./choose clr tryshsgr hasshsgr.h1 hasshsgr.h2 > hasshsgr.h
+++	cat hasshsgr.h1 > hasshsgr.h
++ 
++ hier.o: \
++ compile hier.c auto_home.h
++diff -u djbdns-1.05.orig/hier.c djbdns-1.05/hier.c
++--- djbdns-1.05.orig/hier.c	2001-02-11 22:11:45.000000000 +0100
+++++ djbdns-1.05/hier.c	2013-09-18 15:47:34.029534695 +0200
++@@ -2,10 +2,11 @@
++ 
++ void hier()
++ {
++-  c("/","etc","dnsroots.global",-1,-1,0644);
++ 
++   h(auto_home,-1,-1,02755);
++   d(auto_home,"bin",-1,-1,02755);
+++  d(auto_home,"etc",-1,-1,02755);
+++  c(auto_home,"etc","dnsroots.global",-1,-1,0644);
++ 
++   c(auto_home,"bin","dnscache-conf",-1,-1,0755);
++   c(auto_home,"bin","tinydns-conf",-1,-1,0755);
+diff --git a/pkgs/servers/dns/djbdns/default.nix b/pkgs/servers/dns/djbdns/default.nix
+new file mode 100644
+index 0000000..8875523
+--- /dev/null
++++ b/pkgs/servers/dns/djbdns/default.nix
+@@ -0,0 +1,45 @@
++{ stdenv, fetchurl, dietlibc, ucspi-tcp }:
++
++let
++  pkg = "djbdns";
++  ver = "1.05";
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  srcs = [
++    (fetchurl {
++      url = "http://cr.yp.to/${pkg}/${pkg}-${ver}.tar.gz";
++      sha256 = "0j3baf92vkczr5fxww7rp1b7gmczxmmgrqc8w2dy7kgk09m85k9w";
++    })
++  ];
++
++  sourceRoot = name;
++
++  patches = [ ./compile.patch ];
++
++  buildInputs = [dietlibc];
++
++  configurePhase = ''
++    echo $out > conf-home
++    echo "diet gcc" > conf-cc
++    echo "diet gcc -s -static" > conf-ld
++  '';
++
++  installTargets = "setup check";
++
++  dontStrip = true; # diet does not need stripping
++  dontPatchELF = true; # we produce static binaries
++
++  meta = {
++    description = "High-performant & secure DNS services";
++    homepage = http://cr.yp.to/djbdns.html;
++    license = stdenv.lib.licenses.publicDomain.shortName;
++    platforms = stdenv.lib.platforms.linux;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++
++}
++
++# vim: et ts=2 sw=2 
++
++
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 8a60647..c9198d7 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -5996,6 +5996,8 @@ let
+ 
+   diod = callPackage ../servers/diod { };
+ 
++  djbdns = callPackage ../servers/dns/djbdns { };
++
+   dovecot = dovecot21;
+ 
+   dovecot21 = callPackage ../servers/mail/dovecot { };
