@@ -10,3 +10,4 @@ vmailmgr.patch
 libowfat.patch
 minit.patch
 djbdns.patch
+daemontools-compile.patch
