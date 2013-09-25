@@ -1,0 +1,43 @@
+diff --git a/pkgs/tools/misc/daemontools/default.nix b/pkgs/tools/misc/daemontools/default.nix
+index 7eeb9fe..0c9351c 100644
+--- a/pkgs/tools/misc/daemontools/default.nix
++++ b/pkgs/tools/misc/daemontools/default.nix
+@@ -23,6 +23,8 @@ in stdenv.mkDerivation rec {
+     # Avoid need to have secondary groups for compilation
+     # Install dnsroots.global into $out/etc
+     ./compile.patch
++    # Fix PATH for rts tests
++    ./rts.patch
+   ];
+ 
+   buildInputs = [dietlibc];
+diff --git a/pkgs/tools/misc/daemontools/rts.patch b/pkgs/tools/misc/daemontools/rts.patch
+new file mode 100644
+index 0000000..5bea86b
+--- /dev/null
++++ b/pkgs/tools/misc/daemontools/rts.patch
+@@ -0,0 +1,24 @@
++diff -ru daemontools-0.76.orig/src/Makefile daemontools-0.76/src/Makefile
++--- daemontools-0.76.orig/src/Makefile	2001-07-12 18:49:49.000000000 +0200
+++++ daemontools-0.76/src/Makefile	2013-09-25 11:45:56.358024669 +0200
++@@ -265,7 +265,7 @@
++ rts: envdir envuidgid fghack matchtest multilog pgrphack \
++ readproctitle rts.tests setlock setuidgid softlimit supervise svc \
++ svok svscan svscanboot svstat tai64n tai64nlocal
++-	env - /bin/sh rts.tests 2>&1 | cat -v > rts
+++	/bin/sh rts.tests 2>&1 | cat -v > rts
++ 
++ scan_ulong.o: compile scan.h scan_ulong.c
++ 	./compile scan_ulong.c
++diff -ru daemontools-0.76.orig/src/rts.tests daemontools-0.76/src/rts.tests
++--- daemontools-0.76.orig/src/rts.tests	2001-07-12 18:49:49.000000000 +0200
+++++ daemontools-0.76/src/rts.tests	2013-09-25 11:35:21.617953581 +0200
++@@ -41,7 +41,7 @@
++ # softlimit -t
++ 
++ 
++-PATH=`pwd`:/command:/usr/local/bin:/usr/local/sbin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin
+++PATH=`pwd`:$PATH
++ export PATH
++ 
++ umask 022
