@@ -38,10 +38,10 @@ index 09f53db..a260a40 100644
    ./services/networking/firewall.nix
 diff --git a/modules/services/networking/dnscache.nix b/modules/services/networking/dnscache.nix
 new file mode 100644
-index 0000000..5383fae
+index 0000000..6de2a9c
 --- /dev/null
 +++ b/modules/services/networking/dnscache.nix
-@@ -0,0 +1,57 @@
+@@ -0,0 +1,132 @@
 +{ config, pkgs, ... }:
 +
 +with pkgs.lib;
@@ -49,6 +49,8 @@ index 0000000..5383fae
 +let
 +
 +  cfg = config.services.dnscache;
++
++  dtools = pkgs.daemontools;
 +
 +in
 +
@@ -65,6 +67,40 @@ index 0000000..5383fae
 +        description = "Whether to enable dnscache service.";
 +      };
 +
++      cacheSize = mkOption {
++        default = 10000000;
++        description = "Cache size";
++      };
++
++      dataLimit = mkOption {
++        default = 10485760;
++        description = "Data segment limit";
++      };
++
++      listenIp = mkOption {
++        default = "127.0.0.1";
++        description = "Listening IP address";
++      };
++
++      sendIp = mkOption {
++        default = "0.0.0.0";
++        description = "Source IP";
++      };
++
++      root = mkOption {
++        default = "/var/db/dnscache/root";
++        description = "dnscache root dir";
++      };
++
++      logDir = mkOption {
++        default = "/tmp/dnscache";
++        description = "Log dir";
++      };
++
++      allowFrom = mkOption {
++        default = [ "127.0.0.1" ];
++        description = "List of IP addresses/prefixes to allow query";
++      };
 +    };
 +
 +  };
@@ -93,6 +129,45 @@ index 0000000..5383fae
 +    };
 +
 +    users.extraGroups.dnslog.gid = config.ids.gids.dnslog;
++
++    environment.etc = {
++      "minit/dns/cache/env/CACHESIZE".text = toString cfg.cacheSize;
++      "minit/dns/cache/env/DATALIMIT".text = toString cfg.dataLimit;
++      "minit/dns/cache/env/IP".text = cfg.listenIp;
++      "minit/dns/cache/env/IPSEND".text = cfg.sendIp;
++      "minit/dns/cache/env/ROOT".text = cfg.root;
++      "minit/dns/cache/run" = {
++        mode = "0755";
++        text = ''
++          #!${pkgs.bash}/bin/sh
++          exec 2>&1
++          mkdir -p ${cfg.root}/{ip,servers}
++          for i in ${toString cfg.allowFrom}; do
++            [ -f ${cfg.root}/ip/$i ] || touch ${cfg.root}/ip/$i
++          done
++          [ -f "${cfg.root}/servers/@" ] || cp ${pkgs.djbdns}/etc/dnsroots.global "${cfg.root}/servers/@"
++          [ -f /run/dnscache-seed ] || dd if=/dev/urandom of=/run/dnscache-seed bs=512 count=1
++          exec </run/dnscache-seed
++          exec ${dtools}/bin/envdir env ${pkgs.bash}/bin/sh -c '
++            exec ${dtools}/bin/envuidgid dnscache ${dtools}/bin/softlimit -o250 -d "${toString cfg.dataLimit}" ${pkgs.djbdns}/bin/dnscache
++          '
++        '';
++      };
++      "minit/dns/cache/respawn".text = "";
++      "minit/dns/cache/log/run" = {
++        mode = "0755";
++        text = ''
++          #!${pkgs.bash}/bin/sh
++          mkdir -p "${cfg.logDir}"
++          chown dnslog "${cfg.logDir}"
++          chmod 700 "${cfg.logDir}"
++          exec ${dtools}/bin/setuidgid dnslog ${dtools}/bin/multilog t s1048576 "${cfg.logDir}"
++        '';
++      };
++      "minit/dns/cache/log/respawn".text = "";
++    };
++
++
 +  };
 +
 +}
