@@ -1,1 +1,50 @@
 php53: fpm support
+diff --git a/pkgs/development/interpreters/php/5.3.nix b/pkgs/development/interpreters/php/5.3.nix
+index caa673b..21cc14c 100644
+--- a/pkgs/development/interpreters/php/5.3.nix
++++ b/pkgs/development/interpreters/php/5.3.nix
+@@ -2,7 +2,7 @@
+ , apacheHttpd, mysql, libxml2, readline, zlib, curl, gd, postgresql, gettext
+ , openssl, pkgconfig, sqlite, config, libjpeg, libpng, freetype, libxslt
+ , libmcrypt, bzip2, icu, libssh2, makeWrapper, libiconvOrEmpty, libiconv, uwimap
+-, pam }:
++, pam, sapi ? "apxs2" }:
+ 
+ let
+   libmcryptOverride = libmcrypt.override { disablePosixThreads = true; };
+@@ -37,6 +37,10 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+         buildInputs = [apacheHttpd];
+       };
+ 
++      fpm = {
++      	configureFlags = ["--enable-fpm"];
++      };
++
+       # Extensions
+ 
+       curl = {
+@@ -175,7 +179,8 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+     };
+ 
+   cfg = {
+-    apxs2Support = config.php.apxs2 or true;
++    apxs2Support = sapi == "apxs2";
++    fpmSupport = sapi == "fpm";
+     bcmathSupport = config.php.bcmath or true;
+     bz2Support = config.php.bz2 or false;
+     curlSupport = config.php.curl or true;
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index c9198d7..33554f2 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -3153,6 +3153,10 @@ let
+ 
+   php53 = callPackage ../development/interpreters/php/5.3.nix { };
+ 
++  php53-fpm = callPackage ../development/interpreters/php/5.3.nix {
++    sapi = "fpm";
++  };
++
+   php54 = callPackage ../development/interpreters/php/5.4.nix { };
+ 
+   php_apc = callPackage ../development/libraries/php-apc { };
