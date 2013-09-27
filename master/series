@@ -1,2 +1,3 @@
 minit-module.patch
 dnscache-module.patch
+dnscache-no-minit.patch
