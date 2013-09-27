@@ -1,0 +1,60 @@
+diff --git a/modules/services/networking/dnscache.nix b/modules/services/networking/dnscache.nix
+index 6de2a9c..42a3af1 100644
+--- a/modules/services/networking/dnscache.nix
++++ b/modules/services/networking/dnscache.nix
+@@ -66,9 +66,7 @@ in
+ 
+   config = mkIf cfg.enable {
+ 
+-    systemd.services.minit.enable = true;
+-
+-    environment.systemPackages = [ pkgs.daemontools pkgs.djbdns pkgs.minit ];
++    environment.systemPackages = [ pkgs.djbdns ];
+ 
+     users.extraUsers.dnscache = {
+       uid = config.ids.uids.dnscache;
+@@ -86,44 +84,6 @@ in
+ 
+     users.extraGroups.dnslog.gid = config.ids.gids.dnslog;
+ 
+-    environment.etc = {
+-      "minit/dns/cache/env/CACHESIZE".text = toString cfg.cacheSize;
+-      "minit/dns/cache/env/DATALIMIT".text = toString cfg.dataLimit;
+-      "minit/dns/cache/env/IP".text = cfg.listenIp;
+-      "minit/dns/cache/env/IPSEND".text = cfg.sendIp;
+-      "minit/dns/cache/env/ROOT".text = cfg.root;
+-      "minit/dns/cache/run" = {
+-        mode = "0755";
+-        text = ''
+-          #!${pkgs.bash}/bin/sh
+-          exec 2>&1
+-          mkdir -p ${cfg.root}/{ip,servers}
+-          for i in ${toString cfg.allowFrom}; do
+-            [ -f ${cfg.root}/ip/$i ] || touch ${cfg.root}/ip/$i
+-          done
+-          [ -f "${cfg.root}/servers/@" ] || cp ${pkgs.djbdns}/etc/dnsroots.global "${cfg.root}/servers/@"
+-          [ -f /run/dnscache-seed ] || dd if=/dev/urandom of=/run/dnscache-seed bs=512 count=1
+-          exec </run/dnscache-seed
+-          exec ${dtools}/bin/envdir env ${pkgs.bash}/bin/sh -c '
+-            exec ${dtools}/bin/envuidgid dnscache ${dtools}/bin/softlimit -o250 -d "${toString cfg.dataLimit}" ${pkgs.djbdns}/bin/dnscache
+-          '
+-        '';
+-      };
+-      "minit/dns/cache/respawn".text = "";
+-      "minit/dns/cache/log/run" = {
+-        mode = "0755";
+-        text = ''
+-          #!${pkgs.bash}/bin/sh
+-          mkdir -p "${cfg.logDir}"
+-          chown dnslog "${cfg.logDir}"
+-          chmod 700 "${cfg.logDir}"
+-          exec ${dtools}/bin/setuidgid dnslog ${dtools}/bin/multilog t s1048576 "${cfg.logDir}"
+-        '';
+-      };
+-      "minit/dns/cache/log/respawn".text = "";
+-    };
+-
+-
+   };
+ 
+ }
