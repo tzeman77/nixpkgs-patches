@@ -1,8 +1,17 @@
 diff --git a/modules/services/networking/dnscache.nix b/modules/services/networking/dnscache.nix
-index 6de2a9c..42a3af1 100644
+index 6de2a9c..f60c1ff 100644
 --- a/modules/services/networking/dnscache.nix
 +++ b/modules/services/networking/dnscache.nix
-@@ -66,9 +66,7 @@ in
+@@ -6,8 +6,6 @@ let
+ 
+   cfg = config.services.dnscache;
+ 
+-  dtools = pkgs.daemontools;
+-
+ in
+ 
+ {
+@@ -66,9 +64,7 @@ in
  
    config = mkIf cfg.enable {
  
@@ -13,7 +22,7 @@ index 6de2a9c..42a3af1 100644
  
      users.extraUsers.dnscache = {
        uid = config.ids.uids.dnscache;
-@@ -86,44 +84,6 @@ in
+@@ -86,44 +82,6 @@ in
  
      users.extraGroups.dnslog.gid = config.ids.gids.dnslog;
  
