@@ -56,10 +56,10 @@ index 0000000..760afe1
 ++int auto_gidn = 81;
 diff --git a/pkgs/servers/mail/qmail/diet.nix b/pkgs/servers/mail/qmail/diet.nix
 new file mode 100644
-index 0000000..d80347c
+index 0000000..d51fb40
 --- /dev/null
 +++ b/pkgs/servers/mail/qmail/diet.nix
-@@ -0,0 +1,74 @@
+@@ -0,0 +1,134 @@
 +{ stdenv, fetchurl, dietlibc, groff }:
 +
 +let
@@ -75,8 +75,8 @@ index 0000000..d80347c
 +      sha256 = "123gc80z7l8svd7qbc6a39fi311b4b43az0rcqm0jmdv5ib6rv91";
 +    })
 +#    (fetchurl {
-+#      url = "http://smarden.org/pape/djb/manpages/${pkg}-${ver}-man.tar.gz";
-+#      sha256 = "02k06k2f69jl758cz6hfmnvzxq5vyyik29b7hzshv2l7w2ppfk8v";
++#      url = "http://www.netmeridian.com/e-huss/queue-fix-1.4.tar.gz";
++#      sha256 = "ce42fcc4daf5076adcf8fea6a9a84f2e1716c67c";
 +#    })
 +  ];
 +  sourceRoot = "${pkg}-${ver}";
@@ -100,7 +100,67 @@ index 0000000..d80347c
 +
 +  buildInputs = [dietlibc groff];
 +
-+  installTargets = "setup check";
++  installPhase = ''
++    # dirs
++    for i in alias bin boot control users configure; do
++      install -d -m 755 $out/$i
++    done
++
++    # boot files
++    for i in binm1{,+df} binm2{,+df} binm3{,+df} home{,+df} proc{,+df}; do
++      install -m 755 $i $out/boot/$i
++    done
++
++    # binaries
++    install -m 4711 qmail-queue $out/bin/qmail-queue
++    for i in qmail-lspawn qmail-start qmail-newu qmail-newmrh; do
++      install -m 700 $i $out/bin/$i
++    done
++    for i in qmail-getpw qmail-local qmail-remote qmail-rspawn \
++             qmail-clean qmail-send splogger qmail-popup qmail-pw2u \
++             qmail-todo; do
++      install -m 711 $i $out/bin/$i
++    done
++    for i in qmail-inject predate datemail mailsubj qmail-showctl \
++       qmail-qread qmail-qstat qmail-tcpto qmail-tcpok qmail-pop3d \
++             qmail-popup qmail-qmqpc qmail-qmqpd qmail-qmtpd qmail-smtpd \
++             sendmail tcp-env qreceipt qsmhook qbiff forward preline \
++             condredirect bouncesaying except maildirmake maildir2mbox \
++             maildirwatch qail elq pinq; do
++      install -m 755 $i $out/bin/$i
++    done
++
++    # configure scripts/binaries
++    install -m 755 config-fast $out/configure/config-fast
++
++    # install manpages
++    for i in bouncesaying except maildir2mbox maildirwatch preline qreceipt \
++             condredirect forward maildirmake mailsubj qbiff tcp-env; do
++      install -D -m 644 $i.1 $out/man/man1/$i.1
++    done
++    for i in addresses envelopes mbox qmail-header qmail-users dot-qmail \
++             maildir qmail-control qmail-log tcp-environ; do
++      install -D -m 644 $i.5 $out/man/man5/$i.5
++    done
++    for i in forgeries qmail-limits qmail; do
++      install -D -m 644 $i.7 $out/man/man7/$i.7
++    done
++    for i in qmail-clean qmail-newmrh qmail-qmqpd qmail-rspawn qmail-tcpto \
++             qmail-command qmail-newu qmail-qmtpd qmail-send splogger \
++             qmail-getpw qmail-pop3d qmail-qread qmail-showctl qmail-inject \
++             qmail-popup qmail-qstat qmail-smtpd qmail-local qmail-pw2u \
++             qmail-queue qmail-start qmail-lspawn qmail-qmqpc qmail-remote \
++             qmail-tcpok; do
++      install -D -m 644 $i.8 $out/man/man8/$i.8
++    done
++
++    # install concurrencyicoming & defaultdelivery files
++    echo 20 > $out/control/concurrencyincoming
++    echo ./Maildir/ > $out/control/defaultdelivery
++    chmod 644 $out/control/{concurrencyincoming,defaultdelivery}
++  '';
++
++#  installTargets = "setup check";
 +#
 +#  configurePhase = ''
 +#    echo "diet gcc" > src/conf-cc
@@ -2352,6 +2412,50 @@ index 0000000..6d08258
 ++#define _QREGEX_H_
 ++int matchregex(char *text, char *regex);
 ++#endif
+diff --git a/pkgs/servers/mail/qmail/queue-fix-dietlibc.patch b/pkgs/servers/mail/qmail/queue-fix-dietlibc.patch
+new file mode 100644
+index 0000000..6d967ed
+--- /dev/null
++++ b/pkgs/servers/mail/qmail/queue-fix-dietlibc.patch
+@@ -0,0 +1,18 @@
++Compile with dietlibc
++
++diff -r 6becbe0d87fa conf-cc
++--- a/conf-cc	Thu Nov 01 15:04:39 2007 +0100
+++++ b/conf-cc	Thu Nov 01 15:06:54 2007 +0100
++@@ -1,3 +1,3 @@ gcc -O2
++-gcc -O2
+++diet gcc -O2
++ 
++ This will be used to compile .c files.
++diff -r 6becbe0d87fa conf-ld
++--- a/conf-ld	Thu Nov 01 15:04:39 2007 +0100
+++++ b/conf-ld	Thu Nov 01 15:06:54 2007 +0100
++@@ -1,3 +1,3 @@ gcc -s
++-gcc -s
+++diet gcc -s -static
++ 
++ This will be used to link .o files into an executable.
+diff --git a/pkgs/servers/mail/qmail/queue-fix-errno.patch b/pkgs/servers/mail/qmail/queue-fix-errno.patch
+new file mode 100644
+index 0000000..72f9fcd
+--- /dev/null
++++ b/pkgs/servers/mail/qmail/queue-fix-errno.patch
+@@ -0,0 +1,14 @@
++errno fix
++
++diff -r c045670f36e9 error.h
++--- a/error.h	Thu Nov 01 14:46:11 2007 +0100
+++++ b/error.h	Thu Nov 01 15:02:39 2007 +0100
++@@ -1,7 +1,7 @@
++ #ifndef ERROR_H
++ #define ERROR_H
++ 
++-extern int errno;
+++#include <errno.h>
++ 
++ extern int error_intr;
++ extern int error_nomem;
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
 index 08a6420..7cd0615 100644
 --- a/pkgs/top-level/all-packages.nix
