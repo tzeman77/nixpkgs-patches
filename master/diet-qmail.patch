@@ -56,11 +56,11 @@ index 0000000..760afe1
 ++int auto_gidn = 81;
 diff --git a/pkgs/servers/mail/qmail/diet.nix b/pkgs/servers/mail/qmail/diet.nix
 new file mode 100644
-index 0000000..794a768
+index 0000000..d80347c
 --- /dev/null
 +++ b/pkgs/servers/mail/qmail/diet.nix
-@@ -0,0 +1,72 @@
-+{ stdenv, fetchurl, dietlibc }:
+@@ -0,0 +1,74 @@
++{ stdenv, fetchurl, dietlibc, groff }:
 +
 +let
 +  pkg = "qmail";
@@ -96,9 +96,11 @@ index 0000000..794a768
 +    ./qmail-smtpd.spam.patch
 +  ];
 +
-+  buildTargets = "it man";
++  buildFlags = "it man";
 +
-+  buildInputs = [dietlibc];
++  buildInputs = [dietlibc groff];
++
++  installTargets = "setup check";
 +#
 +#  configurePhase = ''
 +#    echo "diet gcc" > src/conf-cc
