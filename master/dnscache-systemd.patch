@@ -1,23 +1,86 @@
 diff --git a/modules/services/networking/dnscache.nix b/modules/services/networking/dnscache.nix
-index f60c1ff..3e03591 100644
+index 7925f98..1838aa3 100644
 --- a/modules/services/networking/dnscache.nix
 +++ b/modules/services/networking/dnscache.nix
-@@ -82,6 +82,18 @@ in
+@@ -5,6 +5,8 @@ with pkgs.lib;
+ let
+ 
+   cfg = config.services.dnscache;
++  dtools = pkgs.daemontools;
++  pkg = pkgs.djbdns;
+ 
+ in
+ 
+@@ -50,6 +52,16 @@ in
+         default = [ "127.0.0.1" ];
+         description = "List of IP addresses/prefixes to allow query";
+       };
++
++      forwardOnly = mkOption {
++        default = false;
++        description = "If the cache forwards queries to recursive nameservers";
++      };
++
++      nameservers = mkOption {
++        default = [];
++        description = "List of root servers IP addresses. Uses dnsroots.global if empty";
++      };
+     };
+ 
+   };
+@@ -59,7 +71,13 @@ in
+ 
+   config = mkIf cfg.enable {
+ 
+-    environment.systemPackages = [ pkgs.djbdns ];
++    environment.systemPackages = [ pkg dtools pkgs.diffutils ];
++
++    environment.etc."dnscache-root-servers" =
++      if cfg.nameservers == [] then
++        { source = "${pkgs.djbdns}/etc/dnsroots.global"; }
++      else
++        { text = concatStringsSep "\n" cfg.nameservers; };
+ 
+     users.extraUsers.dnscache = {
+       uid = config.ids.uids.dnscache;
+@@ -77,6 +95,40 @@ in
  
      users.extraGroups.dnslog.gid = config.ids.gids.dnslog;
  
 +    systemd.services.dnscache = {
 +      description = "DNS cache service";
 +      wantedBy = [ "multi-user.target" ];
++      after = [ "network.target" ];
 +      environment = {
 +        CACHESIZE = toString cfg.cacheSize;
 +        DATALIMIT = toString cfg.dataLimit;
 +        IP = cfg.listenIp;
 +        IPSEND = cfg.sendIp;
 +        ROOT = cfg.root;
++      } // optionalAttrs (cfg.forwardOnly) {
++        FORWARDONLY = "1";
++      };
++
++      preStart = ''
++        mkdir -p ${cfg.root}/{ip,servers}
++        for i in ${toString cfg.allowFrom}; do
++          [ -f ${cfg.root}/ip/$i ] || touch ${cfg.root}/ip/$i
++        done
++        rs=${cfg.root}/servers/@
++        [ -f $rs ] && ${pkgs.diffutils}/bin/cmp -s /etc/dnscache-root-servers $rs || cp /etc/dnscache-root-servers $rs
++        [ -f /run/dnscache-seed ] || dd if=/dev/urandom of=/run/dnscache-seed bs=512 count=1
++      '';
++
++      serviceConfig = {
++        ExecStart =
++          "${pkgs.bash}/bin/sh -c 'exec </run/dnscache-seed; exec " +
++          "${dtools}/bin/envuidgid dnscache ${dtools}/bin/softlimit -o 250 " +
++          "-d ${toString cfg.dataLimit} ${pkg}/bin/dnscache" +
++          "'";
++        Restart = "always";
++        Type = "simple";
 +      };
 +    };
-+
    };
  
  }
