@@ -3,17 +3,31 @@ Subject: [PATCH] tg/ucspi-tcp
 
 ucspi-tcp-0.88
 
----
- pkgs/tools/networking/ucspi-tcp/default.nix | 56 +++++++++++++++++++++++++++++
- pkgs/top-level/all-packages.nix             |  2 ++
- 2 files changed, 58 insertions(+)
-
+diff --git a/pkgs/tools/networking/ucspi-tcp/compile.patch b/pkgs/tools/networking/ucspi-tcp/compile.patch
+new file mode 100644
+index 0000000..f2bbb2c
+--- /dev/null
++++ b/pkgs/tools/networking/ucspi-tcp/compile.patch
+@@ -0,0 +1,13 @@
++diff -ru ucspi-tcp-0.88.orig/Makefile ucspi-tcp-0.88/Makefile
++--- ucspi-tcp-0.88.orig/Makefile	2000-03-18 16:18:42.000000000 +0100
+++++ ucspi-tcp-0.88/Makefile	2013-09-30 12:49:28.847991546 +0200
++@@ -328,8 +328,7 @@
++ hasshsgr.h: \
++ choose compile load tryshsgr.c hasshsgr.h1 hasshsgr.h2 chkshsgr \
++ warn-shsgr
++-	./chkshsgr || ( cat warn-shsgr; exit 1 )
++-	./choose clr tryshsgr hasshsgr.h1 hasshsgr.h2 > hasshsgr.h
+++	cat hasshsgr.h1 > hasshsgr.h
++ 
++ haswaitp.h: \
++ choose compile load trywaitp.c haswaitp.h1 haswaitp.h2
 diff --git a/pkgs/tools/networking/ucspi-tcp/default.nix b/pkgs/tools/networking/ucspi-tcp/default.nix
 new file mode 100644
-index 0000000..7e1db02
+index 0000000..ea18234
 --- /dev/null
 +++ b/pkgs/tools/networking/ucspi-tcp/default.nix
-@@ -0,0 +1,56 @@
+@@ -0,0 +1,63 @@
 +{ stdenv, fetchurl, dietlibc }:
 +
 +let
@@ -39,7 +53,12 @@ index 0000000..7e1db02
 +    sha256 = "1kls3xysv3wwmikxychnbfv8vbnb0ih15005hhn4a56pj392r59m";
 +  };
 +
-+  patches = ipv6patch;
++  patches = [
++    # Avoid need to have secondary groups for compilation
++    ./compile.patch
++    # IPv6 support
++    ipv6patch
++  ];
 +
 +  buildInputs = [dietlibc];
 +
@@ -70,11 +89,13 @@ index 0000000..7e1db02
 +    maintainers = with stdenv.lib.maintainers; [ tzeman ];
 +  };
 +}
++
++# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index cc942c3..7d96b79 100644
+index 74623b9..dcaaa39 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -1833,6 +1833,8 @@ let
+@@ -1816,6 +1816,8 @@ let
  
    ucl = callPackage ../development/libraries/ucl { };
  
@@ -83,5 +104,3 @@ index cc942c3..7d96b79 100644
    udftools = callPackage ../tools/filesystems/udftools {};
  
    udptunnel = callPackage ../tools/networking/udptunnel { };
--- 
-tg: (632b5ec..) tg/ucspi-tcp (depends on: master tg/maintainer-tzeman)
