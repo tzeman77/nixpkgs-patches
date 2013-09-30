@@ -34,7 +34,7 @@ index c3616b4..1c644ee 100644
    ./services/networking/cntlm.nix
 diff --git a/modules/services/networking/axfrdns.nix b/modules/services/networking/axfrdns.nix
 new file mode 100644
-index 0000000..11a54cd
+index 0000000..05d51d5
 --- /dev/null
 +++ b/modules/services/networking/axfrdns.nix
 @@ -0,0 +1,88 @@
@@ -115,7 +115,7 @@ index 0000000..11a54cd
 +          "${dtools}/bin/envuidgid axfrdns ${dtools}/bin/softlimit " +
 +          "-d ${toString cfg.dataLimit} " +
 +          "${ucspi}/bin/tcpserver -vDRHl0 -x ${cfg.rules} -- $IP 53 " +
-+          "${pkg}/bin/tinydns";
++          "${pkg}/bin/axfrdns";
 +        Restart = "always";
 +        Type = "simple";
 +      };
