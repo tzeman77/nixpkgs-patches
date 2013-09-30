@@ -1,5 +1,5 @@
 diff --git a/modules/services/networking/dnscache.nix b/modules/services/networking/dnscache.nix
-index 6de2a9c..f60c1ff 100644
+index 6de2a9c..7925f98 100644
 --- a/modules/services/networking/dnscache.nix
 +++ b/modules/services/networking/dnscache.nix
 @@ -6,8 +6,6 @@ let
@@ -11,7 +11,19 @@ index 6de2a9c..f60c1ff 100644
  in
  
  {
-@@ -66,9 +64,7 @@ in
+@@ -48,11 +46,6 @@ in
+         description = "dnscache root dir";
+       };
+ 
+-      logDir = mkOption {
+-        default = "/tmp/dnscache";
+-        description = "Log dir";
+-      };
+-
+       allowFrom = mkOption {
+         default = [ "127.0.0.1" ];
+         description = "List of IP addresses/prefixes to allow query";
+@@ -66,9 +59,7 @@ in
  
    config = mkIf cfg.enable {
  
@@ -22,7 +34,7 @@ index 6de2a9c..f60c1ff 100644
  
      users.extraUsers.dnscache = {
        uid = config.ids.uids.dnscache;
-@@ -86,44 +82,6 @@ in
+@@ -86,44 +77,6 @@ in
  
      users.extraGroups.dnslog.gid = config.ids.gids.dnslog;
  
