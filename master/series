@@ -2,3 +2,4 @@ minit-module.patch
 dnscache-module.patch
 dnscache-no-minit.patch
 dnscache-systemd.patch
+dnsserver-systemd.patch
