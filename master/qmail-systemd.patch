@@ -40,10 +40,10 @@ index 1c644ee..bc47f7b 100644
    ./services/misc/cgminer.nix
 diff --git a/modules/services/mail/qmail.nix b/modules/services/mail/qmail.nix
 new file mode 100644
-index 0000000..d51821b
+index 0000000..8cda869
 --- /dev/null
 +++ b/modules/services/mail/qmail.nix
-@@ -0,0 +1,95 @@
+@@ -0,0 +1,133 @@
 +{ config, pkgs, ... }:
 +
 +with pkgs.lib;
@@ -75,6 +75,32 @@ index 0000000..d51821b
 +      defaultdelivery = mkOption {
 +        default = "./Maildir/";
 +        description = "Default delivery (mbox or maildir). See qmail-start(8).";
++      };
++
++      me = mkOption {
++        default = "";
++        description = "Fully qualified name of this host.";
++      };
++
++      defaultdomain = mkOption {
++        default = "";
++        description = "Default domain name. See qmail-inject(8).";
++      };
++
++      locals = mkOption {
++        default = [];
++        description = ''
++          List of domain names that the current host receives mail for. See
++          qmail-send(8).
++        '';
++      };
++
++      plusdomain = mkOption {
++        default = "";
++        description = ''
++          Plus domain name. qmail-inject adds this name to any host name that
++          ends with a plus sign. See qmail-inject(8).
++        '';
 +      };
 +
 +    };
@@ -116,6 +142,13 @@ index 0000000..d51821b
 +      qmails = { uid = uids.qmails; group = "qmail"; };
 +    };
 +
++    environment.etc = {
++      "qmail/me".text = cfg.me;
++      "qmail/defaultdomain".text = cfg.defaultdomain;
++      "qmail/locals".text = concatStringsSep "\n" cfg.locals;
++      "qmail/plusdomain".text = cfg.plusdomain;
++    };
++
 +    systemd.services.qmail = {
 +      description = "qmail service";
 +      wantedBy = [ "multi-user.target" ];
@@ -124,7 +157,12 @@ index 0000000..d51821b
 +
 +      preStart = ''
 +        qdir=/var/qmail/queue
++        cdir=/var/qmail/control
 +        [ -d $qdir ] || ${pkg}/bin/queue-fix $qdir
++        [ -d $cdir ] || mkdir -p $cdir
++        for i in me defaultdomain locals plusdomain; do
++          [ -e $cdir/$i ] || ln -s /etc/qmail/$i $cdir/$i
++        done
 +      '';
 +
 +      serviceConfig = {
