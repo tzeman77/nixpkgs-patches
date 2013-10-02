@@ -33,27 +33,24 @@ index 0000000..db12b0c
 + compile auto_uids.c
 diff --git a/pkgs/servers/mail/qmail/auto_uids.c.patch b/pkgs/servers/mail/qmail/auto_uids.c.patch
 new file mode 100644
-index 0000000..760afe1
+index 0000000..185e3b6
 --- /dev/null
 +++ b/pkgs/servers/mail/qmail/auto_uids.c.patch
-@@ -0,0 +1,17 @@
+@@ -0,0 +1,14 @@
 +diff -ru qmail-1.03.orig/Makefile qmail-1.03/Makefile
 +--- /dev/null		1970-01-01 01:00:00.000000000 +0100
 ++++ qmail-1.03/auto_uids.c.dist	2011-06-05 10:29:16.425936277 +0100
-+@@ -0,0 +1,13 @@
-++/* These values are hard-coded here, which looks bad until you *
-++ * realise that they're hard-coded in ${PORTSDIR}/?IDs anyway. */
-++/* $FreeBSD: mail/qmail/files/patch-auto_uids-c-dist 300896 2012-07-14 13:54:48Z beat $ */
-++int auto_uida = 81;
-++int auto_uidd = 82;
-++int auto_uidl = 83;
++@@ -0,0 +1,10 @@
+++int auto_uida = 7790;
+++int auto_uidd = 7791;
+++int auto_uidl = 7792;
 ++int auto_uido = 0;
-++int auto_uidp = 84;
-++int auto_uidq = 85;
-++int auto_uidr = 86;
-++int auto_uids = 87;
-++int auto_gidq = 82;
-++int auto_gidn = 81;
+++int auto_uidp = 7793;
+++int auto_uidq = 7794;
+++int auto_uidr = 7795;
+++int auto_uids = 7796;
+++int auto_gidq = 2107;
+++int auto_gidn = 2108;
 diff --git a/pkgs/servers/mail/qmail/diet.nix b/pkgs/servers/mail/qmail/diet.nix
 new file mode 100644
 index 0000000..dc831e8
