@@ -26,3 +26,116 @@ index b2301e8..d02f1dd 100644
      nixbld = 30000;
      nogroup = 65534;
    };
+diff --git a/modules/module-list.nix b/modules/module-list.nix
+index 1c644ee..bc47f7b 100644
+--- a/modules/module-list.nix
++++ b/modules/module-list.nix
+@@ -106,6 +106,7 @@
+   ./services/mail/mail.nix
+   ./services/mail/opensmtpd.nix
+   ./services/mail/postfix.nix
++  ./services/mail/qmail.nix
+   ./services/mail/spamassassin.nix
+   ./services/misc/autofs.nix
+   ./services/misc/cgminer.nix
+diff --git a/modules/services/mail/qmail.nix b/modules/services/mail/qmail.nix
+new file mode 100644
+index 0000000..d51821b
+--- /dev/null
++++ b/modules/services/mail/qmail.nix
+@@ -0,0 +1,95 @@
++{ config, pkgs, ... }:
++
++with pkgs.lib;
++
++let
++
++  cfg = config.services.qmail;
++  dtools = pkgs.daemontools;
++  pkg = pkgs.diet-qmail;
++  ucspi = pkgs.ucspi-tcp;
++  uids = config.ids.uids;
++  gids = config.ids.gids;
++
++in
++
++{
++
++  ###### interface
++
++  options = {
++
++    services.qmail = {
++
++      enable = mkOption {
++        default = true;
++        description = "Whether to enable qmail service.";
++      };
++
++      defaultdelivery = mkOption {
++        default = "./Maildir/";
++        description = "Default delivery (mbox or maildir). See qmail-start(8).";
++      };
++
++    };
++  };
++
++
++  ###### implementation
++
++  config = mkIf cfg.enable {
++
++    environment.systemPackages = [ pkg dtools ucspi ];
++
++    security.setuidOwners = [ {
++      program = "qmail-queue";
++      owner = "qmailq";
++      group = "qmail";
++      setuid = true;
++      setgid = false;
++    } ];
++
++    # groups
++    users.extraGroups = {
++      qmail.gid = gids.qmail;
++      nofiles.gid = gids.nofiles;
++    };
++
++    users.extraUsers = {
++      alias = {
++        uid = uids.alias;
++        group = "nofiles";
++        home = "/var/qmail/alias";
++        createHome = true;
++      };
++      qmaild = { uid = uids.qmaild; group = "nofiles"; };
++      qmaill = { uid = uids.qmaill; group = "nofiles"; };
++      qmailp = { uid = uids.qmailp; group = "nofiles"; };
++      qmailq = { uid = uids.qmailq; group = "qmail"; };
++      qmailr = { uid = uids.qmailr; group = "qmail"; };
++      qmails = { uid = uids.qmails; group = "qmail"; };
++    };
++
++    systemd.services.qmail = {
++      description = "qmail service";
++      wantedBy = [ "multi-user.target" ];
++      after = [ "network.target" ];
++      path = [ pkg ];
++
++      preStart = ''
++        qdir=/var/qmail/queue
++        [ -d $qdir ] || ${pkg}/bin/queue-fix $qdir
++      '';
++
++      serviceConfig = {
++        ExecStart = "${pkg}/bin/qmail-start ${cfg.defaultdelivery}";
++        Restart = "always";
++        Type = "simple";
++      };
++    };
++  };
++
++}
++
++# vim: et ts=2 sw=2
++
