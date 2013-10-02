@@ -56,10 +56,10 @@ index 0000000..760afe1
 ++int auto_gidn = 81;
 diff --git a/pkgs/servers/mail/qmail/diet.nix b/pkgs/servers/mail/qmail/diet.nix
 new file mode 100644
-index 0000000..d51fb40
+index 0000000..06ad77d
 --- /dev/null
 +++ b/pkgs/servers/mail/qmail/diet.nix
-@@ -0,0 +1,134 @@
+@@ -0,0 +1,130 @@
 +{ stdenv, fetchurl, dietlibc, groff }:
 +
 +let
@@ -69,17 +69,30 @@ index 0000000..d51fb40
 +in stdenv.mkDerivation rec {
 +  name = "${pkg}-${ver}";
 +
-+  srcs = [
-+    (fetchurl {
-+      url = "${web}/software/${pkg}-${ver}.tar.gz";
-+      sha256 = "123gc80z7l8svd7qbc6a39fi311b4b43az0rcqm0jmdv5ib6rv91";
-+    })
-+#    (fetchurl {
-+#      url = "http://www.netmeridian.com/e-huss/queue-fix-1.4.tar.gz";
-+#      sha256 = "ce42fcc4daf5076adcf8fea6a9a84f2e1716c67c";
-+#    })
-+  ];
-+  sourceRoot = "${pkg}-${ver}";
++  queue-fix = stdenv.mkDerivation {
++    name = "queue-fix-1.4";
++    src = fetchurl {
++      url = "http://www.netmeridian.com/e-huss/queue-fix-1.4.tar.gz";
++      sha256 = "15h41l5g4a69pd0zshhzx9z1k8b7ishm6nwj73pqyni2wdh67nk3";
++    };
++    patches = [
++      ./queue-fix-errno.patch
++      ./queue-fix-dietlibc.patch
++    ];
++    buildInputs = [ dietlibc ];
++    installPhase = ''
++      mkdir -p $out/{bin,doc}
++      cp queue-fix $out/bin/
++      cp README $out/doc
++    '';
++    allowedReferences = ["out"];
++    dontStrip = true; # diet does not need stripping
++  };
++
++  src = fetchurl {
++    url = "${web}/software/${pkg}-${ver}.tar.gz";
++    sha256 = "123gc80z7l8svd7qbc6a39fi311b4b43az0rcqm0jmdv5ib6rv91";
++  };
 +
 +  patches = [
 +    # Avoid need to have secondary groups for compilation
@@ -98,7 +111,7 @@ index 0000000..d51fb40
 +
 +  buildFlags = "it man";
 +
-+  buildInputs = [dietlibc groff];
++  buildInputs = [dietlibc groff queue-fix];
 +
 +  installPhase = ''
 +    # dirs
@@ -158,28 +171,11 @@ index 0000000..d51fb40
 +    echo 20 > $out/control/concurrencyincoming
 +    echo ./Maildir/ > $out/control/defaultdelivery
 +    chmod 644 $out/control/{concurrencyincoming,defaultdelivery}
++
++    # symlink queue-fix
++    ln -s ${queue-fix}/bin/queue-fix $out/bin
 +  '';
 +
-+#  installTargets = "setup check";
-+#
-+#  configurePhase = ''
-+#    echo "diet gcc" > src/conf-cc
-+#    echo "diet gcc -s -static" > src/conf-ld
-+#  '';
-+#
-+#  buildPhase = "./package/compile";
-+#
-+#  installPhase = ''
-+#    mkdir -p $out/bin
-+#    for BIN in `cat package/commands`; do
-+#      cp command/$BIN $out/bin
-+#    done
-+#    mkdir -p $out/man/man8
-+#    cp $NIX_BUILD_TOP/${pkg}-man/*.8 $out/man/man8/
-+#  '';
-+#
-+#  allowedReferences = ["out"];
-+#  dontPatchShebangs = true; # /bin/sh
 +  dontStrip = true; # diet does not need stripping
 +  dontPatchELF = true; # we produce static binaries
 +
