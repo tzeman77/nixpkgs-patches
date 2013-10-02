@@ -56,10 +56,10 @@ index 0000000..760afe1
 ++int auto_gidn = 81;
 diff --git a/pkgs/servers/mail/qmail/diet.nix b/pkgs/servers/mail/qmail/diet.nix
 new file mode 100644
-index 0000000..06ad77d
+index 0000000..dc831e8
 --- /dev/null
 +++ b/pkgs/servers/mail/qmail/diet.nix
-@@ -0,0 +1,130 @@
+@@ -0,0 +1,136 @@
 +{ stdenv, fetchurl, dietlibc, groff }:
 +
 +let
@@ -115,7 +115,7 @@ index 0000000..06ad77d
 +
 +  installPhase = ''
 +    # dirs
-+    for i in alias bin boot control users configure; do
++    for i in alias bin boot control doc users configure; do
 +      install -d -m 755 $out/$i
 +    done
 +
@@ -167,6 +167,11 @@ index 0000000..06ad77d
 +      install -D -m 644 $i.8 $out/man/man8/$i.8
 +    done
 +
++    # doc files
++    for i in `grep 'c(auto_qmail,"doc"' hier.c | cut -d, -f3 | tr -d '"'`; do
++      install -m 644 $i $out/doc/$i
++    done
++
 +    # install concurrencyicoming & defaultdelivery files
 +    echo 20 > $out/control/concurrencyincoming
 +    echo ./Maildir/ > $out/control/defaultdelivery
@@ -174,6 +179,7 @@ index 0000000..06ad77d
 +
 +    # symlink queue-fix
 +    ln -s ${queue-fix}/bin/queue-fix $out/bin
++    ln -s ${queue-fix}/doc/README $out/doc/README.queue-fix
 +  '';
 +
 +  dontStrip = true; # diet does not need stripping
