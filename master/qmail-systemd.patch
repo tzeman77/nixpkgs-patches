@@ -40,10 +40,10 @@ index 1c644ee..bc47f7b 100644
    ./services/misc/cgminer.nix
 diff --git a/modules/services/mail/qmail.nix b/modules/services/mail/qmail.nix
 new file mode 100644
-index 0000000..7cba3c8
+index 0000000..1328898
 --- /dev/null
 +++ b/modules/services/mail/qmail.nix
-@@ -0,0 +1,189 @@
+@@ -0,0 +1,193 @@
 +{ config, pkgs, ... }:
 +
 +with pkgs.lib;
@@ -214,10 +214,14 @@ index 0000000..7cba3c8
 +        [ -d $adir ] || mkdir -p $adir
 +        for i in /etc/qmail/alias/.qmail-*; do
 +          n=`basename $i`
-+          [ -e $adir/$n ] || ln -s $i $adir/$n;
++          [ -e $adir/$n ] || ln -s $i $adir/$n
 +        done
 +        [ -d $bdir ] || mkdir -p $bdir
-+        ln -s /var/setuid-wrappers/qmail-queue $bdir/qmail-queue
++        [ -e $bdir/qmail-queue ] || ln -s /var/setuid-wrappers/qmail-queue $bdir/qmail-queue
++        for i in ${pkg}/bin/*; do
++          n=`basename $i`
++          [ -e $bdir/$n ] || ln -s /run/current-system/sw/bin/$n $bdir/$n
++        done
 +      '';
 +
 +      serviceConfig = {
