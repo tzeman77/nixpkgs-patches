@@ -1,0 +1,28 @@
+diff --git a/modules/misc/ids.nix b/modules/misc/ids.nix
+index b2301e8..d02f1dd 100644
+--- a/modules/misc/ids.nix
++++ b/modules/misc/ids.nix
+@@ -99,6 +99,14 @@ in
+     dnslog = 186;
+     axfrdns = 187;
+ 
++    alias = 7790;
++    qmaild = 7791;
++    qmaill = 7792;
++    qmailp = 7793;
++    qmailq = 7794;
++    qmailr = 7795;
++    qmails = 7796;
++
+     # When adding a uid, make sure it doesn't match an existing gid.
+ 
+     nixbld = 30000; # start of range of uids
+@@ -185,6 +193,8 @@ in
+     tinydns = 185;
+     dnslog = 186;
+     axfrdns = 187;
++    qmail = 2107;
++    nofiles = 2108;
+     nixbld = 30000;
+     nogroup = 65534;
+   };
