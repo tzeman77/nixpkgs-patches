@@ -40,10 +40,10 @@ index 1c644ee..bc47f7b 100644
    ./services/misc/cgminer.nix
 diff --git a/modules/services/mail/qmail.nix b/modules/services/mail/qmail.nix
 new file mode 100644
-index 0000000..8cda869
+index 0000000..7cba3c8
 --- /dev/null
 +++ b/modules/services/mail/qmail.nix
-@@ -0,0 +1,133 @@
+@@ -0,0 +1,189 @@
 +{ config, pkgs, ... }:
 +
 +with pkgs.lib;
@@ -56,6 +56,35 @@ index 0000000..8cda869
 +  ucspi = pkgs.ucspi-tcp;
 +  uids = config.ids.uids;
 +  gids = config.ids.gids;
++
++  aliasOpts = { name, ... }: {
++    options = {
++      alias = mkOption {
++        example = "postmaster";
++        type = types.uniq types.string;
++        description = "Alias name";
++      };
++      real = mkOption {
++        example = "jsmith";
++        default = null;
++        type = types.nullOr types.string;
++        description = "Real user to receive mail.";
++      };
++      content = mkOption {
++        example = "anotheruser";
++        default = null;
++        type = types.nullOr types.string;
++        description = "Verbatim content of the alias file. See dot-qmail(5).";
++      };
++    };
++    config = {
++      alias = mkDefault name;
++    };
++  };
++
++  aliasF = alias: nameValuePair "qmail/alias/.qmail-${alias.alias}" {
++    text = if alias.real != null then alias.real else alias.content;
++  };
 +
 +in
 +
@@ -103,6 +132,23 @@ index 0000000..8cda869
 +        '';
 +      };
 +
++      aliases = mkOption {
++        default = {};
++        type = types.loaOf types.optionSet;
++        example = {
++          root = { real = "jsmith"; };
++          postmaster = { content = "another user"; };
++        };
++        options = [ aliasOpts ];
++        description = ''
++          Global qmail aliases configuration. Addresses that don't start with a
++          username are controlled by a special user, alias. Delivery
++          instructions for foo go into ~alias/.qmail-foo; delivery instructions
++          for user-foo go into ~user/.qmail-foo. See dot-qmail(5) for the full
++          story or doc/INSTALL.alias in qmail installaction directory.
++        '';
++      };
++
 +    };
 +  };
 +
@@ -147,7 +193,7 @@ index 0000000..8cda869
 +      "qmail/defaultdomain".text = cfg.defaultdomain;
 +      "qmail/locals".text = concatStringsSep "\n" cfg.locals;
 +      "qmail/plusdomain".text = cfg.plusdomain;
-+    };
++    } // listToAttrs (map aliasF (attrValues cfg.aliases));
 +
 +    systemd.services.qmail = {
 +      description = "qmail service";
@@ -158,17 +204,27 @@ index 0000000..8cda869
 +      preStart = ''
 +        qdir=/var/qmail/queue
 +        cdir=/var/qmail/control
++        adir=/var/qmail/alias
++        bdir=/var/qmail/bin
 +        [ -d $qdir ] || ${pkg}/bin/queue-fix $qdir
 +        [ -d $cdir ] || mkdir -p $cdir
 +        for i in me defaultdomain locals plusdomain; do
 +          [ -e $cdir/$i ] || ln -s /etc/qmail/$i $cdir/$i
 +        done
++        [ -d $adir ] || mkdir -p $adir
++        for i in /etc/qmail/alias/.qmail-*; do
++          n=`basename $i`
++          [ -e $adir/$n ] || ln -s $i $adir/$n;
++        done
++        [ -d $bdir ] || mkdir -p $bdir
++        ln -s /var/setuid-wrappers/qmail-queue $bdir/qmail-queue
 +      '';
 +
 +      serviceConfig = {
 +        ExecStart = "${pkg}/bin/qmail-start ${cfg.defaultdelivery}";
 +        Restart = "always";
 +        Type = "simple";
++        KillMode = "process";
 +      };
 +    };
 +  };
