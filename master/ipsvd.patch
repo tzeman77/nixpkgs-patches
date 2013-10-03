@@ -1,2 +1,97 @@
 ipsvd-1.0.0: internet protocol service daemons
 
+diff --git a/pkgs/tools/networking/ipsvd/default.nix b/pkgs/tools/networking/ipsvd/default.nix
+new file mode 100644
+index 0000000..5136a37
+--- /dev/null
++++ b/pkgs/tools/networking/ipsvd/default.nix
+@@ -0,0 +1,56 @@
++{ stdenv, fetchurl, dietlibc }:
++
++let
++  pkg = "ipsvd";
++  ver = "1.0.0";
++  web = "http://smarden.org/ipsvd";
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  src = fetchurl {
++    url = "${web}/${pkg}-${ver}.tar.gz";
++    sha256 = "1b8zs0vvvim6bn5wizx4lm6kw2s7pf2q6rapmc4mvjssr1dp4ypg";
++  };
++
++  sourceRoot = "net/${pkg}-${ver}";
++
++  patches = [
++    # Avoid need to have secondary groups for compilation
++    ./hasshsgr.h.patch
++  ];
++
++  buildInputs = [dietlibc];
++
++  configurePhase = ''
++    echo "diet -Os gcc -O2 -Wall" > src/conf-cc
++    echo "diet -Os gcc -s -Os -pipe" > src/conf-ld
++  '';
++
++  buildPhase = "./package/compile";
++
++  installPhase = ''
++    # binaries
++    mkdir -p $out/bin
++    for i in command/*; do cp $i $out/bin; done
++
++    # man pages / doc
++    mkdir -p $out/share/{doc,man}
++    mkdir -p $out/share/man/man{5,7,8}
++    for i in doc/*; do cp $i $out/share/doc; done
++    for i in 5 7 8; do cp man/*.$i $out/share/man/man$i; done
++  '';
++
++  allowedReferences = ["out"];
++  dontStrip = true; # diet does not need stripping
++  dontPatchELF = true; # we produce static binaries
++
++  meta = {
++    description = "internet protocol service daemons";
++    homepage = web;
++    license = stdenv.lib.licenses.publicDomain.shortName;
++    platforms = stdenv.lib.platforms.linux;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/tools/networking/ipsvd/hasshsgr.h.patch b/pkgs/tools/networking/ipsvd/hasshsgr.h.patch
+new file mode 100644
+index 0000000..6229f1c
+--- /dev/null
++++ b/pkgs/tools/networking/ipsvd/hasshsgr.h.patch
+@@ -0,0 +1,14 @@
++diff -ru ipsvd-1.0.0.orig/src/Makefile ipsvd-1.0.0/src/Makefile
++--- ipsvd-1.0.0.orig/src/Makefile	2008-06-15 22:31:14.000000000 +0200
+++++ ipsvd-1.0.0/src/Makefile	2013-10-03 17:10:31.826232203 +0200
++@@ -331,8 +331,8 @@
++ 
++ hasshsgr.h: chkshsgr choose compile hasshsgr.h1 hasshsgr.h2 load tryshsgr.c \
++ 	  warn-shsgr
++-	./chkshsgr || (cat warn-shsgr; exit 1)
++-	./choose clr tryshsgr hasshsgr.h1 hasshsgr.h2 >hasshsgr.h
+++	cat hasshsgr.h1 > hasshsgr.h
+++
++ 
++ haswaitp.h: choose compile haswaitp.h1 haswaitp.h2 load trywaitp.c
++ 	./choose cl trywaitp haswaitp.h1 haswaitp.h2 >haswaitp.h
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 7cd0615..b5c068f 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -1103,6 +1103,8 @@ let
+ 
+   ipmiutil = callPackage ../tools/system/ipmiutil {};
+ 
++  ipsvd = callPackage ../tools/networking/ipsvd { };
++
+   ised = callPackage ../tools/misc/ised {};
+ 
+   isl = callPackage ../development/libraries/isl { };
