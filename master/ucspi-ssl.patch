@@ -1,0 +1,77 @@
+ucspi-ssl-0.92: TLS encryption for Client/Server IPv6/IPv4 communication
+
+sslserver and sslclient are command-line tools for building SSL client-server
+applications.They conform to the UNIX Client-Server Program Interface, UCSPI.
+diff --git a/pkgs/tools/networking/ucspi-ssl/default.nix b/pkgs/tools/networking/ucspi-ssl/default.nix
+new file mode 100644
+index 0000000..098fb73
+--- /dev/null
++++ b/pkgs/tools/networking/ucspi-ssl/default.nix
+@@ -0,0 +1,54 @@
++{ stdenv, fetchurl, openssl, ucspi-tcp }:
++
++let
++  pkg = "ucspi-ssl";
++  ver = "0.92";
++  web = "http://www.fehcom.de/ipnet/ucspi-ssl";
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  src = fetchurl {
++    url = "${web}/${pkg}-${ver}.tgz";
++    sha256 = "1w9j2ynzw5cc2nxib6agiqqyiddvxdwipm7r3hrari8xfc8arz8r";
++  };
++  sourceRoot = "host/superscript.com/net/${pkg}-${ver}";
++
++  buildInputs = [openssl];
++
++  configurePhase = ''
++    echo /etc/ssl/certs > src/conf-cadir
++    echo /etc/ssl/pem/dh1024.pem > src/conf-dhfile
++    echo > src/conf-ssl
++    echo ${ucspi-tcp}/bin > src/conf-tcpbin
++    substituteInPlace src/https\@.sh --replace HOME/command/sslclient $out/bin/sslclient
++    substituteInPlace src/sslcat.sh --replace HOME/command/sslclient $out/bin/sslclient
++    substituteInPlace src/sslconnect.sh --replace HOME/command/sslclient $out/bin/sslclient
++  '';
++
++  buildPhase = "./package/compile base";
++
++  installPhase = ''
++    # binaries
++    mkdir -p $out/bin
++    cp command/* $out/bin/
++
++    # man
++    mdir=$out/share/man
++    mkdir -p $mdir/man{1,2}
++    for i in 1 2; do cp man/*.$i $mdir/man$i/; done
++
++    # doc
++    mkdir -p $out/share/doc
++    cp doc/* $out/share/doc/
++  '';
++
++  meta = {
++    description = "TLS encryption for Client/Server IPv6/IPv4 communication";
++    homepage = "${web}.html";
++    license = stdenv.lib.licenses.publicDomain.shortName;
++    platforms = stdenv.lib.platforms.linux;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index b5c068f..1a98f8d 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -1829,6 +1829,8 @@ let
+ 
+   ucl = callPackage ../development/libraries/ucl { };
+ 
++  ucspi-ssl = callPackage ../tools/networking/ucspi-ssl { };
++
+   ucspi-tcp = callPackage ../tools/networking/ucspi-tcp { };
+ 
+   udftools = callPackage ../tools/filesystems/udftools {};
