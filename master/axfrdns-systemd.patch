@@ -1,30 +1,30 @@
 axfr dns modules (supervised via systemd)
 
 diff --git a/modules/misc/ids.nix b/modules/misc/ids.nix
-index 2d04ce3..b2301e8 100644
+index 6a87e9c..b8ed8fb 100644
 --- a/modules/misc/ids.nix
 +++ b/modules/misc/ids.nix
-@@ -97,6 +97,7 @@ in
-     dnscache = 184;
-     tinydns = 185;
-     dnslog = 186;
-+    axfrdns = 187;
+@@ -103,6 +103,7 @@
+       dnscache = 184;
+       tinydns = 185;
+       dnslog = 186;
++      axfrdns = 187;
  
-     # When adding a uid, make sure it doesn't match an existing gid.
+       # When adding a uid, make sure it doesn't match an existing gid.
  
-@@ -183,6 +184,7 @@ in
-     dnscache = 184;
-     tinydns = 185;
-     dnslog = 186;
-+    axfrdns = 187;
-     nixbld = 30000;
-     nogroup = 65534;
-   };
+@@ -196,6 +197,7 @@
+       dnscache = 184;
+       tinydns = 185;
+       dnslog = 186;
++      axfrdns = 187;
+       nixbld = 30000;
+       nogroup = 65534;
+     };
 diff --git a/modules/module-list.nix b/modules/module-list.nix
-index c3616b4..1c644ee 100644
+index f23a7cb..cf1f411 100644
 --- a/modules/module-list.nix
 +++ b/modules/module-list.nix
-@@ -137,6 +137,7 @@
+@@ -139,6 +139,7 @@
    ./services/network-filesystems/samba.nix
    ./services/networking/amuled.nix
    ./services/networking/avahi-daemon.nix
