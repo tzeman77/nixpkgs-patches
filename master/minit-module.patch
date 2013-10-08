@@ -1,10 +1,10 @@
 minit module/service unit
 
 diff --git a/modules/module-list.nix b/modules/module-list.nix
-index 20ad0a0..09f53db 100644
+index 931b798..4d73894 100644
 --- a/modules/module-list.nix
 +++ b/modules/module-list.nix
-@@ -196,6 +196,7 @@
+@@ -199,6 +199,7 @@
    ./services/security/torsocks.nix
    ./services/system/dbus.nix
    ./services/system/kerberos.nix
@@ -14,7 +14,7 @@ index 20ad0a0..09f53db 100644
    ./services/torrent/deluge.nix
 diff --git a/modules/services/system/minit.nix b/modules/services/system/minit.nix
 new file mode 100644
-index 0000000..70d304e
+index 0000000..f84d426
 --- /dev/null
 +++ b/modules/services/system/minit.nix
 @@ -0,0 +1,60 @@
@@ -37,7 +37,7 @@ index 0000000..70d304e
 +    services.minit = {
 +
 +      enable = mkOption {
-+        default = true;
++        default = false;
 +        description = "Whether to enable minit service.";
 +      };
 +

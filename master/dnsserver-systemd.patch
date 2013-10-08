@@ -1,10 +1,10 @@
 dnsserver module (supervised via systemd)
 
 diff --git a/modules/module-list.nix b/modules/module-list.nix
-index a260a40..c3616b4 100644
+index 8bcb700..f23a7cb 100644
 --- a/modules/module-list.nix
 +++ b/modules/module-list.nix
-@@ -178,6 +178,7 @@
+@@ -180,6 +180,7 @@
    ./services/networking/ssh/lshd.nix
    ./services/networking/ssh/sshd.nix
    ./services/networking/tftpd.nix
@@ -14,7 +14,7 @@ index a260a40..c3616b4 100644
    ./services/networking/wakeonlan.nix
 diff --git a/modules/services/networking/tinydns.nix b/modules/services/networking/tinydns.nix
 new file mode 100644
-index 0000000..bc8faee
+index 0000000..b1486b3
 --- /dev/null
 +++ b/modules/services/networking/tinydns.nix
 @@ -0,0 +1,84 @@
@@ -39,7 +39,7 @@ index 0000000..bc8faee
 +    services.tinydns = {
 +
 +      enable = mkOption {
-+        default = true;
++        default = false;
 +        description = "Whether to enable tinydns (authoritative) service.";
 +      };
 +

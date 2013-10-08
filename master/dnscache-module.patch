@@ -38,7 +38,7 @@ index 4d73894..8bcb700 100644
    ./services/networking/firewall.nix
 diff --git a/modules/services/networking/dnscache.nix b/modules/services/networking/dnscache.nix
 new file mode 100644
-index 0000000..6de2a9c
+index 0000000..fc11cdd
 --- /dev/null
 +++ b/modules/services/networking/dnscache.nix
 @@ -0,0 +1,132 @@
@@ -63,7 +63,7 @@ index 0000000..6de2a9c
 +    services.dnscache = {
 +
 +      enable = mkOption {
-+        default = true;
++        default = false;
 +        description = "Whether to enable dnscache service.";
 +      };
 +

@@ -40,7 +40,7 @@ index cf1f411..6c4cac5 100644
    ./services/misc/cgminer.nix
 diff --git a/modules/services/mail/qmail.nix b/modules/services/mail/qmail.nix
 new file mode 100644
-index 0000000..1328898
+index 0000000..5d4c5ed
 --- /dev/null
 +++ b/modules/services/mail/qmail.nix
 @@ -0,0 +1,193 @@
@@ -97,7 +97,7 @@ index 0000000..1328898
 +    services.qmail = {
 +
 +      enable = mkOption {
-+        default = true;
++        default = false;
 +        description = "Whether to enable qmail service.";
 +      };
 +

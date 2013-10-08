@@ -34,7 +34,7 @@ index f23a7cb..cf1f411 100644
    ./services/networking/cntlm.nix
 diff --git a/modules/services/networking/axfrdns.nix b/modules/services/networking/axfrdns.nix
 new file mode 100644
-index 0000000..05d51d5
+index 0000000..497aaa7
 --- /dev/null
 +++ b/modules/services/networking/axfrdns.nix
 @@ -0,0 +1,88 @@
@@ -61,7 +61,7 @@ index 0000000..05d51d5
 +    services.axfrdns = {
 +
 +      enable = mkOption {
-+        default = true;
++        default = false;
 +        description = "Whether to enable axfrdns service.";
 +      };
 +
