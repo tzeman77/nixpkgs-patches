@@ -1,0 +1,91 @@
+ucspi-ipc-0.67: command-line tools for building local-domain client-server applications
+
+diff --git a/pkgs/tools/networking/ucspi-ipc/default.nix b/pkgs/tools/networking/ucspi-ipc/default.nix
+new file mode 100644
+index 0000000..2a29231
+--- /dev/null
++++ b/pkgs/tools/networking/ucspi-ipc/default.nix
+@@ -0,0 +1,51 @@
++{ stdenv, fetchurl, dietlibc }:
++
++let
++  pkg = "ucspi-ipc";
++  ver = "0.67";
++  web = http://www.superscript.com/ucspi-ipc;
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  src = fetchurl {
++    url = "${web}/${pkg}-${ver}.tar.gz";
++    sha256 = "12wy9l5aak3n5yxnyyasdh3gcn8nkca9gflbbjvpfwza9c6rf34m";
++  };
++  sourceRoot = "host/superscript.com/net/${pkg}-${ver}";
++
++  patches = [
++    # Avoid need to have secondary groups for compilation
++    ./hasshsgr.h.patch
++  ];
++
++  buildInputs = [dietlibc];
++
++  configurePhase = ''
++    echo "diet gcc" > src/conf-cc
++    echo "diet gcc -s -static" > src/conf-ld
++    for i in ipccat ipcconnect ipcdo ipcrun; do
++      substituteInPlace src/$i.sh --replace HOME/command/ $out/bin/
++    done
++  '';
++
++  buildPhase = "./package/compile base";
++
++  installPhase = ''
++    # binaries
++    mkdir -p $out/bin
++    cp command/* $out/bin/
++  '';
++
++  dontStrip = true; # diet does not need stripping
++  dontPatchELF = true; # we produce static binaries
++
++  meta = {
++    description = "Command-line tools for building local-domain client-server applications";
++    homepage = web;
++    license = stdenv.lib.licenses.publicDomain.shortName;
++    platforms = stdenv.lib.platforms.linux;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/tools/networking/ucspi-ipc/hasshsgr.h.patch b/pkgs/tools/networking/ucspi-ipc/hasshsgr.h.patch
+new file mode 100644
+index 0000000..407f071
+--- /dev/null
++++ b/pkgs/tools/networking/ucspi-ipc/hasshsgr.h.patch
+@@ -0,0 +1,13 @@
++diff -ru ucspi-ipc-0.67.orig/src/Makefile ucspi-ipc-0.67/src/Makefile
++--- ucspi-ipc-0.67.orig/src/Makefile	2013-10-07 15:42:01.923987612 +0200
+++++ ucspi-ipc-0.67/src/Makefile	2013-10-07 15:43:44.569948650 +0200
++@@ -197,8 +197,7 @@
++ 
++ hasshsgr.h: choose compile tryshsgr.c hasshsgr.h1 hasshsgr.h2 chkshsgr \
++ warn-shsgr
++-	./chkshsgr || ( cat warn-shsgr; exit 1 )
++-	./choose clr tryshsgr hasshsgr.h1 hasshsgr.h2 > hasshsgr.h
+++	cat hasshsgr.h1 > hasshsgr.h
++ 
++ haswaitp.h: choose compile load trywaitp.c haswaitp.h1 haswaitp.h2
++ 	./choose cl trywaitp haswaitp.h1 haswaitp.h2 >haswaitp.h
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 1a98f8d..18cbf55 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -1829,6 +1829,8 @@ let
+ 
+   ucl = callPackage ../development/libraries/ucl { };
+ 
++  ucspi-ipc = callPackage ../tools/networking/ucspi-ipc { };
++
+   ucspi-ssl = callPackage ../tools/networking/ucspi-ssl { };
+ 
+   ucspi-tcp = callPackage ../tools/networking/ucspi-tcp { };

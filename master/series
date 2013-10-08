@@ -15,3 +15,5 @@ diet-qmail.patch
 ipsvd.patch
 ucspi-ssl.patch
 diet-qmail-oversize-dns.patch
+ucspi-ipc.patch
+mess822.patch

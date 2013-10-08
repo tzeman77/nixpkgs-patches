@@ -1,0 +1,68 @@
+mess822-0.58: library for parsing Internet mail messages
+
+diff --git a/pkgs/tools/networking/mess822/default.nix b/pkgs/tools/networking/mess822/default.nix
+new file mode 100644
+index 0000000..aba6605
+--- /dev/null
++++ b/pkgs/tools/networking/mess822/default.nix
+@@ -0,0 +1,47 @@
++{ stdenv, fetchurl, dietlibc, groff }:
++
++let
++  pkg = "mess822";
++  ver = "0.58";
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  src = fetchurl {
++    url = "http://cr.yp.to/software/${pkg}-${ver}.tar.gz";
++    sha256 = "1q0kqjhnvd1crkc0xnyml1qfa9zaxafk18d0ppcmrbbl6iw7mlr3";
++  };
++
++  buildInputs = [dietlibc groff];
++
++  configurePhase = ''
++    echo $out > conf-home
++    echo "diet gcc" > conf-cc
++    echo "diet gcc -s -static" > conf-ld
++    substituteInPlace hier.c --replace /etc $out/etc
++    substituteInPlace leapsecs_read.c --replace /etc/leapsecs $out/etc/leapsecs
++  '';
++
++  preInstall = ''
++    mkdir -p $out/etc
++  '';
++
++  installTargets = "setup";
++
++  postInstall = ''
++    rm -fr $out/man/cat*
++  '';
++
++  allowedReferences = ["out"];
++  dontStrip = true; # diet does not need stripping
++  dontPatchELF = true; # we produce static binaries
++
++  meta = {
++    description = "Library for parsing internet mail messages";
++    homepage = http://cr.yp.to/mess822.html;
++    license = stdenv.lib.licenses.publicDomain.shortName;
++    platforms = stdenv.lib.platforms.linux;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 18cbf55..7ec6120 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -1245,6 +1245,8 @@ let
+ 
+   megatools = callPackage ../tools/networking/megatools { };
+ 
++  mess822 = callPackage ../tools/networking/mess822 { };
++
+   minecraft = callPackage ../games/minecraft { };
+ 
+   minetest = callPackage ../games/minetest {
