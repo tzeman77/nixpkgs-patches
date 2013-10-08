@@ -40,10 +40,10 @@ index cf1f411..6c4cac5 100644
    ./services/misc/cgminer.nix
 diff --git a/modules/services/mail/qmail.nix b/modules/services/mail/qmail.nix
 new file mode 100644
-index 0000000..5d4c5ed
+index 0000000..e2ed1ee
 --- /dev/null
 +++ b/modules/services/mail/qmail.nix
-@@ -0,0 +1,193 @@
+@@ -0,0 +1,210 @@
 +{ config, pkgs, ... }:
 +
 +with pkgs.lib;
@@ -226,6 +226,23 @@ index 0000000..5d4c5ed
 +
 +      serviceConfig = {
 +        ExecStart = "${pkg}/bin/qmail-start ${cfg.defaultdelivery}";
++        Restart = "always";
++        Type = "simple";
++        KillMode = "process";
++      };
++    };
++
++    systemd.services.smtp-local = {
++      description = "smtp local service";
++      wantedBy = [ "multi-user.target" ];
++      after = [ "network.target" ];
++      path = [ pkg ];
++
++      serviceConfig = {
++        ExecStart = "${dtools}/bin/softlimit -m 20000000 " +
++          "${ucspi}/bin/tcpserver -v -h -l ${cfg.me} -c 10 " +
++          "-u ${toString uids.qmaild} -g ${toString gids.nofiles} " +
++          "127.0.0.1 25 qmail-smtpd";
 +        Restart = "always";
 +        Type = "simple";
 +        KillMode = "process";
