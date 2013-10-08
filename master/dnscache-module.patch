@@ -1,34 +1,34 @@
 dnscache service
 
 diff --git a/modules/misc/ids.nix b/modules/misc/ids.nix
-index 5b545b7..2d04ce3 100644
+index d8ca111..6a87e9c 100644
 --- a/modules/misc/ids.nix
 +++ b/modules/misc/ids.nix
-@@ -94,6 +94,9 @@ in
-     bacula = 81;
-     almir = 82;
-     deluge = 83;
-+    dnscache = 184;
-+    tinydns = 185;
-+    dnslog = 186;
+@@ -100,6 +100,9 @@
+       minidlna = 91;
+       elasticsearch = 92;
+       tcpcryptd = 93; # tcpcryptd uses a hard-coded uid. We patch it in Nixpkgs to match this choice.
++      dnscache = 184;
++      tinydns = 185;
++      dnslog = 186;
  
-     # When adding a uid, make sure it doesn't match an existing gid.
+       # When adding a uid, make sure it doesn't match an existing gid.
  
-@@ -177,6 +180,9 @@ in
-     # When adding a gid, make sure it doesn't match an existing uid.
+@@ -190,6 +193,9 @@
+       # When adding a gid, make sure it doesn't match an existing uid.
  
-     users = 100;
-+    dnscache = 184;
-+    tinydns = 185;
-+    dnslog = 186;
-     nixbld = 30000;
-     nogroup = 65534;
-   };
+       users = 100;
++      dnscache = 184;
++      tinydns = 185;
++      dnslog = 186;
+       nixbld = 30000;
+       nogroup = 65534;
+     };
 diff --git a/modules/module-list.nix b/modules/module-list.nix
-index 09f53db..a260a40 100644
+index 4d73894..8bcb700 100644
 --- a/modules/module-list.nix
 +++ b/modules/module-list.nix
-@@ -145,6 +145,7 @@
+@@ -147,6 +147,7 @@
    #./services/networking/dhclient.nix
    ./services/networking/dhcpcd.nix
    ./services/networking/dhcpd.nix
