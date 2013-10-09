@@ -27,17 +27,127 @@ index b8ed8fb..7a9d81e 100644
        nogroup = 65534;
      };
 diff --git a/modules/module-list.nix b/modules/module-list.nix
-index cf1f411..6c4cac5 100644
+index cf1f411..0a26ea1 100644
 --- a/modules/module-list.nix
 +++ b/modules/module-list.nix
-@@ -108,6 +108,7 @@
+@@ -108,6 +108,8 @@
    ./services/mail/mail.nix
    ./services/mail/opensmtpd.nix
    ./services/mail/postfix.nix
 +  ./services/mail/qmail.nix
++  ./services/mail/qmail-smtp.nix
    ./services/mail/spamassassin.nix
    ./services/misc/autofs.nix
    ./services/misc/cgminer.nix
+diff --git a/modules/services/mail/qmail-smtp.nix b/modules/services/mail/qmail-smtp.nix
+new file mode 100644
+index 0000000..a65164d
+--- /dev/null
++++ b/modules/services/mail/qmail-smtp.nix
+@@ -0,0 +1,103 @@
++{ config, pkgs, ... }:
++
++with pkgs.lib;
++
++let
++
++  cfg = config.services.qmail-smtp;
++  dtools = pkgs.daemontools;
++  ipsvd = pkgs.ipsvd;
++  mailfront = pkgs.mailfront;
++
++in
++
++{
++
++  ###### interface
++
++  options = {
++
++    services.qmail-smtp = {
++
++      enable = mkOption {
++        default = false;
++        description = "Whether to enable qmail SMTP service.";
++      };
++
++      user = mkOption {
++        default = "qmaild";
++        description = "User under which SMTP service runs.";
++      };
++
++      instructDir = mkOption {
++        default = "/var/tcp-instruct";
++        description = ''
++          Read instructions for handling new connections from the instructions
++          directory <code>instructDir</code>. See ipsvd-instruct(5).
++          '';
++      };
++
++      me = mkOption {
++        default = config.services.qmail.me;
++        description = "Fully qualified name of this host.";
++      };
++
++      concurrency = mkOption {
++        default = 20;
++        description = ''
++          Handle up to <code>concurrency</code> connections simultaneously.
++        '';
++      };
++
++      mailrulesFile = mkOption {
++        default = /var/qmail/control/mailrules;
++        description = "Path to mailrules file.";
++      };
++
++      listenIp = mkOption {
++        default = "0.0.0.0";
++        description = "Listen IP address.";
++      };
++
++    };
++  };
++
++
++  ###### implementation
++
++  config = mkIf cfg.enable {
++
++    services.qmail.enable = true;
++
++    environment.systemPackages = [ ipsvd mailfront ];
++
++    systemd.services.qmail-smtp = {
++      description = "qmail SMTP service";
++      wantedBy = [ "multi-user.target" ];
++      after = [ "network.target" ];
++      path = [ mailfront ];
++
++      environment.MAILRULES = toString cfg.mailrulesFile;
++
++      preStart = ''
++        mkdir -p ${cfg.instructDir}
++      '';
++
++      serviceConfig = {
++        ExecStart = "${dtools}/bin/softlimit -m 20000000 " +
++          "${ipsvd}/bin/tcpsvd -v -h -l ${cfg.me} -i ${cfg.instructDir} " +
++          "-c ${toString cfg.concurrency} " +
++          "-u ${cfg.user} ${cfg.listenIp} 25 " +
++          "${mailfront}/bin/smtpfront-qmail";
++        Restart = "always";
++        Type = "simple";
++        KillMode = "process";
++      };
++    };
++
++  };
++
++}
++
++# vim: et ts=2 sw=2
++
 diff --git a/modules/services/mail/qmail.nix b/modules/services/mail/qmail.nix
 new file mode 100644
 index 0000000..e2ed1ee
