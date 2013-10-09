@@ -41,7 +41,7 @@ index cf1f411..0a26ea1 100644
    ./services/misc/cgminer.nix
 diff --git a/modules/services/mail/qmail-smtp.nix b/modules/services/mail/qmail-smtp.nix
 new file mode 100644
-index 0000000..a65164d
+index 0000000..57af43f
 --- /dev/null
 +++ b/modules/services/mail/qmail-smtp.nix
 @@ -0,0 +1,103 @@
@@ -131,7 +131,7 @@ index 0000000..a65164d
 +      '';
 +
 +      serviceConfig = {
-+        ExecStart = "${dtools}/bin/softlimit -m 20000000 " +
++        ExecStart = "${dtools}/bin/softlimit -m 200000000 " +
 +          "${ipsvd}/bin/tcpsvd -v -h -l ${cfg.me} -i ${cfg.instructDir} " +
 +          "-c ${toString cfg.concurrency} " +
 +          "-u ${cfg.user} ${cfg.listenIp} 25 " +
