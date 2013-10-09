@@ -1,0 +1,2 @@
+ccollect-0.8: (pseudo) incremental backup with different exclude lists using hardlinks and rsync
+
