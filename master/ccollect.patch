@@ -1,2 +1,63 @@
 ccollect-0.8: (pseudo) incremental backup with different exclude lists using hardlinks and rsync
 
+diff --git a/pkgs/tools/backup/ccollect/default.nix b/pkgs/tools/backup/ccollect/default.nix
+new file mode 100644
+index 0000000..fe64f64
+--- /dev/null
++++ b/pkgs/tools/backup/ccollect/default.nix
+@@ -0,0 +1,42 @@
++{
++  fetchurl, stdenv, openssh, rsync,
++  asciidoc, libxml2, docbook_xml_dtd_45, libxslt, docbook_xml_xslt # man pages
++}:
++
++let
++
++  pkg = "ccollect";
++  ver = "0.8";
++  web = http://www.nico.schottelius.org/software/ccollect;
++
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++  src = fetchurl {
++    url = "${web}/download/${pkg}-${ver}.tar.bz2";
++    sha256 = "16lj8zl6gdr7ifzwzd8j7zramc92zghxmljzxbc025nd9ydjpf6h";
++  };
++
++  buildInputs = [
++    openssh rsync
++    asciidoc libxml2 docbook_xml_dtd_45 libxslt docbook_xml_xslt
++  ];
++
++  installPhase = ''
++    make install-script install-man prefix=$out
++    for i in add_source analyse_logs delete_source list_intervals logwrapper; do
++      install -m 755 tools/ccollect_$i.sh $out/bin
++    done
++    ddir=$out/share/doc
++    mkdir -p $ddir
++    cp README $ddir
++    cp doc/ccollect.{text,html} $ddir
++  '';
++
++  meta = {
++    description = "(pseudo) incremental backup with different exclude lists using hardlinks and rsync";
++    homepage = web;
++    license = stdenv.lib.licenses.gpl2;
++  };
++}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 63522e7..f8a44c1 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -623,6 +623,8 @@ let
+ 
+   ccid = callPackage ../tools/security/ccid { };
+ 
++  ccollect = callPackage ../tools/backup/ccollect { };
++
+   ccrypt = callPackage ../tools/security/ccrypt { };
+ 
+   cdecl = callPackage ../development/tools/cdecl { };
