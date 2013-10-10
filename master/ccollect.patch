@@ -2,10 +2,10 @@ ccollect-0.8: (pseudo) incremental backup with different exclude lists using har
 
 diff --git a/pkgs/tools/backup/ccollect/default.nix b/pkgs/tools/backup/ccollect/default.nix
 new file mode 100644
-index 0000000..fe64f64
+index 0000000..cac0303
 --- /dev/null
 +++ b/pkgs/tools/backup/ccollect/default.nix
-@@ -0,0 +1,42 @@
+@@ -0,0 +1,40 @@
 +{
 +  fetchurl, stdenv, openssh, rsync,
 +  asciidoc, libxml2, docbook_xml_dtd_45, libxslt, docbook_xml_xslt # man pages
@@ -24,10 +24,8 @@ index 0000000..fe64f64
 +    sha256 = "16lj8zl6gdr7ifzwzd8j7zramc92zghxmljzxbc025nd9ydjpf6h";
 +  };
 +
-+  buildInputs = [
-+    openssh rsync
-+    asciidoc libxml2 docbook_xml_dtd_45 libxslt docbook_xml_xslt
-+  ];
++  propagatedBuildInputs = [ openssh rsync ];
++  buildInputs = [ asciidoc libxml2 docbook_xml_dtd_45 libxslt docbook_xml_xslt ];
 +
 +  installPhase = ''
 +    make install-script install-man prefix=$out
