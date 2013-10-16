@@ -1,10 +1,10 @@
 axfr dns modules (supervised via systemd)
 
-diff --git a/modules/misc/ids.nix b/modules/misc/ids.nix
-index 6a87e9c..b8ed8fb 100644
---- a/modules/misc/ids.nix
-+++ b/modules/misc/ids.nix
-@@ -103,6 +103,7 @@
+diff --git a/nixos/modules/misc/ids.nix b/nixos/modules/misc/ids.nix
+index 9ad0496..3a8cf27 100644
+--- a/nixos/modules/misc/ids.nix
++++ b/nixos/modules/misc/ids.nix
+@@ -105,6 +105,7 @@
        dnscache = 184;
        tinydns = 185;
        dnslog = 186;
@@ -12,7 +12,7 @@ index 6a87e9c..b8ed8fb 100644
  
        # When adding a uid, make sure it doesn't match an existing gid.
  
-@@ -196,6 +197,7 @@
+@@ -198,6 +199,7 @@
        dnscache = 184;
        tinydns = 185;
        dnslog = 186;
@@ -20,11 +20,11 @@ index 6a87e9c..b8ed8fb 100644
        nixbld = 30000;
        nogroup = 65534;
      };
-diff --git a/modules/module-list.nix b/modules/module-list.nix
-index f23a7cb..cf1f411 100644
---- a/modules/module-list.nix
-+++ b/modules/module-list.nix
-@@ -139,6 +139,7 @@
+diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
+index d6dfcf4..cd96420 100644
+--- a/nixos/modules/module-list.nix
++++ b/nixos/modules/module-list.nix
+@@ -142,6 +142,7 @@
    ./services/network-filesystems/samba.nix
    ./services/networking/amuled.nix
    ./services/networking/avahi-daemon.nix
@@ -32,11 +32,11 @@ index f23a7cb..cf1f411 100644
    ./services/networking/bind.nix
    ./services/networking/bitlbee.nix
    ./services/networking/cntlm.nix
-diff --git a/modules/services/networking/axfrdns.nix b/modules/services/networking/axfrdns.nix
+diff --git a/nixos/modules/services/networking/axfrdns.nix b/nixos/modules/services/networking/axfrdns.nix
 new file mode 100644
 index 0000000..29a1a9c
 --- /dev/null
-+++ b/modules/services/networking/axfrdns.nix
++++ b/nixos/modules/services/networking/axfrdns.nix
 @@ -0,0 +1,88 @@
 +{ config, pkgs, ... }:
 +
