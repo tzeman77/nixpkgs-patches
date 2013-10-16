@@ -1,9 +1,9 @@
 dnsserver module (supervised via systemd)
 
-diff --git a/modules/module-list.nix b/modules/module-list.nix
+diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
 index 8bcb700..f23a7cb 100644
---- a/modules/module-list.nix
-+++ b/modules/module-list.nix
+--- a/nixos/modules/module-list.nix
++++ b/nixos/modules/module-list.nix
 @@ -180,6 +180,7 @@
    ./services/networking/ssh/lshd.nix
    ./services/networking/ssh/sshd.nix
@@ -12,11 +12,11 @@ index 8bcb700..f23a7cb 100644
    ./services/networking/unbound.nix
    ./services/networking/vsftpd.nix
    ./services/networking/wakeonlan.nix
-diff --git a/modules/services/networking/tinydns.nix b/modules/services/networking/tinydns.nix
+diff --git a/nixos/modules/services/networking/tinydns.nix b/nixos/modules/services/networking/tinydns.nix
 new file mode 100644
 index 0000000..b1486b3
 --- /dev/null
-+++ b/modules/services/networking/tinydns.nix
++++ b/nixos/modules/services/networking/tinydns.nix
 @@ -0,0 +1,84 @@
 +{ config, pkgs, ... }:
 +
