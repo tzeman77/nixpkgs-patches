@@ -21,8 +21,6 @@ qmail-isoc.patch
 ccollect.patch
 minit-module.patch
 dnscache-module.patch
-dnscache-no-minit.patch
-dnscache-systemd.patch
 dnsserver-systemd.patch
 axfrdns-systemd.patch
 qmail-systemd.patch
