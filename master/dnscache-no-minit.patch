@@ -1,7 +1,7 @@
-diff --git a/modules/services/networking/dnscache.nix b/modules/services/networking/dnscache.nix
+diff --git a/nixos/modules/services/networking/dnscache.nix b/nixos/modules/services/networking/dnscache.nix
 index 6de2a9c..7925f98 100644
---- a/modules/services/networking/dnscache.nix
-+++ b/modules/services/networking/dnscache.nix
+--- a/nixos/modules/services/networking/dnscache.nix
++++ b/nixos/modules/services/networking/dnscache.nix
 @@ -6,8 +6,6 @@ let
  
    cfg = config.services.dnscache;

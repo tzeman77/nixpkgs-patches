@@ -1,7 +1,7 @@
-diff --git a/modules/services/networking/dnscache.nix b/modules/services/networking/dnscache.nix
+diff --git a/nixos/modules/services/networking/dnscache.nix b/nixos/modules/services/networking/dnscache.nix
 index 7925f98..1838aa3 100644
---- a/modules/services/networking/dnscache.nix
-+++ b/modules/services/networking/dnscache.nix
+--- a/nixos/modules/services/networking/dnscache.nix
++++ b/nixos/modules/services/networking/dnscache.nix
 @@ -5,6 +5,8 @@ with pkgs.lib;
  let
  

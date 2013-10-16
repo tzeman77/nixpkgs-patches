@@ -1,20 +1,20 @@
 dnscache service
 
-diff --git a/modules/misc/ids.nix b/modules/misc/ids.nix
-index d8ca111..6a87e9c 100644
---- a/modules/misc/ids.nix
-+++ b/modules/misc/ids.nix
-@@ -100,6 +100,9 @@
-       minidlna = 91;
-       elasticsearch = 92;
+diff --git a/nixos/modules/misc/ids.nix b/nixos/modules/misc/ids.nix
+index adaa2b0..9ad0496 100644
+--- a/nixos/modules/misc/ids.nix
++++ b/nixos/modules/misc/ids.nix
+@@ -102,6 +102,9 @@
        tcpcryptd = 93; # tcpcryptd uses a hard-coded uid. We patch it in Nixpkgs to match this choice.
+       zope2 = 94;
+       firebird = 95;
 +      dnscache = 184;
 +      tinydns = 185;
 +      dnslog = 186;
  
        # When adding a uid, make sure it doesn't match an existing gid.
  
-@@ -190,6 +193,9 @@
+@@ -192,6 +195,9 @@
        # When adding a gid, make sure it doesn't match an existing uid.
  
        users = 100;
@@ -24,11 +24,11 @@ index d8ca111..6a87e9c 100644
        nixbld = 30000;
        nogroup = 65534;
      };
-diff --git a/modules/module-list.nix b/modules/module-list.nix
-index 4d73894..8bcb700 100644
---- a/modules/module-list.nix
-+++ b/modules/module-list.nix
-@@ -147,6 +147,7 @@
+diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
+index 35835c8..6b11986 100644
+--- a/nixos/modules/module-list.nix
++++ b/nixos/modules/module-list.nix
+@@ -150,6 +150,7 @@
    #./services/networking/dhclient.nix
    ./services/networking/dhcpcd.nix
    ./services/networking/dhcpd.nix
@@ -36,11 +36,11 @@ index 4d73894..8bcb700 100644
    ./services/networking/dnsmasq.nix
    ./services/networking/ejabberd.nix
    ./services/networking/firewall.nix
-diff --git a/modules/services/networking/dnscache.nix b/modules/services/networking/dnscache.nix
+diff --git a/nixos/modules/services/networking/dnscache.nix b/nixos/modules/services/networking/dnscache.nix
 new file mode 100644
 index 0000000..fc11cdd
 --- /dev/null
-+++ b/modules/services/networking/dnscache.nix
++++ b/nixos/modules/services/networking/dnscache.nix
 @@ -0,0 +1,132 @@
 +{ config, pkgs, ... }:
 +
