@@ -1,7 +1,7 @@
-diff --git a/modules/misc/ids.nix b/modules/misc/ids.nix
+diff --git a/nixos/modules/misc/ids.nix b/nixos/modules/misc/ids.nix
 index b8ed8fb..7a9d81e 100644
---- a/modules/misc/ids.nix
-+++ b/modules/misc/ids.nix
+--- a/nixos/modules/misc/ids.nix
++++ b/nixos/modules/misc/ids.nix
 @@ -105,6 +105,14 @@
        dnslog = 186;
        axfrdns = 187;
@@ -26,10 +26,10 @@ index b8ed8fb..7a9d81e 100644
        nixbld = 30000;
        nogroup = 65534;
      };
-diff --git a/modules/module-list.nix b/modules/module-list.nix
+diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
 index cf1f411..0a26ea1 100644
---- a/modules/module-list.nix
-+++ b/modules/module-list.nix
+--- a/nixos/modules/module-list.nix
++++ b/nixos/modules/module-list.nix
 @@ -108,6 +108,8 @@
    ./services/mail/mail.nix
    ./services/mail/opensmtpd.nix
@@ -39,11 +39,11 @@ index cf1f411..0a26ea1 100644
    ./services/mail/spamassassin.nix
    ./services/misc/autofs.nix
    ./services/misc/cgminer.nix
-diff --git a/modules/services/mail/qmail-smtp.nix b/modules/services/mail/qmail-smtp.nix
+diff --git a/nixos/modules/services/mail/qmail-smtp.nix b/nixos/modules/services/mail/qmail-smtp.nix
 new file mode 100644
 index 0000000..57af43f
 --- /dev/null
-+++ b/modules/services/mail/qmail-smtp.nix
++++ b/nixos/modules/services/mail/qmail-smtp.nix
 @@ -0,0 +1,103 @@
 +{ config, pkgs, ... }:
 +
@@ -148,11 +148,11 @@ index 0000000..57af43f
 +
 +# vim: et ts=2 sw=2
 +
-diff --git a/modules/services/mail/qmail.nix b/modules/services/mail/qmail.nix
+diff --git a/nixos/modules/services/mail/qmail.nix b/nixos/modules/services/mail/qmail.nix
 new file mode 100644
 index 0000000..e2ed1ee
 --- /dev/null
-+++ b/modules/services/mail/qmail.nix
++++ b/nixos/modules/services/mail/qmail.nix
 @@ -0,0 +1,210 @@
 +{ config, pkgs, ... }:
 +
