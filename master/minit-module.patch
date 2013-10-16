@@ -1,10 +1,10 @@
 minit module/service unit
 
-diff --git a/modules/module-list.nix b/modules/module-list.nix
-index 931b798..4d73894 100644
---- a/modules/module-list.nix
-+++ b/modules/module-list.nix
-@@ -199,6 +199,7 @@
+diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
+index b835907..35835c8 100644
+--- a/nixos/modules/module-list.nix
++++ b/nixos/modules/module-list.nix
+@@ -202,6 +202,7 @@
    ./services/security/torsocks.nix
    ./services/system/dbus.nix
    ./services/system/kerberos.nix
@@ -12,11 +12,11 @@ index 931b798..4d73894 100644
    ./services/system/nscd.nix
    ./services/system/uptimed.nix
    ./services/torrent/deluge.nix
-diff --git a/modules/services/system/minit.nix b/modules/services/system/minit.nix
+diff --git a/nixos/modules/services/system/minit.nix b/nixos/modules/services/system/minit.nix
 new file mode 100644
 index 0000000..f84d426
 --- /dev/null
-+++ b/modules/services/system/minit.nix
++++ b/nixos/modules/services/system/minit.nix
 @@ -0,0 +1,60 @@
 +{ config, pkgs, ... }:
 +
