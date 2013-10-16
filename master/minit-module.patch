@@ -1,0 +1,80 @@
+minit module/service unit
+
+diff --git a/modules/module-list.nix b/modules/module-list.nix
+index 931b798..4d73894 100644
+--- a/modules/module-list.nix
++++ b/modules/module-list.nix
+@@ -199,6 +199,7 @@
+   ./services/security/torsocks.nix
+   ./services/system/dbus.nix
+   ./services/system/kerberos.nix
++  ./services/system/minit.nix
+   ./services/system/nscd.nix
+   ./services/system/uptimed.nix
+   ./services/torrent/deluge.nix
+diff --git a/modules/services/system/minit.nix b/modules/services/system/minit.nix
+new file mode 100644
+index 0000000..f84d426
+--- /dev/null
++++ b/modules/services/system/minit.nix
+@@ -0,0 +1,60 @@
++{ config, pkgs, ... }:
++
++with pkgs.lib;
++
++let
++
++  cfg = config.services.minit;
++
++in
++
++{
++
++  ###### interface
++
++  options = {
++
++    services.minit = {
++
++      enable = mkOption {
++        default = false;
++        description = "Whether to enable minit service.";
++      };
++
++    };
++
++  };
++
++
++  ###### implementation
++
++  config = mkIf config.services.minit.enable {
++
++    environment.systemPackages = [ pkgs.minit ];
++
++    systemd.services.minit =
++      { description = "Minit service";
++
++        wantedBy = [ "multi-user.target" ];
++        after = [ "network.target" ];
++
++        preStart =
++          ''
++            dir=/etc/minit
++            mkdir -p $dir
++            for i in 'in' 'out'; do
++              [ -p $dir/$i ] || mkfifo -m 600 $dir/$i
++            done
++          '';
++
++        serviceConfig = {
++          Type = "simple";
++          ExecStart = "${pkgs.minit}/sbin/minit";
++        };
++      };
++
++  };
++
++}
++
++# vim: et ts=2 sw=2

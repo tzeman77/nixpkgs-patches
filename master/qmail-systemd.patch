@@ -1,0 +1,366 @@
+diff --git a/modules/misc/ids.nix b/modules/misc/ids.nix
+index b8ed8fb..7a9d81e 100644
+--- a/modules/misc/ids.nix
++++ b/modules/misc/ids.nix
+@@ -105,6 +105,14 @@
+       dnslog = 186;
+       axfrdns = 187;
+ 
++      alias = 7790;
++      qmaild = 7791;
++      qmaill = 7792;
++      qmailp = 7793;
++      qmailq = 7794;
++      qmailr = 7795;
++      qmails = 7796;
++
+       # When adding a uid, make sure it doesn't match an existing gid.
+ 
+       nixbld = 30000; # start of range of uids
+@@ -198,6 +206,8 @@
+       tinydns = 185;
+       dnslog = 186;
+       axfrdns = 187;
++      qmail = 2107;
++      nofiles = 2108;
+       nixbld = 30000;
+       nogroup = 65534;
+     };
+diff --git a/modules/module-list.nix b/modules/module-list.nix
+index cf1f411..0a26ea1 100644
+--- a/modules/module-list.nix
++++ b/modules/module-list.nix
+@@ -108,6 +108,8 @@
+   ./services/mail/mail.nix
+   ./services/mail/opensmtpd.nix
+   ./services/mail/postfix.nix
++  ./services/mail/qmail.nix
++  ./services/mail/qmail-smtp.nix
+   ./services/mail/spamassassin.nix
+   ./services/misc/autofs.nix
+   ./services/misc/cgminer.nix
+diff --git a/modules/services/mail/qmail-smtp.nix b/modules/services/mail/qmail-smtp.nix
+new file mode 100644
+index 0000000..57af43f
+--- /dev/null
++++ b/modules/services/mail/qmail-smtp.nix
+@@ -0,0 +1,103 @@
++{ config, pkgs, ... }:
++
++with pkgs.lib;
++
++let
++
++  cfg = config.services.qmail-smtp;
++  dtools = pkgs.daemontools;
++  ipsvd = pkgs.ipsvd;
++  mailfront = pkgs.mailfront;
++
++in
++
++{
++
++  ###### interface
++
++  options = {
++
++    services.qmail-smtp = {
++
++      enable = mkOption {
++        default = false;
++        description = "Whether to enable qmail SMTP service.";
++      };
++
++      user = mkOption {
++        default = "qmaild";
++        description = "User under which SMTP service runs.";
++      };
++
++      instructDir = mkOption {
++        default = "/var/tcp-instruct";
++        description = ''
++          Read instructions for handling new connections from the instructions
++          directory <code>instructDir</code>. See ipsvd-instruct(5).
++          '';
++      };
++
++      me = mkOption {
++        default = config.services.qmail.me;
++        description = "Fully qualified name of this host.";
++      };
++
++      concurrency = mkOption {
++        default = 20;
++        description = ''
++          Handle up to <code>concurrency</code> connections simultaneously.
++        '';
++      };
++
++      mailrulesFile = mkOption {
++        default = /var/qmail/control/mailrules;
++        description = "Path to mailrules file.";
++      };
++
++      listenIp = mkOption {
++        default = "0.0.0.0";
++        description = "Listen IP address.";
++      };
++
++    };
++  };
++
++
++  ###### implementation
++
++  config = mkIf cfg.enable {
++
++    services.qmail.enable = true;
++
++    environment.systemPackages = [ ipsvd mailfront ];
++
++    systemd.services.qmail-smtp = {
++      description = "qmail SMTP service";
++      wantedBy = [ "multi-user.target" ];
++      after = [ "network.target" ];
++      path = [ mailfront ];
++
++      environment.MAILRULES = toString cfg.mailrulesFile;
++
++      preStart = ''
++        mkdir -p ${cfg.instructDir}
++      '';
++
++      serviceConfig = {
++        ExecStart = "${dtools}/bin/softlimit -m 200000000 " +
++          "${ipsvd}/bin/tcpsvd -v -h -l ${cfg.me} -i ${cfg.instructDir} " +
++          "-c ${toString cfg.concurrency} " +
++          "-u ${cfg.user} ${cfg.listenIp} 25 " +
++          "${mailfront}/bin/smtpfront-qmail";
++        Restart = "always";
++        Type = "simple";
++        KillMode = "process";
++      };
++    };
++
++  };
++
++}
++
++# vim: et ts=2 sw=2
++
+diff --git a/modules/services/mail/qmail.nix b/modules/services/mail/qmail.nix
+new file mode 100644
+index 0000000..e2ed1ee
+--- /dev/null
++++ b/modules/services/mail/qmail.nix
+@@ -0,0 +1,210 @@
++{ config, pkgs, ... }:
++
++with pkgs.lib;
++
++let
++
++  cfg = config.services.qmail;
++  dtools = pkgs.daemontools;
++  pkg = pkgs.diet-qmail;
++  ucspi = pkgs.ucspi-tcp;
++  uids = config.ids.uids;
++  gids = config.ids.gids;
++
++  aliasOpts = { name, ... }: {
++    options = {
++      alias = mkOption {
++        example = "postmaster";
++        type = types.uniq types.string;
++        description = "Alias name";
++      };
++      real = mkOption {
++        example = "jsmith";
++        default = null;
++        type = types.nullOr types.string;
++        description = "Real user to receive mail.";
++      };
++      content = mkOption {
++        example = "anotheruser";
++        default = null;
++        type = types.nullOr types.string;
++        description = "Verbatim content of the alias file. See dot-qmail(5).";
++      };
++    };
++    config = {
++      alias = mkDefault name;
++    };
++  };
++
++  aliasF = alias: nameValuePair "qmail/alias/.qmail-${alias.alias}" {
++    text = if alias.real != null then alias.real else alias.content;
++  };
++
++in
++
++{
++
++  ###### interface
++
++  options = {
++
++    services.qmail = {
++
++      enable = mkOption {
++        default = false;
++        description = "Whether to enable qmail service.";
++      };
++
++      defaultdelivery = mkOption {
++        default = "./Maildir/";
++        description = "Default delivery (mbox or maildir). See qmail-start(8).";
++      };
++
++      me = mkOption {
++        default = "";
++        description = "Fully qualified name of this host.";
++      };
++
++      defaultdomain = mkOption {
++        default = "";
++        description = "Default domain name. See qmail-inject(8).";
++      };
++
++      locals = mkOption {
++        default = [];
++        description = ''
++          List of domain names that the current host receives mail for. See
++          qmail-send(8).
++        '';
++      };
++
++      plusdomain = mkOption {
++        default = "";
++        description = ''
++          Plus domain name. qmail-inject adds this name to any host name that
++          ends with a plus sign. See qmail-inject(8).
++        '';
++      };
++
++      aliases = mkOption {
++        default = {};
++        type = types.loaOf types.optionSet;
++        example = {
++          root = { real = "jsmith"; };
++          postmaster = { content = "another user"; };
++        };
++        options = [ aliasOpts ];
++        description = ''
++          Global qmail aliases configuration. Addresses that don't start with a
++          username are controlled by a special user, alias. Delivery
++          instructions for foo go into ~alias/.qmail-foo; delivery instructions
++          for user-foo go into ~user/.qmail-foo. See dot-qmail(5) for the full
++          story or doc/INSTALL.alias in qmail installaction directory.
++        '';
++      };
++
++    };
++  };
++
++
++  ###### implementation
++
++  config = mkIf cfg.enable {
++
++    environment.systemPackages = [ pkg dtools ucspi ];
++
++    security.setuidOwners = [ {
++      program = "qmail-queue";
++      owner = "qmailq";
++      group = "qmail";
++      setuid = true;
++      setgid = false;
++    } ];
++
++    # groups
++    users.extraGroups = {
++      qmail.gid = gids.qmail;
++      nofiles.gid = gids.nofiles;
++    };
++
++    users.extraUsers = {
++      alias = {
++        uid = uids.alias;
++        group = "nofiles";
++        home = "/var/qmail/alias";
++        createHome = true;
++      };
++      qmaild = { uid = uids.qmaild; group = "nofiles"; };
++      qmaill = { uid = uids.qmaill; group = "nofiles"; };
++      qmailp = { uid = uids.qmailp; group = "nofiles"; };
++      qmailq = { uid = uids.qmailq; group = "qmail"; };
++      qmailr = { uid = uids.qmailr; group = "qmail"; };
++      qmails = { uid = uids.qmails; group = "qmail"; };
++    };
++
++    environment.etc = {
++      "qmail/me".text = cfg.me;
++      "qmail/defaultdomain".text = cfg.defaultdomain;
++      "qmail/locals".text = concatStringsSep "\n" cfg.locals;
++      "qmail/plusdomain".text = cfg.plusdomain;
++    } // listToAttrs (map aliasF (attrValues cfg.aliases));
++
++    systemd.services.qmail = {
++      description = "qmail service";
++      wantedBy = [ "multi-user.target" ];
++      after = [ "network.target" ];
++      path = [ pkg ];
++
++      preStart = ''
++        qdir=/var/qmail/queue
++        cdir=/var/qmail/control
++        adir=/var/qmail/alias
++        bdir=/var/qmail/bin
++        [ -d $qdir ] || ${pkg}/bin/queue-fix $qdir
++        [ -d $cdir ] || mkdir -p $cdir
++        for i in me defaultdomain locals plusdomain; do
++          [ -e $cdir/$i ] || ln -s /etc/qmail/$i $cdir/$i
++        done
++        [ -d $adir ] || mkdir -p $adir
++        for i in /etc/qmail/alias/.qmail-*; do
++          n=`basename $i`
++          [ -e $adir/$n ] || ln -s $i $adir/$n
++        done
++        [ -d $bdir ] || mkdir -p $bdir
++        [ -e $bdir/qmail-queue ] || ln -s /var/setuid-wrappers/qmail-queue $bdir/qmail-queue
++        for i in ${pkg}/bin/*; do
++          n=`basename $i`
++          [ -e $bdir/$n ] || ln -s /run/current-system/sw/bin/$n $bdir/$n
++        done
++      '';
++
++      serviceConfig = {
++        ExecStart = "${pkg}/bin/qmail-start ${cfg.defaultdelivery}";
++        Restart = "always";
++        Type = "simple";
++        KillMode = "process";
++      };
++    };
++
++    systemd.services.smtp-local = {
++      description = "smtp local service";
++      wantedBy = [ "multi-user.target" ];
++      after = [ "network.target" ];
++      path = [ pkg ];
++
++      serviceConfig = {
++        ExecStart = "${dtools}/bin/softlimit -m 20000000 " +
++          "${ucspi}/bin/tcpserver -v -h -l ${cfg.me} -c 10 " +
++          "-u ${toString uids.qmaild} -g ${toString gids.nofiles} " +
++          "127.0.0.1 25 qmail-smtpd";
++        Restart = "always";
++        Type = "simple";
++        KillMode = "process";
++      };
++    };
++  };
++
++}
++
++# vim: et ts=2 sw=2
++

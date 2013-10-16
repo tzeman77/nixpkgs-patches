@@ -1,0 +1,128 @@
+axfr dns modules (supervised via systemd)
+
+diff --git a/modules/misc/ids.nix b/modules/misc/ids.nix
+index 6a87e9c..b8ed8fb 100644
+--- a/modules/misc/ids.nix
++++ b/modules/misc/ids.nix
+@@ -103,6 +103,7 @@
+       dnscache = 184;
+       tinydns = 185;
+       dnslog = 186;
++      axfrdns = 187;
+ 
+       # When adding a uid, make sure it doesn't match an existing gid.
+ 
+@@ -196,6 +197,7 @@
+       dnscache = 184;
+       tinydns = 185;
+       dnslog = 186;
++      axfrdns = 187;
+       nixbld = 30000;
+       nogroup = 65534;
+     };
+diff --git a/modules/module-list.nix b/modules/module-list.nix
+index f23a7cb..cf1f411 100644
+--- a/modules/module-list.nix
++++ b/modules/module-list.nix
+@@ -139,6 +139,7 @@
+   ./services/network-filesystems/samba.nix
+   ./services/networking/amuled.nix
+   ./services/networking/avahi-daemon.nix
++  ./services/networking/axfrdns.nix
+   ./services/networking/bind.nix
+   ./services/networking/bitlbee.nix
+   ./services/networking/cntlm.nix
+diff --git a/modules/services/networking/axfrdns.nix b/modules/services/networking/axfrdns.nix
+new file mode 100644
+index 0000000..29a1a9c
+--- /dev/null
++++ b/modules/services/networking/axfrdns.nix
+@@ -0,0 +1,88 @@
++{ config, pkgs, ... }:
++
++with pkgs.lib;
++
++let
++
++  cfg = config.services.axfrdns;
++  tcfg = config.services.tinydns;
++  dtools = pkgs.daemontools;
++  pkg = pkgs.djbdns;
++  ucspi = pkgs.ucspi-tcp;
++
++in
++
++{
++
++  ###### interface
++
++  options = {
++
++    services.axfrdns = {
++
++      enable = mkOption {
++        default = false;
++        description = "Whether to enable axfrdns service.";
++      };
++
++      dataLimit = mkOption {
++        default = 1048576;
++        description = "Data segment limit";
++      };
++
++      listenIp = mkOption {
++        default = "127.0.0.1";
++        description = "Listening IP address. Should be the external IP.";
++      };
++
++      rules = mkOption {
++        default = "/var/db/axfrdns/tcp.cdb";
++        description = "tcp rules database (service access list rules)";
++      };
++    };
++  };
++
++
++  ###### implementation
++
++  config = mkIf cfg.enable {
++
++    environment.systemPackages = [ pkg dtools ucspi ];
++
++    users.extraUsers.axfrdns = {
++      uid = config.ids.uids.axfrdns;
++      group = "axfrdns";
++      description = "axfrdns service user";
++    };
++
++    users.extraGroups.axfrdns.gid = config.ids.gids.axfrdns;
++
++    systemd.services.axfrdns = {
++      description = "AXFR server (axfrdns) service";
++      wantedBy = [ "multi-user.target" ];
++      after = [ "network.target" ];
++      environment = {
++        IP = cfg.listenIp;
++        ROOT = tcfg.root; # shared w/ tinydns service
++      };
++
++      preStart = ''
++        mkdir -p ${tcfg.root}
++      '';
++
++      serviceConfig = {
++        ExecStart =
++          "${dtools}/bin/envuidgid axfrdns ${dtools}/bin/softlimit " +
++          "-d ${toString cfg.dataLimit} " +
++          "${ucspi}/bin/tcpserver -vDRHl0 -x ${cfg.rules} -- $IP 53 " +
++          "${pkg}/bin/axfrdns";
++        Restart = "always";
++        Type = "simple";
++      };
++    };
++  };
++
++}
++
++# vim: et ts=2 sw=2
++
