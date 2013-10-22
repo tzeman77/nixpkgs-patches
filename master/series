@@ -24,3 +24,5 @@ dnscache-systemd.patch
 dnsserver-systemd.patch
 axfrdns-systemd.patch
 qmail-systemd.patch
+pure-ftpd.patch
+pdns.patch
