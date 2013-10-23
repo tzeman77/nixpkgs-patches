@@ -1,0 +1,179 @@
+pdns-3.3: PowerDNS - authoritative DNS server
+
+diff --git a/pkgs/servers/dns/pdns/default.nix b/pkgs/servers/dns/pdns/default.nix
+new file mode 100644
+index 0000000..8e99429
+--- /dev/null
++++ b/pkgs/servers/dns/pdns/default.nix
+@@ -0,0 +1,35 @@
++{ stdenv, fetchurl, pkgconfig, lua5_2, boost, openssl, zlib, mysql55 }:
++
++let
++  pkg = "pdns";
++  ver = "3.3";
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  src = fetchurl {
++    url = "http://downloads.powerdns.com/releases/${pkg}-${ver}.tar.gz";
++    sha256 = "1dmhq86x8z4bjyhj89psi3ims5zdhzvak2n9bzwfmlfc32s7nhck";
++  };
++
++  patches = [
++    ./use-libtool-object-files.patch
++  ];
++
++  buildInputs = [ pkgconfig lua5_2 boost openssl zlib mysql55 ];
++
++  configureFlags = ''
++    --disable-static
++    --with-mysql=${mysql55}
++  '';
++
++  meta = {
++    description = "PowerDNS authoritative DNS server";
++    homepage = https://www.powerdns.com;
++    license = stdenv.lib.licenses.gpl2;
++    platforms = stdenv.lib.platforms.all;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++
++}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/servers/dns/pdns/use-libtool-object-files.patch b/pkgs/servers/dns/pdns/use-libtool-object-files.patch
+new file mode 100644
+index 0000000..6894d1c
+--- /dev/null
++++ b/pkgs/servers/dns/pdns/use-libtool-object-files.patch
+@@ -0,0 +1,117 @@
++a0fdbda3ba6727cf86b84666f44088bf49bc8f8a
++Subject: [PATCH] modules: use libtool object files - real object file might be in a .libs subdir
++
++diff --git a/modules/geobackend/OBJECTFILES b/modules/geobackend/OBJECTFILES
++index aa081d3..000a469 100644
++--- a/modules/geobackend/OBJECTFILES
+++++ b/modules/geobackend/OBJECTFILES
++@@ -1 +1 @@
++-geobackend.o ippreftree.o
+++geobackend.lo ippreftree.lo
++diff --git a/modules/gmysqlbackend/OBJECTFILES b/modules/gmysqlbackend/OBJECTFILES
++index 6a8ed86..98bf556 100644
++--- a/modules/gmysqlbackend/OBJECTFILES
+++++ b/modules/gmysqlbackend/OBJECTFILES
++@@ -1 +1 @@
++-gmysqlbackend.o smysql.o
+++gmysqlbackend.lo smysql.lo
++diff --git a/modules/goraclebackend/OBJECTFILES b/modules/goraclebackend/OBJECTFILES
++index dd954ee..59149cd 100644
++--- a/modules/goraclebackend/OBJECTFILES
+++++ b/modules/goraclebackend/OBJECTFILES
++@@ -1 +1 @@
++-goraclebackend.o soracle.o
++\ No newline at end of file
+++goraclebackend.lo soracle.lo
++\ No newline at end of file
++diff --git a/modules/gpgsqlbackend/OBJECTFILES b/modules/gpgsqlbackend/OBJECTFILES
++index efc26fd..288a969 100644
++--- a/modules/gpgsqlbackend/OBJECTFILES
+++++ b/modules/gpgsqlbackend/OBJECTFILES
++@@ -1 +1 @@
++-gpgsqlbackend.o spgsql.o
+++gpgsqlbackend.lo spgsql.lo
++diff --git a/modules/gsqlite3backend/OBJECTFILES b/modules/gsqlite3backend/OBJECTFILES
++index 5ea04b0..fe8c0e4 100644
++--- a/modules/gsqlite3backend/OBJECTFILES
+++++ b/modules/gsqlite3backend/OBJECTFILES
++@@ -1 +1 @@
++-gsqlite3backend.o
+++gsqlite3backend.lo
++diff --git a/modules/ldapbackend/OBJECTFILES b/modules/ldapbackend/OBJECTFILES
++index 3c922b3..59f4773 100644
++--- a/modules/ldapbackend/OBJECTFILES
+++++ b/modules/ldapbackend/OBJECTFILES
++@@ -1 +1 @@
++-ldapbackend.o powerldap.o
+++ldapbackend.lo powerldap.lo
++diff --git a/modules/luabackend/OBJECTFILES b/modules/luabackend/OBJECTFILES
++index 3c78d71..0906c91 100644
++--- a/modules/luabackend/OBJECTFILES
+++++ b/modules/luabackend/OBJECTFILES
++@@ -1 +1 @@
++-luabackend.o minimal.o reload.o lua_functions.o master.o private.o slave.o supermaster.o dnssec.o
++\ No newline at end of file
+++luabackend.lo minimal.lo reload.lo lua_functions.lo master.lo private.lo slave.lo supermaster.lo dnssec.lo
++\ No newline at end of file
++diff --git a/modules/mydnsbackend/OBJECTFILES b/modules/mydnsbackend/OBJECTFILES
++index 1cd6d21..e1c69a1 100644
++--- a/modules/mydnsbackend/OBJECTFILES
+++++ b/modules/mydnsbackend/OBJECTFILES
++@@ -1 +1 @@
++-mydnsbackend.o 
+++mydnsbackend.lo
++diff --git a/modules/opendbxbackend/OBJECTFILES b/modules/opendbxbackend/OBJECTFILES
++index cf716f8..f2a813e 100644
++--- a/modules/opendbxbackend/OBJECTFILES
+++++ b/modules/opendbxbackend/OBJECTFILES
++@@ -1 +1 @@
++-odbxbackend.o odbxprivate.o
+++odbxbackend.lo odbxprivate.lo
++diff --git a/modules/oraclebackend/OBJECTFILES b/modules/oraclebackend/OBJECTFILES
++index ac8cc25..570c62e 100644
++--- a/modules/oraclebackend/OBJECTFILES
+++++ b/modules/oraclebackend/OBJECTFILES
++@@ -1 +1 @@
++-oraclebackend.o
+++oraclebackend.lo
++diff --git a/modules/pipebackend/OBJECTFILES b/modules/pipebackend/OBJECTFILES
++index 5ec17d1..5b8a67d 100644
++--- a/modules/pipebackend/OBJECTFILES
+++++ b/modules/pipebackend/OBJECTFILES
++@@ -1 +1 @@
++-coprocess.o pipebackend.o
+++coprocess.lo pipebackend.lo
++diff --git a/modules/randombackend/OBJECTFILES b/modules/randombackend/OBJECTFILES
++index c46b6ef..012f607 100644
++--- a/modules/randombackend/OBJECTFILES
+++++ b/modules/randombackend/OBJECTFILES
++@@ -1 +1 @@
++-randombackend.o
+++randombackend.lo
++diff --git a/modules/remotebackend/OBJECTFILES b/modules/remotebackend/OBJECTFILES
++index d46943f..c125b82 100644
++--- a/modules/remotebackend/OBJECTFILES
+++++ b/modules/remotebackend/OBJECTFILES
++@@ -1 +1 @@
++-remotebackend.o unixconnector.o httpconnector.o pipeconnector.o
+++remotebackend.lo unixconnector.lo httpconnector.lo pipeconnector.lo
++diff --git a/modules/tinydnsbackend/OBJECTFILES b/modules/tinydnsbackend/OBJECTFILES
++index 59ab29a..41c0623 100644
++--- a/modules/tinydnsbackend/OBJECTFILES
+++++ b/modules/tinydnsbackend/OBJECTFILES
++@@ -1 +1 @@
++-tinydnsbackend.o cdb.o
++\ No newline at end of file
+++tinydnsbackend.lo cdb.lo
++\ No newline at end of file
++diff --git a/modules/xdbbackend/OBJECTFILES b/modules/xdbbackend/OBJECTFILES
++index ccbf5b1..1a7dfcf 100644
++--- a/modules/xdbbackend/OBJECTFILES
+++++ b/modules/xdbbackend/OBJECTFILES
++@@ -1 +1 @@
++-xdbbackend.o xtdb.o
+++xdbbackend.lo xtdb.lo
++-- 
++1.8.4
++
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 5742c4a..9f79e62 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -6274,6 +6274,8 @@ let
+ 
+   OVMF = callPackage ../applications/virtualization/OVMF { };
+ 
++  pdns = callPackage ../servers/dns/pdns { };
++
+   postgresql = postgresql92;
+ 
+   postgresql83 = callPackage ../servers/sql/postgresql/8.3.x.nix { };
