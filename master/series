@@ -27,3 +27,4 @@ qmail-systemd.patch
 pure-ftpd.patch
 pdns.patch
 pure-ftpd-systemd.patch
+php53-fpm-systemd.patch
