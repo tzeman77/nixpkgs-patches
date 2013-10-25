@@ -1,2 +1,70 @@
 firehol-1.296: iptables stateful packet filtering firewall builder
 
+diff --git a/pkgs/tools/security/firehol/default.nix b/pkgs/tools/security/firehol/default.nix
+new file mode 100644
+index 0000000..8305af8
+--- /dev/null
++++ b/pkgs/tools/security/firehol/default.nix
+@@ -0,0 +1,47 @@
++{ stdenv, fetchurl, iptables, gnugrep, findutils, gawk #, modprobe, util-linux
++, bash, gnused, procps, gzip, iproute, which, wget }:
++
++let
++  pkg = "firehol";
++  ver = "1.296";
++  web = http://firehol.org;
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  src = fetchurl {
++    url = "${web}/download/latest/${pkg}-${ver}.tar.gz";
++    sha256 = "1f2bgbwp0smhij29y3rgsfgn1mk3949va05acg1c6kzy3hw9gwwk";
++  };
++
++  propagatedBuildInputs = [ iptables gnugrep findutils gawk gnused procps
++    gzip iproute which wget ];
++
++  inherit which;
++
++  configurePhase = ''
++    substituteInPlace firehol.sh --replace "export PATH" "# export PATH"
++    substituteInPlace firehol.sh --replace "\`which" "\`$which/bin/which"
++  '';
++
++  installPhase = ''
++    install -D -m755 firehol.sh $out/sbin/firehol
++    mkdir -p $out/scripts
++    for i in adblock.sh buildrpm.sh check-iana.sh get-iana.sh; do
++      install -D -m755 $i $out/scripts/
++    done
++    mkdir -p $out/share/man/man{1,5}
++    for i in 1 5; do cp man/*.$i $out/share/man/man$i/; done
++    mv doc $out/share/
++    mv examples $out/share/
++  '';
++
++  meta = {
++    description = "The iptables stateful packet filtering firewall builder";
++    homepage = web;
++    license = stdenv.lib.licenses.gpl2;
++    platforms = stdenv.lib.platforms.linux;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 9f79e62..958bb76 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -886,6 +886,10 @@ let
+ 
+   fio = callPackage ../tools/system/fio { };
+ 
++  firehol = callPackage ../tools/security/firehol {
++    #inherit modprobe, util-linux;
++  };
++
+   flpsed = callPackage ../applications/editors/flpsed { };
+ 
+   flvstreamer = callPackage ../tools/networking/flvstreamer { };
