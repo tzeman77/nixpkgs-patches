@@ -54,16 +54,14 @@ index 0000000..8305af8
 +
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 9f79e62..958bb76 100644
+index 9f79e62..9dc59d6 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -886,6 +886,10 @@ let
+@@ -886,6 +886,8 @@ let
  
    fio = callPackage ../tools/system/fio { };
  
-+  firehol = callPackage ../tools/security/firehol {
-+    #inherit modprobe, util-linux;
-+  };
++  firehol = callPackage ../tools/security/firehol { };
 +
    flpsed = callPackage ../applications/editors/flpsed { };
  
