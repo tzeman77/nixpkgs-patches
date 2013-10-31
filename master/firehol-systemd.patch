@@ -14,10 +14,10 @@ index 96fe4bb..1cfa1d7 100644
    ./services/networking/flashpolicyd.nix
 diff --git a/nixos/modules/services/networking/firehol.nix b/nixos/modules/services/networking/firehol.nix
 new file mode 100644
-index 0000000..ec4fe11
+index 0000000..90d34d0
 --- /dev/null
 +++ b/nixos/modules/services/networking/firehol.nix
-@@ -0,0 +1,66 @@
+@@ -0,0 +1,71 @@
 +{ config, pkgs, ... }:
 +
 +with pkgs.lib;
@@ -58,13 +58,18 @@ index 0000000..ec4fe11
 +
 +    networking.firewall.enable = false; # mutually exclusive with nixos default firewall.
 +
++    boot.kernelModules = [ "configs" ];
++
 +    environment.etc."firehol/firehol.conf".text = cfg.configuration;
++
++    environment.systemPackages = [ pkg pkgs.iptables ];
 +
 +    systemd.services.firehol = {
 +      description = "Firehol firewall";
 +      wantedBy = [ "network.target" ];
 +      after = [ "network-interfaces.target" ];
-+      conflicts = [ "firewall" ];
++      path = with pkgs; [ gnugrep findutils gawk gnused procps gzip iproute
++        which iptables kmod utillinux ];
 +
 +      serviceConfig = {
 +        Type = "oneshot";
