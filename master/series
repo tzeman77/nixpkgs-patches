@@ -31,3 +31,4 @@ php53-fpm-systemd.patch
 firehol.patch
 firehol-systemd.patch
 clamd-systemd.patch
+php53-shared-extensions.patch
