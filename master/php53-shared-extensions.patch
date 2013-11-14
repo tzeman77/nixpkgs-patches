@@ -1,2 +1,231 @@
 php53 shared extensions
 
+diff --git a/pkgs/development/interpreters/php/5.3.nix b/pkgs/development/interpreters/php/5.3.nix
+index 21cc14c..cd220f5 100644
+--- a/pkgs/development/interpreters/php/5.3.nix
++++ b/pkgs/development/interpreters/php/5.3.nix
+@@ -2,6 +2,7 @@
+ , apacheHttpd, mysql, libxml2, readline, zlib, curl, gd, postgresql, gettext
+ , openssl, pkgconfig, sqlite, config, libjpeg, libpng, freetype, libxslt
+ , libmcrypt, bzip2, icu, libssh2, makeWrapper, libiconvOrEmpty, libiconv, uwimap
++, gdbm, gmp
+ , pam, sapi ? "apxs2" }:
+ 
+ let
+@@ -43,8 +44,12 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+ 
+       # Extensions
+ 
++      calendar = {
++        configureFlags = ["--enable-calendar=shared"];
++      };
++
+       curl = {
+-        configureFlags = ["--with-curl=${curl}" "--with-curlwrappers"];
++        configureFlags = ["--with-curl=shared,${curl}" "--with-curlwrappers"];
+         buildInputs = [curl openssl];
+       };
+ 
+@@ -71,17 +76,32 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+       };
+ 
+       sqlite = {
+-        configureFlags = ["--with-pdo-sqlite=${sqlite}"];
++        configureFlags = [
++#         "--with-sqlite=shared,${sqlite}"
++          "--with-pdo-sqlite=shared,${sqlite}"
++        ];
+         buildInputs = [ sqlite ];
+       };
+ 
++      posix = {
++        configureFlags = ["--enable-posix=shared"];
++      };
++
+       postgresql = {
+-        configureFlags = ["--with-pgsql=${postgresql}"];
++        configureFlags = ["--with-pgsql=shared,${postgresql}"];
++        buildInputs = [ postgresql ];
++      };
++
++      pdo_pgsql = {
++        configureFlags = ["--with-pdo-pgsql=shared,${postgresql}"];
+         buildInputs = [ postgresql ];
+       };
+ 
+       mysql = {
+-        configureFlags = ["--with-mysql=${mysql}"];
++        configureFlags = [
++          "--with-mysql=shared,${mysql}"
++          "--with-mysql-sock=/tmp/mysql.sock"
++        ];
+         buildInputs = [ mysql ];
+       };
+ 
+@@ -97,17 +117,17 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+       };
+ 
+       pdo_mysql = {
+-        configureFlags = ["--with-pdo-mysql=${mysql}"];
++        configureFlags = ["--with-pdo-mysql=shared,${mysql}"];
+         buildInputs = [ mysql ];
+       };
+ 
+       bcmath = {
+-        configureFlags = ["--enable-bcmath"];
++        configureFlags = ["--enable-bcmath=shared"];
+       };
+ 
+       gd = {
+         configureFlags = [
+-          "--with-gd=${gd}"
++          "--with-gd=shared,${gd}"
+           "--with-freetype-dir=${freetype}"
+           "--with-png-dir=${libpng}"
+           "--with-jpeg-dir=${libjpeg}"
+@@ -116,7 +136,7 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+       };
+ 
+       soap = {
+-        configureFlags = ["--enable-soap"];
++        configureFlags = ["--enable-soap=shared"];
+       };
+ 
+       sockets = {
+@@ -138,7 +158,7 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+       };
+ 
+       imap = {
+-        configureFlags = [ "--with-imap=${uwimap}" "--with-imap-ssl" ]
++        configureFlags = [ "--with-imap=shared,${uwimap}" "--with-imap-ssl=shared" ]
+           # uwimap builds with kerberos on darwin
+           ++ stdenv.lib.optional (stdenv.isDarwin) "--with-kerberos";
+         buildInputs = [ uwimap openssl ]
+@@ -155,17 +175,17 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+       };
+ 
+       xsl = {
+-        configureFlags = ["--with-xsl=${libxslt}"];
++        configureFlags = ["--with-xsl=shared,${libxslt}"];
+         buildInputs = [libxslt];
+       };
+ 
+       mcrypt = {
+-        configureFlags = ["--with-mcrypt=${libmcrypt}"];
++        configureFlags = ["--with-mcrypt=shared,${libmcrypt}"];
+         buildInputs = [libmcryptOverride];
+       };
+ 
+       bz2 = {
+-        configureFlags = ["--with-bz2=${bzip2}"];
++        configureFlags = ["--with-bz2=shared,${bzip2}"];
+         buildInputs = [bzip2];
+       };
+ 
+@@ -174,7 +194,51 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+       };
+ 
+       ftp = {
+-        configureFlags = ["--enable-ftp"];
++        configureFlags = ["--enable-ftp=shared"];
++      };
++
++      gdbm = {
++        configureFlags = ["--with-gdbm=shared,${gdbm}"];
++      };
++
++      gmp = {
++        configureFlags = ["--with-gmp=shared,${gmp}"];
++      };
++
++      mhash = {
++        configureFlags = ["--with-mhash=shared"];
++      };
++
++#     pspell = {
++#       configureFlags = ["--with-pspell=shared"];
++#     };
++
++      shmop = {
++        configureFlags = ["--enable-shmop=shared"];
++      };
++
++      sysvmsg = {
++        configureFlags = ["--enable-sysvmsg"];
++      };
++
++      sysvsem = {
++        configureFlags = ["--enable-sysvsem=shared"];
++      };
++
++      sysvshm = {
++        configureFlags = ["--enable-sysvsem=shared"];
++      };
++
++#     tidy = {
++#       configureFlags = ["--with-tidy=shared"];
++#     };
++
++      ttf = {
++        configureFlags = ["--with-ttf=shared"];
++      };
++
++      xmlrpc = {
++        configureFlags = ["--with-xmlrpc=shared"];
+       };
+     };
+ 
+@@ -183,27 +247,41 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+     fpmSupport = sapi == "fpm";
+     bcmathSupport = config.php.bcmath or true;
+     bz2Support = config.php.bz2 or false;
++    calendarSuppport = config.php.calendar or true;
+     curlSupport = config.php.curl or true;
+     exifSupport = config.php.exif or true;
+     ftpSupport = config.php.ftp or true;
+     gdSupport = config.php.gd or true;
++    gdbmSupport = config.php.gdbm or false;
+     gettextSupport = config.php.gettext or true;
++    gmpSupport = config.php.gmp or true;
+     imapSupport = config.php.imap or false;
+     intlSupport = config.php.intl or true;
+     libxml2Support = config.php.libxml2 or true;
+     mbstringSupport = config.php.mbstring or true;
+     mcryptSupport = config.php.mcrypt or false;
++    mhashSupport = config.php.mhash or false;
+     mysqlSupport = config.php.mysql or true;
+     mysqliSupport = config.php.mysqli or true;
+     opensslSupport = config.php.openssl or true;
+     pcntlSupport = config.php.pcntl or true;
+     pdo_mysqlSupport = config.php.pdo_mysql or true;
++    pdo_pgsqlSupport = config.php.pdo_pgsql or true;
++    posixSupport = config.php.posix or true;
+     postgresqlSupport = config.php.postgresql or true;
++#   pspellSupport = config.php.pspell or true;
+     readlineSupport = config.php.readline or true;
++    shmopSupport = config.php.shmop or true;
++    sysvmsgSupport = config.php.sysvmsg or true;
++    sysvsemSupport = config.php.sysvsem or true;
++    sysvshmSupport = config.php.sysvshm or true;
+     soapSupport = config.php.soap or true;
+     socketsSupport = config.php.sockets or true;
+     sqliteSupport = config.php.sqlite or true;
+-    xslSupport = config.php.xsl or false;
++#   tidySupport = config.php.tidy or true;
++    ttfSupport = config.php.ttf or true;
++    xmlrpcSupport = config.php.xmlrpc or true;
++    xslSupport = config.php.xsl or true;
+     zipSupport = config.php.zip or true;
+     zlibSupport = config.php.zlib or true;
+   };
+@@ -211,7 +289,9 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+   configurePhase = ''
+     iniFile=$out/etc/php-recommended.ini
+     [[ -z "$libxml2" ]] || export PATH=$PATH:$libxml2/bin
+-    ./configure --with-config-file-scan-dir=/etc --with-config-file-path=$out/etc --prefix=$out $configureFlags
++    ./configure --with-config-file-scan-dir=/etc --with-config-file-path=$out/etc \
++        --prefix=$out $configureFlags \
++        --enable-shared --enable-magic-quotes --enable-safe-mode --with-mime-magic
+     echo configurePhase end
+   '' + stdenv.lib.optionalString stdenv.isDarwin ''
+     # don't build php.dSYM as the php binary
