@@ -1,7 +1,7 @@
 php53 shared extensions
 
 diff --git a/pkgs/development/interpreters/php/5.3.nix b/pkgs/development/interpreters/php/5.3.nix
-index 21cc14c..40c3666 100644
+index 21cc14c..df1cc2a 100644
 --- a/pkgs/development/interpreters/php/5.3.nix
 +++ b/pkgs/development/interpreters/php/5.3.nix
 @@ -2,6 +2,7 @@
@@ -171,10 +171,12 @@ index 21cc14c..40c3666 100644
        };
      };
  
-@@ -183,27 +243,40 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+@@ -182,28 +242,41 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+     apxs2Support = sapi == "apxs2";
      fpmSupport = sapi == "fpm";
      bcmathSupport = config.php.bcmath or true;
-     bz2Support = config.php.bz2 or false;
+-    bz2Support = config.php.bz2 or false;
++    bz2Support = config.php.bz2 or true;
 +    calendarSuppport = config.php.calendar or true;
      curlSupport = config.php.curl or true;
      exifSupport = config.php.exif or true;
