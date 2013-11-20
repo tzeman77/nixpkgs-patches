@@ -1,7 +1,7 @@
 php53 shared extensions
 
 diff --git a/pkgs/development/interpreters/php/5.3.nix b/pkgs/development/interpreters/php/5.3.nix
-index 21cc14c..cd220f5 100644
+index 21cc14c..40c3666 100644
 --- a/pkgs/development/interpreters/php/5.3.nix
 +++ b/pkgs/development/interpreters/php/5.3.nix
 @@ -2,6 +2,7 @@
@@ -122,7 +122,7 @@ index 21cc14c..cd220f5 100644
          buildInputs = [bzip2];
        };
  
-@@ -174,7 +194,51 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+@@ -174,7 +194,47 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
        };
  
        ftp = {
@@ -166,16 +166,12 @@ index 21cc14c..cd220f5 100644
 +#       configureFlags = ["--with-tidy=shared"];
 +#     };
 +
-+      ttf = {
-+        configureFlags = ["--with-ttf=shared"];
-+      };
-+
-+      xmlrpc = {
++      mlrpc = {
 +        configureFlags = ["--with-xmlrpc=shared"];
        };
      };
  
-@@ -183,27 +247,41 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+@@ -183,27 +243,40 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
      fpmSupport = sapi == "fpm";
      bcmathSupport = config.php.bcmath or true;
      bz2Support = config.php.bz2 or false;
@@ -212,20 +208,19 @@ index 21cc14c..cd220f5 100644
      sqliteSupport = config.php.sqlite or true;
 -    xslSupport = config.php.xsl or false;
 +#   tidySupport = config.php.tidy or true;
-+    ttfSupport = config.php.ttf or true;
 +    xmlrpcSupport = config.php.xmlrpc or true;
 +    xslSupport = config.php.xsl or true;
      zipSupport = config.php.zip or true;
      zlibSupport = config.php.zlib or true;
    };
-@@ -211,7 +289,9 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+@@ -211,7 +284,9 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
    configurePhase = ''
      iniFile=$out/etc/php-recommended.ini
      [[ -z "$libxml2" ]] || export PATH=$PATH:$libxml2/bin
 -    ./configure --with-config-file-scan-dir=/etc --with-config-file-path=$out/etc --prefix=$out $configureFlags
 +    ./configure --with-config-file-scan-dir=/etc --with-config-file-path=$out/etc \
 +        --prefix=$out $configureFlags \
-+        --enable-shared --enable-magic-quotes --enable-safe-mode --with-mime-magic
++        --enable-shared --enable-magic-quotes --enable-safe-mode
      echo configurePhase end
    '' + stdenv.lib.optionalString stdenv.isDarwin ''
      # don't build php.dSYM as the php binary
