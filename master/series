@@ -32,5 +32,4 @@ firehol.patch
 firehol-systemd.patch
 clamd-systemd.patch
 php53-shared-extensions.patch
-php53-mcrypt-enable.patch
 php53-mysql55.patch
