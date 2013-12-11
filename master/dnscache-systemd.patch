@@ -1,20 +1,20 @@
 dnscache service
 
 diff --git a/nixos/modules/misc/ids.nix b/nixos/modules/misc/ids.nix
-index adaa2b0..9ad0496 100644
+index 0b4274b..fe86e10 100644
 --- a/nixos/modules/misc/ids.nix
 +++ b/nixos/modules/misc/ids.nix
-@@ -102,6 +102,9 @@
-       tcpcryptd = 93; # tcpcryptd uses a hard-coded uid. We patch it in Nixpkgs to match this choice.
-       zope2 = 94;
-       firebird = 95;
+@@ -107,6 +107,9 @@
+       redis = 96;
+       haproxy = 97;
+       mongodb = 98;
 +      dnscache = 184;
 +      tinydns = 185;
 +      dnslog = 186;
  
        # When adding a uid, make sure it doesn't match an existing gid.
  
-@@ -192,6 +195,9 @@
+@@ -198,6 +201,9 @@
        # When adding a gid, make sure it doesn't match an existing uid.
  
        users = 100;
@@ -25,11 +25,11 @@ index adaa2b0..9ad0496 100644
        nogroup = 65534;
      };
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index 35835c8..6b11986 100644
+index 296e622..e17d05c 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -150,6 +150,7 @@
-   #./services/networking/dhclient.nix
+@@ -152,6 +152,7 @@
+   ./services/networking/ddclient.nix
    ./services/networking/dhcpcd.nix
    ./services/networking/dhcpd.nix
 +  ./services/networking/dnscache.nix

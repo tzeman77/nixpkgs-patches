@@ -1,0 +1,28 @@
+android-sdk-22.3.0
+
+diff --git a/pkgs/development/mobile/androidenv/androidsdk.nix b/pkgs/development/mobile/androidenv/androidsdk.nix
+index 0b5f69e..852696a 100644
+--- a/pkgs/development/mobile/androidenv/androidsdk.nix
++++ b/pkgs/development/mobile/androidenv/androidsdk.nix
+@@ -8,16 +8,16 @@
+ {platformVersions, abiVersions, useGoogleAPIs}:
+ 
+ stdenv.mkDerivation {
+-  name = "android-sdk-22.2";
++  name = "android-sdk-22.3.0";
+   
+   src = if (stdenv.system == "i686-linux" || stdenv.system == "x86_64-linux")
+     then fetchurl {
+-      url = http://dl.google.com/android/android-sdk_r22.2-linux.tgz;
+-      md5 = "2a3776839e823ba9acb7a87a3fe26e02";
++      url = http://dl.google.com/android/android-sdk_r22.3-linux.tgz;
++      sha256 = "0kvz0l9nh3l70si730kna9wirqr12n5f843c2ph80m07k1f5fxs0";
+     }
+     else if stdenv.system == "x86_64-darwin" then fetchurl {
+-      url = http://dl.google.com/android/android-sdk_r22.2-macosx.zip;
+-      md5 = "9dfef6404e2f842c433073796aed8b7d";
++      url = http://dl.google.com/android/android-sdk_r22.3-macosx.zip;
++      md5 = "xxx";
+     }
+     else throw "platform not ${stdenv.system} supported!";
+   
