@@ -1,20 +1,20 @@
 dnscache service
 
 diff --git a/nixos/modules/misc/ids.nix b/nixos/modules/misc/ids.nix
-index 0b4274b..fe86e10 100644
+index 16eec90..c5d3f4e 100644
 --- a/nixos/modules/misc/ids.nix
 +++ b/nixos/modules/misc/ids.nix
-@@ -107,6 +107,9 @@
-       redis = 96;
-       haproxy = 97;
-       mongodb = 98;
+@@ -110,6 +110,9 @@
+       openldap = 99;
+       memcached = 100;
+       cgminer = 101;
 +      dnscache = 184;
 +      tinydns = 185;
 +      dnslog = 186;
  
        # When adding a uid, make sure it doesn't match an existing gid.
  
-@@ -198,6 +201,9 @@
+@@ -203,6 +206,9 @@
        # When adding a gid, make sure it doesn't match an existing uid.
  
        users = 100;
@@ -25,10 +25,10 @@ index 0b4274b..fe86e10 100644
        nogroup = 65534;
      };
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index 296e622..e17d05c 100644
+index 35de176..65fea67 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -152,6 +152,7 @@
+@@ -153,6 +153,7 @@
    ./services/networking/ddclient.nix
    ./services/networking/dhcpcd.nix
    ./services/networking/dhcpd.nix
