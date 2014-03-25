@@ -1,13 +1,13 @@
 Added tzeman to maintainer list
 
 diff --git a/lib/maintainers.nix b/lib/maintainers.nix
-index 0418337..beff65c 100644
+index 5061cab..6159904 100644
 --- a/lib/maintainers.nix
 +++ b/lib/maintainers.nix
-@@ -56,6 +56,7 @@
-   thammers = "Tobias Hammerschmidt <jawr@gmx.de>";
-   the-kenny = "Moritz Ulrich <moritz@tarn-vedra.de>";
+@@ -75,6 +75,7 @@
+   thoughtpolice = "Austin Seipp <aseipp@pobox.com>";
    tomberek = "Thomas Bereknyei <tomberek@gmail.com>";
+   ttuegel = "Thomas Tuegel <ttuegel@gmail.com>";
 +  tzeman = "Tomáš Zeman <tzeman@volny.cz>";
    urkud = "Yury G. Kudryashov <urkud+nix@ya.ru>";
    vcunat = "Vladimír Čunát <vcunat@gmail.com>";
