@@ -35,3 +35,4 @@ php53-shared-extensions.patch
 php53-mysql55.patch
 freshclam.patch
 nginx-wrapper.patch
+zabbix20-mysql.patch
