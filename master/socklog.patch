@@ -1,2 +1,94 @@
 socklog-2.1.0: System and kernel logging services
 
+diff --git a/pkgs/tools/system/socklog/compile.patch b/pkgs/tools/system/socklog/compile.patch
+new file mode 100644
+index 0000000..6f79c18
+--- /dev/null
++++ b/pkgs/tools/system/socklog/compile.patch
+@@ -0,0 +1,13 @@
++diff -ru socklog-2.1.0.orig/src/Makefile socklog-2.1.0/src/Makefile
++--- socklog-2.1.0.orig/src/Makefile	2006-03-06 14:00:05.000000000 +0100
+++++ socklog-2.1.0/src/Makefile	2014-04-23 13:16:28.165343794 +0200
++@@ -181,8 +181,7 @@
++ 
++ hasshsgr.h: chkshsgr choose compile hasshsgr.h1 hasshsgr.h2 load \
++ tryshsgr.c warn-shsgr
++-	./chkshsgr || ( cat warn-shsgr; exit 1 )
++-	./choose clr tryshsgr hasshsgr.h1 hasshsgr.h2 > hasshsgr.h
+++	cat hasshsgr.h1 > hasshsgr.h
++ 
++ haswaitp.h: choose compile haswaitp.h1 haswaitp.h2 load trywaitp.c
++ 	./choose cl trywaitp haswaitp.h1 haswaitp.h2 > haswaitp.h
+diff --git a/pkgs/tools/system/socklog/default.nix b/pkgs/tools/system/socklog/default.nix
+new file mode 100644
+index 0000000..abe36c1
+--- /dev/null
++++ b/pkgs/tools/system/socklog/default.nix
+@@ -0,0 +1,54 @@
++{ stdenv, fetchurl, dietlibc }:
++
++let
++  pkg = "socklog";
++  ver = "2.1.0";
++  web = http://smarden.org/socklog/;
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  src = fetchurl {
++    url = "${web}/${pkg}/${pkg}-${ver}.tar.gz";
++    sha256 = "0mdlmhiq2j2fip7c4l669ams85yc3c1s1d89am7dl170grw9m1ma";
++  };
++
++  sourceRoot = "admin/${pkg}-${ver}";
++
++  patches = [
++    ./compile.patch
++  ];
++
++  buildInputs = [dietlibc];
++
++  configurePhase = ''
++    echo "diet gcc -nostdinc" > src/conf-cc
++    echo "diet gcc -s -static" > src/conf-ld
++  '';
++
++  buildPhase = "./package/compile";
++
++  installPhase = ''
++    mkdir -p $out/bin
++    for BIN in `cat package/commands`; do
++      cp command/$BIN $out/bin
++    done
++    mkdir -p $out/man/man{1,8}
++    cp man/*.1 $out/man/man1
++    cp man/*.8 $out/man/man8
++  '';
++
++  allowedReferences = ["out"];
++  dontPatchShebangs = true; # /bin/sh
++  dontStrip = true; # diet does not need stripping
++  dontPatchELF = true; # we produce static binaries
++
++  meta = {
++    description = "System and kernel logging services";
++    homepage = "${web}";
++    license = stdenv.lib.licenses.bsd2;
++    platforms = stdenv.lib.platforms.gnu;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 2f1f364..5e06260 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -1972,6 +1972,8 @@ let
+     inherit (pkgsi686Linux.xlibs) libX11;
+   };
+ 
++  socklog = callPackage ../tools/system/socklog { };
++
+   solr = callPackage ../servers/search/solr { };
+ 
+   sparsehash = callPackage ../development/libraries/sparsehash { };
