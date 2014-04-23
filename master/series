@@ -36,3 +36,4 @@ php53-mysql55.patch
 freshclam.patch
 nginx-wrapper.patch
 zabbix20-mysql.patch
+minit-path.patch
