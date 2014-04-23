@@ -39,3 +39,4 @@ zabbix20-mysql.patch
 minit-path.patch
 socklog.patch
 runit.patch
+qmail-autoresponder.patch
