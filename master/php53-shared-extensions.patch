@@ -6,7 +6,7 @@ Header from folded patch 'php53-mcrypt-enable.patch':
 php53: mcrypt enable
 
 diff --git a/pkgs/development/interpreters/php/5.3.nix b/pkgs/development/interpreters/php/5.3.nix
-index 21cc14c..f53b5c6 100644
+index bb4a2d0..7aa55cd 100644
 --- a/pkgs/development/interpreters/php/5.3.nix
 +++ b/pkgs/development/interpreters/php/5.3.nix
 @@ -2,6 +2,7 @@
@@ -174,9 +174,9 @@ index 21cc14c..f53b5c6 100644
 +      mlrpc = {
 +        configureFlags = ["--with-xmlrpc=shared"];
        };
-     };
  
-@@ -182,28 +242,41 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+       fpm = {
+@@ -186,29 +246,42 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
      apxs2Support = sapi == "apxs2";
      fpmSupport = sapi == "fpm";
      bcmathSupport = config.php.bcmath or true;
@@ -186,6 +186,7 @@ index 21cc14c..f53b5c6 100644
      curlSupport = config.php.curl or true;
      exifSupport = config.php.exif or true;
      ftpSupport = config.php.ftp or true;
+     fpmSupport = config.php.fpm or false;
      gdSupport = config.php.gd or true;
 +    gdbmSupport = config.php.gdbm or false;
      gettextSupport = config.php.gettext or true;
@@ -221,7 +222,7 @@ index 21cc14c..f53b5c6 100644
      zipSupport = config.php.zip or true;
      zlibSupport = config.php.zlib or true;
    };
-@@ -211,7 +284,9 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+@@ -216,7 +289,9 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
    configurePhase = ''
      iniFile=$out/etc/php-recommended.ini
      [[ -z "$libxml2" ]] || export PATH=$PATH:$libxml2/bin
