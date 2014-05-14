@@ -10,7 +10,6 @@ vmailmgr.patch
 libowfat.patch
 minit.patch
 djbdns.patch
-php53-fpm.patch
 diet-qmail.patch
 ipsvd.patch
 ucspi-ssl.patch
