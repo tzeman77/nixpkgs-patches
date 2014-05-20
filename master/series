@@ -26,7 +26,6 @@ qmail-systemd.patch
 pure-ftpd.patch
 pdns.patch
 pure-ftpd-systemd.patch
-php53-fpm-systemd.patch
 firehol.patch
 firehol-systemd.patch
 clamd-systemd.patch
@@ -40,3 +39,4 @@ socklog.patch
 runit.patch
 qmail-autoresponder.patch
 dia-fix-crash-due-to-new-glib.patch
+php53-fpm-systemd.patch
