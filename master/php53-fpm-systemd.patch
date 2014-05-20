@@ -1,10 +1,10 @@
 php53-fpm service
 
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index cdd6c4b..d5a7262 100644
+index 3215f75..3277266 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -242,6 +242,7 @@
+@@ -266,6 +266,7 @@
    ./services/web-servers/lighttpd/cgit.nix
    ./services/web-servers/lighttpd/gitweb.nix
    ./services/web-servers/nginx/default.nix
@@ -14,7 +14,7 @@ index cdd6c4b..d5a7262 100644
    ./services/web-servers/varnish/default.nix
 diff --git a/nixos/modules/services/web-servers/php53-fpm.nix b/nixos/modules/services/web-servers/php53-fpm.nix
 new file mode 100644
-index 0000000..a82a31a
+index 0000000..19feedf
 --- /dev/null
 +++ b/nixos/modules/services/web-servers/php53-fpm.nix
 @@ -0,0 +1,76 @@
@@ -25,7 +25,7 @@ index 0000000..a82a31a
 +let
 +
 +  cfg = config.services.php53-fpm;
-+  pkg = pkgs.php53-fpm;
++  pkg = pkgs.php_fpm53;
 +  valOpt = p : name : if ! isNull p then " --${name} ${toString p}" else "";
 +
 +in
