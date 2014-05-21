@@ -1,2 +1,17 @@
 php-apc for php_fpm53
 
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 1258c2c..edfd3b7 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -3447,6 +3447,10 @@ let
+ 
+   php_apc = callPackage ../development/libraries/php-apc { };
+ 
++  php_fpm53_apc = callPackage ../development/libraries/php-apc {
++    php = php_fpm53;
++  };
++
+   php_xcache = callPackage ../development/libraries/php-xcache { };
+ 
+   phpXdebug_5_3 = lowPrio (callPackage ../development/interpreters/php-xdebug {
