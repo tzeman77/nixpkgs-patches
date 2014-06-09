@@ -1,2 +1,45 @@
 notion window manager
 
+diff --git a/pkgs/applications/window-managers/notion/default.nix b/pkgs/applications/window-managers/notion/default.nix
+new file mode 100644
+index 0000000..8cfd205
+--- /dev/null
++++ b/pkgs/applications/window-managers/notion/default.nix
+@@ -0,0 +1,22 @@
++{ stdenv, fetchurl, x11, lua, gettext, groff, pkgconfig, which, libXinerama, libXrandr }:
++
++let
++  pkg = "notion";
++  ver = "3-2014052800";
++  web = http://notion.sourceforge.net;
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++  meta = {
++    description = "Tiling, tabbed window manager for the X window system";
++    homepage = web;
++  };
++  src = fetchurl {
++    url = "mirror://sourceforge/project/${pkg}/${name}-src.tar.gz";
++    sha256 = "0c270k3bx41w63xnvd231gks1446qmw355qn5b7y5hf801ifqc64";
++  };
++  buildInputs = [ x11 lua gettext groff pkgconfig which libXinerama libXrandr];
++  buildFlags = "LUA_DIR=${lua} X11_PREFIX=/no-such-path PREFIX=\${out}";
++  installFlags = "PREFIX=\${out}";
++}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index edfd3b7..7ab44b0 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -8957,6 +8957,10 @@ let
+   netsurfBrowser = netsurf.browser;
+   netsurf = recurseIntoAttrs (import ../applications/networking/browsers/netsurf { inherit pkgs; });
+ 
++  notion = callPackage ../applications/window-managers/notion {
++    lua = lua5;
++  };
++
+   notmuch = callPackage ../applications/networking/mailreaders/notmuch {
+     # use emacsPackages.notmuch if you want emacs support
+     emacs = null;
