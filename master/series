@@ -42,3 +42,4 @@ dia-fix-crash-due-to-new-glib.patch
 php53-fpm-systemd.patch
 php53-apc.patch
 notion.patch
+dnscache-logging.patch
