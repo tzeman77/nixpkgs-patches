@@ -1,2 +1,78 @@
 dnscache service: separate logging
 
+diff --git a/nixos/modules/services/networking/dnscache.nix b/nixos/modules/services/networking/dnscache.nix
+index 3f9443c..19d5d41 100644
+--- a/nixos/modules/services/networking/dnscache.nix
++++ b/nixos/modules/services/networking/dnscache.nix
+@@ -62,6 +62,22 @@ in
+         default = [];
+         description = "List of root servers IP addresses. Uses dnsroots.global if empty";
+       };
++
++      logDir = mkOption {
++        default = "/var/log/dns/cache";
++        description = "dnscache log dir";
++      };
++
++      logSize = mkOption {
++        default = 1048576;
++        description = "dnscache log file size, see `s' parameter of multilog(8)";
++      };
++
++      logNum = mkOption {
++        default = 10;
++        description = "dnscache log file number, see `n' parameter of multilog(8)";
++      };
++
+     };
+ 
+   };
+@@ -117,18 +133,46 @@ in
+         rs=${cfg.root}/servers/@
+         [ -f $rs ] && ${pkgs.diffutils}/bin/cmp -s /etc/dnscache-root-servers $rs || cp /etc/dnscache-root-servers $rs
+         [ -f /run/dnscache-seed ] || dd if=/dev/urandom of=/run/dnscache-seed bs=512 count=1
++        if [ ! -p ${cfg.root}/.out ]; then
++          mkfifo -m640 ${cfg.root}/.out
++          chown dnscache:dnslog ${cfg.root}/.out
++        fi
+       '';
+ 
+       serviceConfig = {
+         ExecStart =
+-          "${pkgs.bash}/bin/sh -c 'exec </run/dnscache-seed; exec " +
+-          "${dtools}/bin/envuidgid dnscache ${dtools}/bin/softlimit -o 250 " +
++          "${pkgs.bash}/bin/sh -c 'exec </run/dnscache-seed; " +
++          "exec 1> ${cfg.root}/.out; " +
++          "exec 2>&1; " +
++          "exec ${dtools}/bin/envuidgid dnscache " +
++          "${dtools}/bin/softlimit -o 250 " +
+           "-d ${toString cfg.dataLimit} ${pkg}/bin/dnscache" +
+           "'";
+         Restart = "always";
+         Type = "simple";
+       };
+     };
++
++    systemd.services.dnscache-log = {
++      description = "DNS cache logging service";
++      wantedBy = [ "multi-user.target" ];
++      after = [ "network.target" ];
++
++      preStart = ''
++        mkdir -p ${cfg.logDir}
++        chown -R dnslog:dnslog ${cfg.logDir}
++      '';
++
++      serviceConfig = {
++        ExecStart =
++          "${pkgs.bash}/bin/sh -c 'exec <${cfg.root}/.out; " +
++          "exec ${dtools}/bin/setuidgid dnslog " +
++          "${dtools}/bin/multilog t n${toString cfg.logNum} s${toString cfg.logSize} ${cfg.logDir} " +
++          "'";
++        Restart = "always";
++        Type = "simple";
++      };
++    };
+   };
+ 
+ }
