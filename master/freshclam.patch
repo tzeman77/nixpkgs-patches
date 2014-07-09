@@ -1,10 +1,10 @@
 clamav: fix for respawning freshclam
 
 diff --git a/nixos/modules/services/security/clamav.nix b/nixos/modules/services/security/clamav.nix
-index 5ccb492..7246bdf 100644
+index 057891a..cecb620 100644
 --- a/nixos/modules/services/security/clamav.nix
 +++ b/nixos/modules/services/security/clamav.nix
-@@ -55,26 +55,22 @@ in
+@@ -55,26 +55,29 @@ in
        };
  
      services.clamav.updater.config = ''
@@ -29,6 +29,12 @@ index 5ccb492..7246bdf 100644
 -          '';
 -          exec = "${pkgs.clamav}/bin/freshclam --config-file=${pkgs.writeText "freshclam.conf" cfg.updater.config}";
 -      }; 
+-    };
++      preStart = ''
++        mkdir -m 0755 -p ${stateDir}
++        chown ${clamavUser}:${clamavGroup} ${stateDir}
++      '';
+ 
 +      serviceConfig = {
 +        ExecStart = ''
 +          ${pkgs.clamav}/bin/freshclam -d --datadir=${stateDir} -c ${toString cfg.updater.frequency} \
@@ -37,10 +43,11 @@ index 5ccb492..7246bdf 100644
 +        Restart = "always";
 +        Type = "forking";
 +      };
-     };
--
++    };
    };
  
 -}
 \ No newline at end of file
 +}
++
++# vim: et ts=2 sw=2 
