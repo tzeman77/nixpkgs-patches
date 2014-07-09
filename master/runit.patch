@@ -21,7 +21,7 @@ index 0000000..c438aa4
 + 	./choose cl trywaitp haswaitp.h1 haswaitp.h2 > haswaitp.h
 diff --git a/pkgs/tools/system/runit/default.nix b/pkgs/tools/system/runit/default.nix
 new file mode 100644
-index 0000000..119a7f7
+index 0000000..b738c4a
 --- /dev/null
 +++ b/pkgs/tools/system/runit/default.nix
 @@ -0,0 +1,53 @@
@@ -30,12 +30,12 @@ index 0000000..119a7f7
 +let
 +  pkg = "runit";
 +  ver = "2.1.1";
-+  web = http://smarden.org/runit/;
++  web = http://smarden.org/runit;
 +in stdenv.mkDerivation rec {
 +  name = "${pkg}-${ver}";
 +
 +  src = fetchurl {
-+    url = "${web}/${pkg}/${pkg}-${ver}.tar.gz";
++    url = "${web}/${pkg}-${ver}.tar.gz";
 +    sha256 = "0b1arw3jqixwzfvl482sd11963dq7qm7gc6ly8aaqn9gnckjvkzz";
 +  };
 +
@@ -79,10 +79,10 @@ index 0000000..119a7f7
 +
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 5e06260..12e43ed 100644
+index b24566e..c208af5 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -1893,6 +1893,8 @@ let
+@@ -1915,6 +1915,8 @@ let
  
    rubber = callPackage ../tools/typesetting/rubber { };
  
