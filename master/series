@@ -45,3 +45,4 @@ notion.patch
 dnscache-logging.patch
 dnsserver-logging.patch
 axfrdns-logging.patch
+qmail-logging.patch
