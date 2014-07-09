@@ -31,7 +31,7 @@ index 0000000..476b85c
 +   return argc-1;
 diff --git a/pkgs/tools/networking/vmailmgr/default.nix b/pkgs/tools/networking/vmailmgr/default.nix
 new file mode 100644
-index 0000000..9b5fb84
+index 0000000..5e12457
 --- /dev/null
 +++ b/pkgs/tools/networking/vmailmgr/default.nix
 @@ -0,0 +1,29 @@
@@ -40,13 +40,13 @@ index 0000000..9b5fb84
 +let
 +  pkg = "vmailmgr";
 +  ver = "0.97";
-+  homepage = http://www.vmailmgr.org;
++  homepage = http://untroubled.org/vmailmgr;
 +in stdenv.mkDerivation rec {
 +  name = "${pkg}-${ver}";
 +
 +  src = fetchurl {
-+    url = "${homepage}/archive/${pkg}-${ver}.tar.gz";
-+    sha256 = "1ac9c85dqb1qxpbmcg8gmqpb8pvf5nxah9fd8icajqi06ipyl8hy";
++    url = "${homepage}/current/${pkg}-${ver}.tar.gz";
++    sha256 = "1hlrqcs5ddynh8v43sj4p6ri3gsyxqy45s0jr5sbz4crn8yqfrk2";
 +  };
 +
 +  patches = [ ./checkvpw.patch ]; # compile (strcasestr redefined)
