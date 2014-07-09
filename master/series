@@ -43,3 +43,4 @@ php53-fpm-systemd.patch
 php53-apc.patch
 notion.patch
 dnscache-logging.patch
+dnsserver-logging.patch
