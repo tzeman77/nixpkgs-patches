@@ -21,7 +21,7 @@ index 0000000..6f79c18
 + 	./choose cl trywaitp haswaitp.h1 haswaitp.h2 > haswaitp.h
 diff --git a/pkgs/tools/system/socklog/default.nix b/pkgs/tools/system/socklog/default.nix
 new file mode 100644
-index 0000000..abe36c1
+index 0000000..d4a7ed2
 --- /dev/null
 +++ b/pkgs/tools/system/socklog/default.nix
 @@ -0,0 +1,54 @@
@@ -30,12 +30,12 @@ index 0000000..abe36c1
 +let
 +  pkg = "socklog";
 +  ver = "2.1.0";
-+  web = http://smarden.org/socklog/;
++  web = http://smarden.org/socklog;
 +in stdenv.mkDerivation rec {
 +  name = "${pkg}-${ver}";
 +
 +  src = fetchurl {
-+    url = "${web}/${pkg}/${pkg}-${ver}.tar.gz";
++    url = "${web}/${pkg}-${ver}.tar.gz";
 +    sha256 = "0mdlmhiq2j2fip7c4l669ams85yc3c1s1d89am7dl170grw9m1ma";
 +  };
 +
@@ -80,10 +80,10 @@ index 0000000..abe36c1
 +
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 2f1f364..5e06260 100644
+index 588c70b..b24566e 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -1972,6 +1972,8 @@ let
+@@ -1994,6 +1994,8 @@ let
      inherit (pkgsi686Linux.xlibs) libX11;
    };
  
