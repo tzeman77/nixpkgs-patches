@@ -1,23 +1,23 @@
 firehol service
 
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index 96fe4bb..1cfa1d7 100644
+index 237383c..6877a35 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -156,6 +156,7 @@
+@@ -187,6 +187,7 @@
    ./services/networking/dnscache.nix
    ./services/networking/dnsmasq.nix
    ./services/networking/ejabberd.nix
 +  ./services/networking/firehol.nix
    ./services/networking/firewall.nix
+   ./services/networking/haproxy.nix
    ./services/networking/tcpcrypt.nix
-   ./services/networking/flashpolicyd.nix
 diff --git a/nixos/modules/services/networking/firehol.nix b/nixos/modules/services/networking/firehol.nix
 new file mode 100644
-index 0000000..90d34d0
+index 0000000..d39872b
 --- /dev/null
 +++ b/nixos/modules/services/networking/firehol.nix
-@@ -0,0 +1,71 @@
+@@ -0,0 +1,73 @@
 +{ config, pkgs, ... }:
 +
 +with pkgs.lib;
@@ -70,6 +70,8 @@ index 0000000..90d34d0
 +      after = [ "network-interfaces.target" ];
 +      path = with pkgs; [ gnugrep findutils gawk gnused procps gzip iproute
 +        which iptables kmod utillinux ];
++
++      preStart = "mkdir -p /var/spool";
 +
 +      serviceConfig = {
 +        Type = "oneshot";

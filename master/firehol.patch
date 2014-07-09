@@ -2,7 +2,7 @@ firehol-1.296: iptables stateful packet filtering firewall builder
 
 diff --git a/pkgs/tools/security/firehol/default.nix b/pkgs/tools/security/firehol/default.nix
 new file mode 100644
-index 0000000..8305af8
+index 0000000..30abcaa
 --- /dev/null
 +++ b/pkgs/tools/security/firehol/default.nix
 @@ -0,0 +1,47 @@
@@ -17,7 +17,7 @@ index 0000000..8305af8
 +  name = "${pkg}-${ver}";
 +
 +  src = fetchurl {
-+    url = "${web}/download/latest/${pkg}-${ver}.tar.gz";
++    url = "${web}/download/releases/${ver}/${pkg}-${ver}.tar.gz";
 +    sha256 = "1f2bgbwp0smhij29y3rgsfgn1mk3949va05acg1c6kzy3hw9gwwk";
 +  };
 +
@@ -54,12 +54,12 @@ index 0000000..8305af8
 +
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 9f79e62..9dc59d6 100644
+index 9db636f..588c70b 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -886,6 +886,8 @@ let
- 
-   fio = callPackage ../tools/system/fio { };
+@@ -987,6 +987,8 @@ let
+     platformTools = androidenv.platformTools;
+   };
  
 +  firehol = callPackage ../tools/security/firehol { };
 +
