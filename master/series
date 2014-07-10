@@ -18,7 +18,6 @@ ucspi-ipc.patch
 mess822.patch
 qmail-isoc.patch
 ccollect.patch
-minit-module.patch
 dnscache-systemd.patch
 dnsserver-systemd.patch
 axfrdns-systemd.patch
@@ -34,7 +33,6 @@ php53-mysql55.patch
 freshclam.patch
 nginx-wrapper.patch
 zabbix20-mysql.patch
-minit-path.patch
 socklog.patch
 runit.patch
 qmail-autoresponder.patch

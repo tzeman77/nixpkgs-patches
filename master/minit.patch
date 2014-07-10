@@ -1,5 +1,97 @@
 minit-0.10: a small yet feature-complete init
 
+
+Header from folded patch 'minit-module.patch':
+
+minit module/service unit
+
+
+Header from folded patch 'minit-path.patch':
+
+minit: fix PATH
+
+diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
+index f98b621..a204222 100644
+--- a/nixos/modules/module-list.nix
++++ b/nixos/modules/module-list.nix
+@@ -244,6 +244,7 @@
+   ./services/security/torsocks.nix
+   ./services/system/dbus.nix
+   ./services/system/kerberos.nix
++  ./services/system/minit.nix
+   ./services/system/nscd.nix
+   ./services/system/uptimed.nix
+   ./services/torrent/deluge.nix
+diff --git a/nixos/modules/services/system/minit.nix b/nixos/modules/services/system/minit.nix
+new file mode 100644
+index 0000000..f17750b
+--- /dev/null
++++ b/nixos/modules/services/system/minit.nix
+@@ -0,0 +1,64 @@
++{ config, pkgs, ... }:
++
++with pkgs.lib;
++
++let
++
++  cfg = config.services.minit;
++
++in
++
++{
++
++  ###### interface
++
++  options = {
++
++    services.minit = {
++
++      enable = mkOption {
++        default = false;
++        description = "Whether to enable minit service.";
++      };
++
++    };
++
++  };
++
++
++  ###### implementation
++
++  config = mkIf config.services.minit.enable {
++
++    environment.systemPackages = [ pkgs.minit ];
++
++    systemd.services.minit =
++      { description = "Minit service";
++
++        path = [
++          "/run/current-system/sw"
++        ];
++
++        wantedBy = [ "multi-user.target" ];
++        after = [ "network.target" ];
++
++        preStart =
++          ''
++            dir=/etc/minit
++            mkdir -p $dir
++            for i in 'in' 'out'; do
++              [ -p $dir/$i ] || mkfifo -m 600 $dir/$i
++            done
++          '';
++
++        serviceConfig = {
++          Type = "simple";
++          ExecStart = "${pkgs.minit}/sbin/minit";
++        };
++      };
++
++  };
++
++}
++
++# vim: et ts=2 sw=2
 diff --git a/pkgs/os-specific/linux/minit/default.nix b/pkgs/os-specific/linux/minit/default.nix
 new file mode 100644
 index 0000000..dcb75ee
@@ -57,10 +149,10 @@ index 0000000..dcb75ee
 +# vim: et ts=2 sw=2 
 +
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 0fffc06..8a60647 100644
+index 82ed2ce..bb6de4c 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -6732,6 +6732,8 @@ let
+@@ -7250,6 +7250,8 @@ let
  
    mingetty = callPackage ../os-specific/linux/mingetty { };
  
@@ -68,4 +160,4 @@ index 0fffc06..8a60647 100644
 +
    module_init_tools = callPackage ../os-specific/linux/module-init-tools { };
  
-   mountall = callPackage ../os-specific/linux/mountall { };
+   aggregateModules = modules:
