@@ -45,3 +45,4 @@ dnsserver-logging.patch
 axfrdns-logging.patch
 qmail-logging.patch
 wvstreams-magic.patch
+usb-modeswitch.patch
