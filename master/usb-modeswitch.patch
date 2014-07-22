@@ -2,19 +2,35 @@ usb-modeswitch-2.2.0
 
 diff --git a/pkgs/development/tools/misc/usb-modeswitch/2.2.nix b/pkgs/development/tools/misc/usb-modeswitch/2.2.nix
 new file mode 100644
-index 0000000..48a823c
+index 0000000..2f9178b
 --- /dev/null
 +++ b/pkgs/development/tools/misc/usb-modeswitch/2.2.nix
-@@ -0,0 +1,26 @@
-+{ stdenv, fetchurl, libusb }:
+@@ -0,0 +1,53 @@
++{ stdenv, fetchurl, libusb1, pkgconfig }:
 +
-+stdenv.mkDerivation {
-+  name = "usb-modeswitch-1.1.2";
++let
++  pkg = "usb-modeswitch";
++  ver = "2.2.0";
++  data_ver = "20140529";
++  web = http://www.draisberghof.de/usb_modeswitch;
++in stdenv.mkDerivation {
++  name = "${pkg}-${ver}";
 +
-+  src =fetchurl {
-+    url = "http://www.draisberghof.de/usb_modeswitch/usb-modeswitch-1.1.2.tar.bz2";
-+    sha256 = "1wzhd0r49nh5y43qrvsi3c7a29206zwd6v8xlpb8dqm40xg3j9nz";
-+  };
++  # http://www.draisberghof.de/usb_modeswitch/usb-modeswitch-2.2.0.tar.bz2
++  # http://www.draisberghof.de/usb_modeswitch/usb-modeswitch-data-20140529.tar.bz2
++
++  srcs = [
++    (fetchurl {
++      url = "${web}/${pkg}-${ver}.tar.bz2";
++      sha256 = "0flaj3mq0xhzk72kkpclwglf77kcw5rkwvkaimn5zvbiw4yi0li7";
++    })
++    (fetchurl {
++      url = "${web}/${pkg}-data-${data_ver}.tar.bz2";
++      sha256 = "0dp5hyjsjyj1r1pgr0qcki7z9wwlxjcc15z8mx6y02bijdbr322k";
++    })
++  ];
++
++  sourceRoot = "${pkg}-${ver}";
 +
 +  # make clean: we always build from source. It should be necessary on x86_64 only
 +  preConfigure = ''
@@ -24,11 +40,35 @@ index 0000000..48a823c
 +    makeFlags="DESTDIR=$out PREFIX=$out"
 +  '';
 +
-+  buildInputs = [ libusb ];
++  postInstall = ''
++    cd $NIX_BUILD_TOP/${pkg}-data-*
++    make install DESTDIR=$out
++  '';
++
++  buildInputs = [ libusb1 pkgconfig ];
++  buildFlags = "static";
++  installTargets = "install-static";
 +
 +  meta = {
++    description = "Mode switching tool for controlling 'multi-mode' USB devices";
++    homepage = http://www.draisberghof.de/usb_modeswitch;
 +    license = "GPLv2";
 +    maintainers = [ stdenv.lib.maintainers.marcweber ];
 +    platforms = stdenv.lib.platforms.linux;
 +  };
 +}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 2081691..a67c20f 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -762,6 +762,8 @@ let
+ 
+   usb_modeswitch = callPackage ../development/tools/misc/usb-modeswitch { };
+ 
++  usb_modeswitch22 = callPackage ../development/tools/misc/usb-modeswitch/2.2.nix { };
++
+   biosdevname = callPackage ../tools/networking/biosdevname { };
+ 
+   clamav = callPackage ../tools/security/clamav { };
