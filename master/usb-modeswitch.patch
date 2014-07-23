@@ -2,10 +2,10 @@ usb-modeswitch-2.2.0
 
 diff --git a/pkgs/development/tools/misc/usb-modeswitch/2.2.nix b/pkgs/development/tools/misc/usb-modeswitch/2.2.nix
 new file mode 100644
-index 0000000..a8022d1
+index 0000000..2a696ba
 --- /dev/null
 +++ b/pkgs/development/tools/misc/usb-modeswitch/2.2.nix
-@@ -0,0 +1,54 @@
+@@ -0,0 +1,55 @@
 +{ stdenv, fetchurl, libusb1, pkgconfig }:
 +
 +let
@@ -43,6 +43,7 @@ index 0000000..a8022d1
 +  postInstall = ''
 +    cd $NIX_BUILD_TOP/${pkg}-data-*
 +    sed -i -e "s|RUN+=\"usb_modeswitch|RUN+=\"$out/lib/udev/usb_modeswitch|" 40-usb_modeswitch.rules
++    sed -i -e "s|PROGRAM=\"usb_modeswitch|PROGRAM=\"$out/lib/udev/usb_modeswitch|" 40-usb_modeswitch.rules
 +    make install DESTDIR=$out
 +  '';
 +
@@ -61,7 +62,7 @@ index 0000000..a8022d1
 +
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 2081691..a67c20f 100644
+index f062b81..9353d9a 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
 @@ -762,6 +762,8 @@ let
