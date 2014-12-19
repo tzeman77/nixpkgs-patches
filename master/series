@@ -38,6 +38,7 @@ socklog.patch
 diet-runit.patch
 qmail-autoresponder.patch
 php53-fpm-systemd.patch
+php-apc-restored.patch
 php53-apc.patch
 notion.patch
 dnscache-logging.patch
