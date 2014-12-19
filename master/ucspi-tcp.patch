@@ -1,13 +1,13 @@
 From: Tomas Zeman <tzeman@volny.cz>
 Subject: [PATCH] tg/ucspi-tcp
 
-ucspi-tcp-0.88
+ucspi-tcp-0.88: compiled w/ dietlibc
 
-diff --git a/pkgs/tools/networking/ucspi-tcp/compile.patch b/pkgs/tools/networking/ucspi-tcp/compile.patch
+diff --git a/pkgs/tools/networking/ucspi-tcp/diet-compile.patch b/pkgs/tools/networking/ucspi-tcp/diet-compile.patch
 new file mode 100644
 index 0000000..f2bbb2c
 --- /dev/null
-+++ b/pkgs/tools/networking/ucspi-tcp/compile.patch
++++ b/pkgs/tools/networking/ucspi-tcp/diet-compile.patch
 @@ -0,0 +1,13 @@
 +diff -ru ucspi-tcp-0.88.orig/Makefile ucspi-tcp-0.88/Makefile
 +--- ucspi-tcp-0.88.orig/Makefile	2000-03-18 16:18:42.000000000 +0100
@@ -22,19 +22,20 @@ index 0000000..f2bbb2c
 + 
 + haswaitp.h: \
 + choose compile load trywaitp.c haswaitp.h1 haswaitp.h2
-diff --git a/pkgs/tools/networking/ucspi-tcp/default.nix b/pkgs/tools/networking/ucspi-tcp/default.nix
+diff --git a/pkgs/tools/networking/ucspi-tcp/diet.nix b/pkgs/tools/networking/ucspi-tcp/diet.nix
 new file mode 100644
-index 0000000..ea18234
+index 0000000..e1036ed
 --- /dev/null
-+++ b/pkgs/tools/networking/ucspi-tcp/default.nix
-@@ -0,0 +1,63 @@
++++ b/pkgs/tools/networking/ucspi-tcp/diet.nix
+@@ -0,0 +1,64 @@
 +{ stdenv, fetchurl, dietlibc }:
 +
 +let
++  brand = "diet";
 +  pkg = "ucspi-tcp";
 +  ver = "0.88";
 +in stdenv.mkDerivation rec {
-+  name = "${pkg}-${ver}";
++  name = "${brand}-${pkg}-${ver}";
 +
 +  srcs = [
 +    (fetchurl {
@@ -55,7 +56,7 @@ index 0000000..ea18234
 +
 +  patches = [
 +    # Avoid need to have secondary groups for compilation
-+    ./compile.patch
++    ./diet-compile.patch
 +    # IPv6 support
 +    ipv6patch
 +  ];
@@ -92,14 +93,14 @@ index 0000000..ea18234
 +
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 74623b9..dcaaa39 100644
+index a76408d..ba3e5c6 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -1816,6 +1816,8 @@ let
+@@ -2575,6 +2575,8 @@ let
  
-   ucl = callPackage ../development/libraries/ucl { };
+   ucspi-tcp = callPackage ../tools/networking/ucspi-tcp { };
  
-+  ucspi-tcp = callPackage ../tools/networking/ucspi-tcp { };
++  diet-ucspi-tcp = callPackage ../tools/networking/ucspi-tcp/diet.nix { };
 +
    udftools = callPackage ../tools/filesystems/udftools {};
  
