@@ -1,15 +1,15 @@
 clamd service
 
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index 4d01179..f017730 100644
+index 225da6d..8fc0ef5 100755
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -208,6 +208,7 @@
-   ./services/scheduling/fcron.nix
+@@ -309,6 +309,7 @@
    ./services/search/elasticsearch.nix
+   ./services/search/solr.nix
    ./services/security/clamav.nix
 +  ./services/security/clamd.nix
-   ./services/security/haveged.nix
+   ./services/security/fail2ban.nix
    ./services/security/fprot.nix
    ./services/security/frandom.nix
 diff --git a/nixos/modules/services/security/clamd.nix b/nixos/modules/services/security/clamd.nix
