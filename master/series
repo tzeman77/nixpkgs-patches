@@ -1,6 +1,6 @@
 maintainer-tzeman.patch
 dietlibc-update.patch
-ucspi-tcp.patch
+diet-ucspi-tcp.patch
 daemontools.patch
 bglibs.patch
 cvm.patch
