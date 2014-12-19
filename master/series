@@ -37,7 +37,6 @@ zabbix20-mysql.patch
 socklog.patch
 diet-runit.patch
 qmail-autoresponder.patch
-dia-fix-crash-due-to-new-glib.patch
 php53-fpm-systemd.patch
 php53-apc.patch
 notion.patch
