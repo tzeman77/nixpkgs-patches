@@ -28,6 +28,7 @@ pure-ftpd-systemd.patch
 firehol.patch
 firehol-systemd.patch
 clamd-systemd.patch
+php53-restore.patch
 php53-shared-extensions.patch
 php53-mysql55.patch
 freshclam.patch
