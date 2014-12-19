@@ -48,15 +48,15 @@ index 0000000..cd33d45
 +
 +
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index cbe67cd..5fbbabe 100644
+index cbe67cd..b5ca7b3 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -8474,6 +8474,8 @@ let
+@@ -10076,6 +10076,8 @@ let
  
-   libnotify = callPackage ../development/libraries/libnotify { };
+   libowfat = callPackage ../development/libraries/libowfat { };
  
 +  diet-libowfat = callPackage ../development/libraries/libowfat/diet.nix { };
 +
-   libvolume_id = callPackage ../os-specific/linux/libvolume_id { };
+   librecad = callPackage ../applications/misc/librecad { };
  
-   lsscsi = callPackage ../os-specific/linux/lsscsi { };
+   librecad2 = callPackage ../applications/misc/librecad/2.0.nix { };
