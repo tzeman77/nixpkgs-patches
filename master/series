@@ -7,7 +7,7 @@ cvm.patch
 mailfront.patch
 bincimap.patch
 vmailmgr.patch
-libowfat.patch
+diet-libowfat.patch
 minit.patch
 djbdns.patch
 diet-qmail.patch
