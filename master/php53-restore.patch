@@ -1,5 +1,7 @@
 PHP 5.3 restored
 
+Reverted commit 0bbe7231910b1185f5b65bb6179e34cf3329ea3e
+
 diff --git a/pkgs/development/interpreters/php/5.3-freetype-dirs.patch b/pkgs/development/interpreters/php/5.3-freetype-dirs.patch
 new file mode 100644
 index 0000000..3b78f9b
