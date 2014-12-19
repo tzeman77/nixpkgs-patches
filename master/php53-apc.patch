@@ -1,10 +1,10 @@
 php-apc for php_fpm53
 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 1258c2c..edfd3b7 100644
+index 040769a..392de7e 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -3447,6 +3447,10 @@ let
+@@ -4107,6 +4107,10 @@ let
  
    php_apc = callPackage ../development/libraries/php-apc { };
  
@@ -12,6 +12,6 @@ index 1258c2c..edfd3b7 100644
 +    php = php_fpm53;
 +  };
 +
-   php_xcache = callPackage ../development/libraries/php-xcache { };
+   picolisp = callPackage ../development/interpreters/picolisp {};
  
-   phpXdebug_5_3 = lowPrio (callPackage ../development/interpreters/php-xdebug {
+   pltScheme = racket; # just to be sure
