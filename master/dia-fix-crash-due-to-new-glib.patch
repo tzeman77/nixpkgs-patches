@@ -1,16 +1,15 @@
 dia: Bug 694025 - GLib drop support for adding interfaces after class_init
 
 diff --git a/pkgs/applications/graphics/dia/default.nix b/pkgs/applications/graphics/dia/default.nix
-index ab421ce..9b728de 100644
+index e498533..ba2a0a1 100644
 --- a/pkgs/applications/graphics/dia/default.nix
 +++ b/pkgs/applications/graphics/dia/default.nix
-@@ -20,7 +20,10 @@ stdenv.mkDerivation rec {
+@@ -25,7 +25,9 @@ stdenv.mkDerivation rec {
  
    configureFlags = stdenv.lib.optionalString withGNOME "--enable-gnome";
  
--  patches = [ ./glib-top-level-header.patch ];
+-  patches = [ ];
 +  patches = [
-+    ./glib-top-level-header.patch
 +    ./fix-crash-due-to-new-glib.patch
 +  ];
  
