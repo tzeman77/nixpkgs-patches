@@ -48,3 +48,4 @@ qmail-logging.patch
 wvstreams-magic.patch
 usb-modeswitch.patch
 zabbix18-mysql.patch
+php53-url.patch
