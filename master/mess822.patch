@@ -54,15 +54,15 @@ index 0000000..aba6605
 +
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 18cbf55..7ec6120 100644
+index 162f3b0..54cc492 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -1245,6 +1245,8 @@ let
+@@ -1751,6 +1751,8 @@ let
  
-   megatools = callPackage ../tools/networking/megatools { };
+   mfoc = callPackage ../tools/security/mfoc { };
  
 +  mess822 = callPackage ../tools/networking/mess822 { };
 +
-   minecraft = callPackage ../games/minecraft { };
- 
-   minetest = callPackage ../games/minetest {
+   minecraft = callPackage ../games/minecraft {
+     pulseaudioSupport = config.pulseaudio or true;
+     pulseaudio = pulseaudio.override { ossWrapper = true; };

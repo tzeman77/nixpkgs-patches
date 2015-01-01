@@ -6,7 +6,7 @@ Header from folded patch 'php53-mcrypt-enable.patch':
 php53: mcrypt enable
 
 diff --git a/pkgs/development/interpreters/php/5.3.nix b/pkgs/development/interpreters/php/5.3.nix
-index 95120a4..9dd597e 100644
+index 4de87f2..af9bbf7 100644
 --- a/pkgs/development/interpreters/php/5.3.nix
 +++ b/pkgs/development/interpreters/php/5.3.nix
 @@ -2,6 +2,7 @@
@@ -85,10 +85,10 @@ index 95120a4..9dd597e 100644
          configureFlags = [
 -          "--with-gd=${gd}"
 +          "--with-gd=shared,${gd}"
-           "--with-freetype-dir=${freetype}"
            "--with-png-dir=${libpng}"
            "--with-jpeg-dir=${libjpeg}"
-@@ -112,7 +132,7 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+         ];
+@@ -111,7 +131,7 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
        };
  
        soap = {
@@ -97,7 +97,7 @@ index 95120a4..9dd597e 100644
        };
  
        sockets = {
-@@ -134,7 +154,7 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+@@ -133,7 +153,7 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
        };
  
        imap = {
@@ -106,7 +106,7 @@ index 95120a4..9dd597e 100644
            # uwimap builds with kerberos on darwin
            ++ stdenv.lib.optional (stdenv.isDarwin) "--with-kerberos";
          buildInputs = [ uwimap openssl ]
-@@ -151,17 +171,17 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+@@ -150,17 +170,17 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
        };
  
        xsl = {
@@ -127,7 +127,7 @@ index 95120a4..9dd597e 100644
          buildInputs = [bzip2];
        };
  
-@@ -170,7 +190,47 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+@@ -169,7 +189,47 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
        };
  
        ftp = {
@@ -176,7 +176,7 @@ index 95120a4..9dd597e 100644
        };
  
        fpm = {
-@@ -181,29 +241,42 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+@@ -180,29 +240,42 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
    cfg = {
      apxs2Support = config.php.apxs2 or true;
      bcmathSupport = config.php.bcmath or true;
@@ -222,7 +222,7 @@ index 95120a4..9dd597e 100644
      zipSupport = config.php.zip or true;
      zlibSupport = config.php.zlib or true;
    };
-@@ -211,7 +284,9 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
+@@ -210,7 +283,9 @@ composableDerivation.composableDerivation {} ( fixed : let inherit (fixed.fixed)
    configurePhase = ''
      iniFile=$out/etc/php-recommended.ini
      [[ -z "$libxml2" ]] || export PATH=$PATH:$libxml2/bin

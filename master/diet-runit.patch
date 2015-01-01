@@ -1,10 +1,10 @@
 runit-2.1.1: init scheme with service supervision
 
-diff --git a/pkgs/tools/system/runit/compile.patch b/pkgs/tools/system/runit/compile.patch
+diff --git a/pkgs/tools/system/runit/diet-compile.patch b/pkgs/tools/system/runit/diet-compile.patch
 new file mode 100644
 index 0000000..c438aa4
 --- /dev/null
-+++ b/pkgs/tools/system/runit/compile.patch
++++ b/pkgs/tools/system/runit/diet-compile.patch
 @@ -0,0 +1,13 @@
 +diff -ru runit-2.1.1.orig/src/Makefile runit-2.1.1/src/Makefile
 +--- runit-2.1.1.orig/src/Makefile	2009-10-04 22:44:02.000000000 +0200
@@ -19,30 +19,31 @@ index 0000000..c438aa4
 + 
 + haswaitp.h: choose compile haswaitp.h1 haswaitp.h2 load trywaitp.c
 + 	./choose cl trywaitp haswaitp.h1 haswaitp.h2 > haswaitp.h
-diff --git a/pkgs/tools/system/runit/default.nix b/pkgs/tools/system/runit/default.nix
+diff --git a/pkgs/tools/system/runit/diet.nix b/pkgs/tools/system/runit/diet.nix
 new file mode 100644
-index 0000000..b738c4a
+index 0000000..2f682fd
 --- /dev/null
-+++ b/pkgs/tools/system/runit/default.nix
-@@ -0,0 +1,53 @@
++++ b/pkgs/tools/system/runit/diet.nix
+@@ -0,0 +1,54 @@
 +{ stdenv, fetchurl, dietlibc }:
 +
 +let
++  branch = "diet";
 +  pkg = "runit";
-+  ver = "2.1.1";
++  ver = "2.1.2";
 +  web = http://smarden.org/runit;
 +in stdenv.mkDerivation rec {
-+  name = "${pkg}-${ver}";
++  name = "${branch}-${pkg}-${ver}";
 +
 +  src = fetchurl {
 +    url = "${web}/${pkg}-${ver}.tar.gz";
-+    sha256 = "0b1arw3jqixwzfvl482sd11963dq7qm7gc6ly8aaqn9gnckjvkzz";
++    sha256 = "065s8w62r6chjjs6m9hapcagy33m75nlnxb69vg0f4ngn061dl3g";
 +  };
 +
 +  sourceRoot = "admin/${pkg}-${ver}";
 +
 +  patches = [
-+    ./compile.patch
++    ./diet-compile.patch
 +  ];
 +
 +  buildInputs = [dietlibc];
@@ -71,7 +72,7 @@ index 0000000..b738c4a
 +  meta = {
 +    description = "UNIX init scheme with service supervision";
 +    homepage = "${web}";
-+    license = stdenv.lib.licenses.bsd2;
++    license = stdenv.lib.licenses.bsd3;
 +    platforms = stdenv.lib.platforms.gnu;
 +    maintainers = with stdenv.lib.maintainers; [ tzeman ];
 +  };
@@ -79,15 +80,15 @@ index 0000000..b738c4a
 +
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index b24566e..c208af5 100644
+index e38928d..d4ca604 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -1915,6 +1915,8 @@ let
+@@ -12697,6 +12697,8 @@ let
  
-   rubber = callPackage ../tools/typesetting/rubber { };
+   runit = callPackage ../tools/system/runit { };
  
-+  runit = callPackage ../tools/system/runit { };
++  diet-runit = callPackage ../tools/system/runit/diet.nix { };
 +
-   rxp = callPackage ../tools/text/xml/rxp { };
+   xlockmore = callPackage ../misc/screensavers/xlockmore { };
  
-   rzip = callPackage ../tools/compression/rzip { };
+   sails = callPackage ../misc/sails { };

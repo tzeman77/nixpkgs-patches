@@ -1,17 +1,17 @@
 pure-ftpd service
 
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index 8eb686e..5061090 100644
+index 3dabfaf..3807bf6 100755
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -177,6 +177,7 @@
-   ./services/networking/openvpn.nix
+@@ -272,6 +272,7 @@
    ./services/networking/prayer.nix
    ./services/networking/privoxy.nix
+   ./services/networking/prosody.nix
 +  ./services/networking/pure-ftpd.nix
    ./services/networking/quassel.nix
+   ./services/networking/radicale.nix
    ./services/networking/radvd.nix
-   ./services/networking/rdnssd.nix
 diff --git a/nixos/modules/services/networking/pure-ftpd.nix b/nixos/modules/services/networking/pure-ftpd.nix
 new file mode 100644
 index 0000000..9ec4e31

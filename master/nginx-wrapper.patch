@@ -1,13 +1,13 @@
 nginx exec script wrapped
 
 diff --git a/nixos/modules/services/web-servers/nginx/default.nix b/nixos/modules/services/web-servers/nginx/default.nix
-index 1a39fe4..ba5b00c 100644
+index 7c2d3a4..1a01d5e 100644
 --- a/nixos/modules/services/web-servers/nginx/default.nix
 +++ b/nixos/modules/services/web-servers/nginx/default.nix
-@@ -75,6 +75,14 @@ in
-   config = mkIf cfg.enable {
-     environment.systemPackages = [ nginx ];
+@@ -84,6 +84,14 @@ in
+   };
  
+   config = mkIf cfg.enable {
 +    environment.etc."nginx_wrapper" = {
 +      text = ''
 +        #!/bin/sh

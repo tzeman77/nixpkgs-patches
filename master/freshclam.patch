@@ -1,7 +1,7 @@
 clamav: fix for respawning freshclam
 
 diff --git a/nixos/modules/services/security/clamav.nix b/nixos/modules/services/security/clamav.nix
-index 057891a..cecb620 100644
+index a4d5430..a0aadb1 100644
 --- a/nixos/modules/services/security/clamav.nix
 +++ b/nixos/modules/services/security/clamav.nix
 @@ -55,26 +55,29 @@ in
@@ -22,19 +22,17 @@ index 057891a..cecb620 100644
 +    systemd.services.clamav_updater = {
 +      description = "freshclam(1) service (clamav updater)";
 +      wantedBy = [ "multi-user.target" ];
- 
--          preStart = ''
--            mkdir -m 0755 -p ${stateDir}
--            chown ${clamavUser}:${clamavGroup} ${stateDir}
--          '';
--          exec = "${pkgs.clamav}/bin/freshclam --config-file=${pkgs.writeText "freshclam.conf" cfg.updater.config}";
--      }; 
--    };
 +      preStart = ''
 +        mkdir -m 0755 -p ${stateDir}
 +        chown ${clamavUser}:${clamavGroup} ${stateDir}
 +      '';
  
+-          preStart = ''
+-            mkdir -m 0755 -p ${stateDir}
+-            chown ${clamavUser}:${clamavGroup} ${stateDir}
+-          '';
+-          exec = "${pkgs.clamav}/bin/freshclam --daemon --config-file=${pkgs.writeText "freshclam.conf" cfg.updater.config}";
+-      }; 
 +      serviceConfig = {
 +        ExecStart = ''
 +          ${pkgs.clamav}/bin/freshclam -d --datadir=${stateDir} -c ${toString cfg.updater.frequency} \
@@ -43,11 +41,10 @@ index 057891a..cecb620 100644
 +        Restart = "always";
 +        Type = "forking";
 +      };
-+    };
+     };
+ 
    };
  
--}
-\ No newline at end of file
-+}
+ }
 +
 +# vim: et ts=2 sw=2 
