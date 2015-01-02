@@ -1,11 +1,23 @@
 mysql suport for zabbix 1.8
 
 diff --git a/nixos/modules/services/monitoring/zabbix-server.nix b/nixos/modules/services/monitoring/zabbix-server.nix
-index ca283ea..48cdaa3 100644
+index acd1279..7395954 100644
 --- a/nixos/modules/services/monitoring/zabbix-server.nix
 +++ b/nixos/modules/services/monitoring/zabbix-server.nix
-@@ -34,7 +34,10 @@ let
+@@ -25,9 +25,9 @@ let
+         DBHost = ${cfg.dbServer}
        ''}
+ 
+-      DBName = zabbix
++      DBName = ${cfg.dbName}
+ 
+-      DBUser = zabbix
++      DBUser = ${cfg.dbUser}
+ 
+       ${optionalString (cfg.dbPassword != "") ''
+         DBPassword = ${cfg.dbPassword}
+@@ -36,7 +36,10 @@ let
+       ${config.services.zabbixServer.extraConfig}
      '';
  
 -  useLocalPostgres = cfg.dbServer == "localhost" || cfg.dbServer == "";
@@ -16,13 +28,36 @@ index ca283ea..48cdaa3 100644
  
  in
  
-@@ -64,6 +67,17 @@ in
-       description = "Password used to connect to the database server.";
+@@ -63,6 +66,22 @@ in
+       '';
+     };
+ 
++    services.zabbixServer.dbName = mkOption {
++      default = "zabbix";
++      type = types.str;
++      description = ''
++        Database name.
++      '';
++    };
++
++    services.zabbixServer.dbUser = mkOption {
++      default = "zabbix";
++      type = types.str;
++      description = ''
++        Database user.
++      '';
++    };
++
+     services.zabbixServer.dbPassword = mkOption {
+       default = "";
+       type = types.str;
+@@ -77,6 +96,17 @@ in
+       '';
      };
  
 +    services.zabbixServer.mysql = mkOption {
 +      default = false;
-+      description = "User MySQL backend";
++      description = "Use MySQL backend";
 +    };
 +
 +    services.zabbixServer.package = mkOption {
@@ -34,7 +69,7 @@ index ca283ea..48cdaa3 100644
    };
  
    ###### implementation
-@@ -71,6 +85,7 @@ in
+@@ -84,6 +114,7 @@ in
    config = mkIf cfg.enable {
  
      services.postgresql.enable = useLocalPostgres;
@@ -42,7 +77,7 @@ index ca283ea..48cdaa3 100644
  
      users.extraUsers = singleton
        { name = "zabbix";
-@@ -89,19 +104,21 @@ in
+@@ -102,19 +133,21 @@ in
              mkdir -m 0755 -p ${stateDir} ${logDir} ${libDir}
              chown zabbix ${stateDir} ${logDir} ${libDir}
  
@@ -70,7 +105,7 @@ index ca283ea..48cdaa3 100644
          serviceConfig.Restart = "always";
          serviceConfig.RestartSec = 2;
 diff --git a/pkgs/servers/monitoring/zabbix/default.nix b/pkgs/servers/monitoring/zabbix/default.nix
-index 1e46ffd..3963a2f 100644
+index ca4df9c..205699b 100644
 --- a/pkgs/servers/monitoring/zabbix/default.nix
 +++ b/pkgs/servers/monitoring/zabbix/default.nix
 @@ -1,4 +1,4 @@
@@ -108,10 +143,10 @@ index 1e46ffd..3963a2f 100644
      postInstall =
        ''
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index c015328..43903e3 100644
+index d8fa2e1..24007b8 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -6805,6 +6805,10 @@ let
+@@ -7952,6 +7952,10 @@ let
      inherit fetchurl stdenv pkgconfig postgresql curl openssl zlib;
    });
  
