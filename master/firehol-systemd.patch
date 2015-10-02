@@ -1,17 +1,17 @@
 firehol service
 
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index 237383c..6877a35 100644
+index eecbe8e..dc26853 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -187,6 +187,7 @@
-   ./services/networking/dnscache.nix
-   ./services/networking/dnsmasq.nix
+@@ -285,6 +285,7 @@
    ./services/networking/ejabberd.nix
+   ./services/networking/fan.nix
+   ./services/networking/firefox/sync-server.nix
 +  ./services/networking/firehol.nix
    ./services/networking/firewall.nix
-   ./services/networking/haproxy.nix
-   ./services/networking/tcpcrypt.nix
+   ./services/networking/flashpolicyd.nix
+   ./services/networking/freenet.nix
 diff --git a/nixos/modules/services/networking/firehol.nix b/nixos/modules/services/networking/firehol.nix
 new file mode 100644
 index 0000000..d39872b
