@@ -324,12 +324,12 @@ index 0000000..4de87f2
 +
 +})
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 78f36ea..96774b4 100644
+index 7d74e4f..f7bfce7 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -4090,6 +4090,17 @@ let
-     inherit php pkgs;
-   });
+@@ -5088,6 +5088,17 @@ let
+     php56
+     php70;
  
 +  php53 = callPackage ../development/interpreters/php/5.3.nix { };
 +
@@ -342,6 +342,6 @@ index 78f36ea..96774b4 100644
 +    };
 +  };
 +
-   php54 = callPackage ../development/interpreters/php/5.4.nix { };
+   picoc = callPackage ../development/interpreters/picoc {};
  
    picolisp = callPackage ../development/interpreters/picolisp {};
