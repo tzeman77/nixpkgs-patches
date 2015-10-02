@@ -165,15 +165,15 @@ index 0000000..6894d1c
 +1.8.4
 +
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 5742c4a..9f79e62 100644
+index e862cba..91c4ce5 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -6274,6 +6274,8 @@ let
+@@ -9229,6 +9229,8 @@ let
  
-   OVMF = callPackage ../applications/virtualization/OVMF { };
+   cbfstool = callPackage ../applications/virtualization/cbfstool { };
  
 +  pdns = callPackage ../servers/dns/pdns { };
 +
-   postgresql = postgresql92;
- 
-   postgresql83 = callPackage ../servers/sql/postgresql/8.3.x.nix { };
+   pgpool92 = pgpool.override { postgresql = postgresql92; };
+   pgpool93 = pgpool.override { postgresql = postgresql93; };
+   pgpool94 = pgpool.override { postgresql = postgresql94; };
