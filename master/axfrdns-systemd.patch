@@ -1,18 +1,18 @@
 axfr dns modules (supervised via systemd)
 
 diff --git a/nixos/modules/misc/ids.nix b/nixos/modules/misc/ids.nix
-index 9ad0496..3a8cf27 100644
+index f770670..ab3c9e4 100644
 --- a/nixos/modules/misc/ids.nix
 +++ b/nixos/modules/misc/ids.nix
-@@ -105,6 +105,7 @@
+@@ -212,6 +212,7 @@
        dnscache = 184;
        tinydns = 185;
        dnslog = 186;
 +      axfrdns = 187;
- 
-       # When adding a uid, make sure it doesn't match an existing gid.
- 
-@@ -198,6 +199,7 @@
+       mediatomb = 187;
+       rdnssd = 188;
+       ihaskell = 189;
+@@ -448,6 +449,7 @@
        dnscache = 184;
        tinydns = 185;
        dnslog = 186;
@@ -21,17 +21,17 @@ index 9ad0496..3a8cf27 100644
        nogroup = 65534;
      };
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index d6dfcf4..cd96420 100644
+index 41acf8d..00a98db 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -142,6 +142,7 @@
-   ./services/network-filesystems/samba.nix
-   ./services/networking/amuled.nix
+@@ -262,6 +262,7 @@
+   ./services/networking/asterisk.nix
+   ./services/networking/atftpd.nix
    ./services/networking/avahi-daemon.nix
 +  ./services/networking/axfrdns.nix
    ./services/networking/bind.nix
+   ./services/networking/bird.nix
    ./services/networking/bitlbee.nix
-   ./services/networking/cntlm.nix
 diff --git a/nixos/modules/services/networking/axfrdns.nix b/nixos/modules/services/networking/axfrdns.nix
 new file mode 100644
 index 0000000..29a1a9c
