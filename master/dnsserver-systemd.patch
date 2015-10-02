@@ -1,17 +1,17 @@
 dnsserver module (supervised via systemd)
 
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index 8bcb700..f23a7cb 100644
+index b4b2fa1..41acf8d 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -180,6 +180,7 @@
-   ./services/networking/ssh/lshd.nix
-   ./services/networking/ssh/sshd.nix
+@@ -344,6 +344,7 @@
+   ./services/networking/teamspeak3.nix
+   ./services/networking/tinc.nix
    ./services/networking/tftpd.nix
 +  ./services/networking/tinydns.nix
-   ./services/networking/unbound.nix
-   ./services/networking/vsftpd.nix
-   ./services/networking/wakeonlan.nix
+   ./services/networking/tlsdated.nix
+   ./services/networking/tox-bootstrapd.nix
+   ./services/networking/tvheadend.nix
 diff --git a/nixos/modules/services/networking/tinydns.nix b/nixos/modules/services/networking/tinydns.nix
 new file mode 100644
 index 0000000..b1486b3
