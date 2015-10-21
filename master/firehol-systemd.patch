@@ -14,13 +14,13 @@ index eecbe8e..dc26853 100644
    ./services/networking/freenet.nix
 diff --git a/nixos/modules/services/networking/firehol.nix b/nixos/modules/services/networking/firehol.nix
 new file mode 100644
-index 0000000..d39872b
+index 0000000..f1fb643
 --- /dev/null
 +++ b/nixos/modules/services/networking/firehol.nix
 @@ -0,0 +1,73 @@
-+{ config, pkgs, ... }:
++{ config, pkgs, lib, ... }:
 +
-+with pkgs.lib;
++with lib;
 +
 +let
 +

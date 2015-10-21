@@ -1,26 +1,26 @@
 clamd service
 
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index 225da6d..8fc0ef5 100755
+index dc26853..aaa773d 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -309,6 +309,7 @@
+@@ -372,6 +372,7 @@
    ./services/search/elasticsearch.nix
    ./services/search/solr.nix
    ./services/security/clamav.nix
 +  ./services/security/clamd.nix
    ./services/security/fail2ban.nix
+   ./services/security/fprintd.nix
    ./services/security/fprot.nix
-   ./services/security/frandom.nix
 diff --git a/nixos/modules/services/security/clamd.nix b/nixos/modules/services/security/clamd.nix
 new file mode 100644
-index 0000000..1d6567c
+index 0000000..e85eda8
 --- /dev/null
 +++ b/nixos/modules/services/security/clamd.nix
 @@ -0,0 +1,57 @@
-+{ config, pkgs, ... }:
++{ config, pkgs, lib, ... }:
 +
-+with pkgs.lib;
++with lib;
 +
 +let
 +

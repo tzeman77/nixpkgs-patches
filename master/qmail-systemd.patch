@@ -1,10 +1,10 @@
 diff --git a/nixos/modules/misc/ids.nix b/nixos/modules/misc/ids.nix
-index 7d3b4c7..62feefd 100644
+index ab3c9e4..8ff88d5 100644
 --- a/nixos/modules/misc/ids.nix
 +++ b/nixos/modules/misc/ids.nix
-@@ -136,6 +136,14 @@
-       dnslog = 186;
-       axfrdns = 187;
+@@ -234,6 +234,14 @@
+       shout = 206;
+       gateone = 207;
  
 +      alias = 7790;
 +      qmaild = 7791;
@@ -17,7 +17,7 @@ index 7d3b4c7..62feefd 100644
        # When adding a uid, make sure it doesn't match an existing gid. And don't use uids above 399!
  
        nixbld = 30000; # start of range of uids
-@@ -248,6 +256,8 @@
+@@ -450,6 +458,8 @@
        tinydns = 185;
        dnslog = 186;
        axfrdns = 187;
@@ -27,27 +27,27 @@ index 7d3b4c7..62feefd 100644
        nogroup = 65534;
      };
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index cfc64e0..51c318a 100644
+index 00a98db..46a1bcd 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -135,6 +135,8 @@
-   ./services/mail/mail.nix
+@@ -183,6 +183,8 @@
+   ./services/mail/mlmmj.nix
    ./services/mail/opensmtpd.nix
    ./services/mail/postfix.nix
 +  ./services/mail/qmail.nix
 +  ./services/mail/qmail-smtp.nix
    ./services/mail/spamassassin.nix
+   ./services/misc/apache-kafka.nix
    #./services/misc/autofs.nix
-   ./services/misc/cgminer.nix
 diff --git a/nixos/modules/services/mail/qmail-smtp.nix b/nixos/modules/services/mail/qmail-smtp.nix
 new file mode 100644
-index 0000000..57af43f
+index 0000000..6c5a4f1
 --- /dev/null
 +++ b/nixos/modules/services/mail/qmail-smtp.nix
 @@ -0,0 +1,103 @@
-+{ config, pkgs, ... }:
++{ config, pkgs, lib, ... }:
 +
-+with pkgs.lib;
++with lib;
 +
 +let
 +
@@ -150,13 +150,13 @@ index 0000000..57af43f
 +
 diff --git a/nixos/modules/services/mail/qmail.nix b/nixos/modules/services/mail/qmail.nix
 new file mode 100644
-index 0000000..e2ed1ee
+index 0000000..4eca88d
 --- /dev/null
 +++ b/nixos/modules/services/mail/qmail.nix
 @@ -0,0 +1,210 @@
-+{ config, pkgs, ... }:
++{ config, pkgs, lib, ... }:
 +
-+with pkgs.lib;
++with lib;
 +
 +let
 +
