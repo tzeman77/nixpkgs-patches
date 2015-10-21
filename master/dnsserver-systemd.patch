@@ -14,13 +14,13 @@ index b4b2fa1..41acf8d 100644
    ./services/networking/tvheadend.nix
 diff --git a/nixos/modules/services/networking/tinydns.nix b/nixos/modules/services/networking/tinydns.nix
 new file mode 100644
-index 0000000..b1486b3
+index 0000000..9517eae
 --- /dev/null
 +++ b/nixos/modules/services/networking/tinydns.nix
 @@ -0,0 +1,84 @@
-+{ config, pkgs, ... }:
++{ config, pkgs, lib, ... }:
 +
-+with pkgs.lib;
++with lib;
 +
 +let
 +
