@@ -34,13 +34,13 @@ index 41acf8d..00a98db 100644
    ./services/networking/bitlbee.nix
 diff --git a/nixos/modules/services/networking/axfrdns.nix b/nixos/modules/services/networking/axfrdns.nix
 new file mode 100644
-index 0000000..29a1a9c
+index 0000000..3a705d8
 --- /dev/null
 +++ b/nixos/modules/services/networking/axfrdns.nix
 @@ -0,0 +1,88 @@
-+{ config, pkgs, ... }:
++{ config, pkgs, lib, ... }:
 +
-+with pkgs.lib;
++with lib;
 +
 +let
 +
