@@ -40,7 +40,6 @@ qmail-autoresponder.patch
 php53-fpm-systemd.patch
 php-apc-restored.patch
 php53-apc.patch
-notion.patch
 dnscache-logging.patch
 dnsserver-logging.patch
 axfrdns-logging.patch
@@ -48,5 +47,4 @@ qmail-logging.patch
 wvstreams-magic.patch
 usb-modeswitch.patch
 zabbix18-mysql.patch
-zabbix-1.8.22.patch
 php53-url.patch

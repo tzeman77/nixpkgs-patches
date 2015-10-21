@@ -11,11 +11,11 @@ Header from folded patch 'minit-path.patch':
 minit: fix PATH
 
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index f98b621..a204222 100644
+index 4188d49..a2b7e89 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -244,6 +244,7 @@
-   ./services/security/torsocks.nix
+@@ -378,6 +378,7 @@
+   ./services/system/cloud-init.nix
    ./services/system/dbus.nix
    ./services/system/kerberos.nix
 +  ./services/system/minit.nix
@@ -24,13 +24,13 @@ index f98b621..a204222 100644
    ./services/torrent/deluge.nix
 diff --git a/nixos/modules/services/system/minit.nix b/nixos/modules/services/system/minit.nix
 new file mode 100644
-index 0000000..f17750b
+index 0000000..44a133d
 --- /dev/null
 +++ b/nixos/modules/services/system/minit.nix
 @@ -0,0 +1,64 @@
-+{ config, pkgs, ... }:
++{ config, pkgs, lib, ... }:
 +
-+with pkgs.lib;
++with lib;
 +
 +let
 +
@@ -149,10 +149,10 @@ index 0000000..dcb75ee
 +# vim: et ts=2 sw=2 
 +
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 82ed2ce..bb6de4c 100644
+index 933576d..5ede07c 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -7250,6 +7250,8 @@ let
+@@ -10082,6 +10082,8 @@ let
  
    mingetty = callPackage ../os-specific/linux/mingetty { };
  
