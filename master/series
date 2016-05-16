@@ -31,7 +31,7 @@ clamd-systemd.patch
 php53-restore.patch
 php53-shared-extensions.patch
 php53-mysql55.patch
-freshclam.patch
+freshclam.patch #+check
 nginx-wrapper.patch
 zabbix20-mysql.patch
 socklog.patch
