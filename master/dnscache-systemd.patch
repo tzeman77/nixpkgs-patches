@@ -1,7 +1,7 @@
 dnscache service
 
 diff --git a/nixos/modules/misc/ids.nix b/nixos/modules/misc/ids.nix
-index 1e5393f..f770670 100644
+index efdc2f9..8a8172c 100644
 --- a/nixos/modules/misc/ids.nix
 +++ b/nixos/modules/misc/ids.nix
 @@ -209,6 +209,9 @@
@@ -14,7 +14,7 @@ index 1e5393f..f770670 100644
        mediatomb = 187;
        rdnssd = 188;
        ihaskell = 189;
-@@ -442,6 +445,9 @@
+@@ -489,6 +492,9 @@
        # uids and gids. Also, don't use gids above 399!
  
        users = 100;
@@ -25,17 +25,17 @@ index 1e5393f..f770670 100644
        nogroup = 65534;
      };
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index a2b7e89..b4b2fa1 100644
+index adcae5b..7a58b7e 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -275,6 +275,7 @@
+@@ -301,6 +301,7 @@
    ./services/networking/ddclient.nix
    ./services/networking/dhcpcd.nix
    ./services/networking/dhcpd.nix
 +  ./services/networking/dnscache.nix
+   ./services/networking/dnschain.nix
    ./services/networking/dnscrypt-proxy.nix
    ./services/networking/dnsmasq.nix
-   ./services/networking/docker-registry-server.nix
 diff --git a/nixos/modules/services/networking/dnscache.nix b/nixos/modules/services/networking/dnscache.nix
 new file mode 100644
 index 0000000..dd54402
