@@ -356,15 +356,15 @@ index 0000000..cc683da
 + }
 + 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 8a60647..c9198d7 100644
+index 8faec9a..26a9c3a 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -5996,6 +5996,8 @@ let
+@@ -9559,6 +9559,8 @@ let
  
-   diod = callPackage ../servers/diod { };
+   diod = callPackage ../servers/diod { lua = lua5_1; };
  
 +  djbdns = callPackage ../servers/dns/djbdns { };
 +
-   dovecot = dovecot21;
+   dnschain = callPackage ../servers/dnschain { };
  
-   dovecot21 = callPackage ../servers/mail/dovecot { };
+   dovecot = dovecot22;
