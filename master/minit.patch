@@ -11,10 +11,10 @@ Header from folded patch 'minit-path.patch':
 minit: fix PATH
 
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index 4188d49..a2b7e89 100644
+index 7cc6f9c..adcae5b 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -378,6 +378,7 @@
+@@ -413,6 +413,7 @@
    ./services/system/cloud-init.nix
    ./services/system/dbus.nix
    ./services/system/kerberos.nix
@@ -149,15 +149,15 @@ index 0000000..dcb75ee
 +# vim: et ts=2 sw=2 
 +
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 933576d..5ede07c 100644
+index 9634cdf..8faec9a 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -10082,6 +10082,8 @@ let
+@@ -10809,6 +10809,8 @@ let
  
    mingetty = callPackage ../os-specific/linux/mingetty { };
  
 +  minit = callPackage ../os-specific/linux/minit { };
 +
-   module_init_tools = callPackage ../os-specific/linux/module-init-tools { };
- 
-   aggregateModules = modules:
+   miraclecast = callPackage ../os-specific/linux/miraclecast {
+     systemd = systemd.override { enableKDbus = true; };
+   };
