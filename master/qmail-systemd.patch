@@ -1,10 +1,10 @@
 diff --git a/nixos/modules/misc/ids.nix b/nixos/modules/misc/ids.nix
-index ab3c9e4..8ff88d5 100644
+index 812c018..656a753 100644
 --- a/nixos/modules/misc/ids.nix
 +++ b/nixos/modules/misc/ids.nix
-@@ -234,6 +234,14 @@
-       shout = 206;
-       gateone = 207;
+@@ -260,6 +260,14 @@
+       hydra-queue-runner = 235;
+       hydra-www = 236;
  
 +      alias = 7790;
 +      qmaild = 7791;
@@ -17,7 +17,7 @@ index ab3c9e4..8ff88d5 100644
        # When adding a uid, make sure it doesn't match an existing gid. And don't use uids above 399!
  
        nixbld = 30000; # start of range of uids
-@@ -450,6 +458,8 @@
+@@ -497,6 +505,8 @@
        tinydns = 185;
        dnslog = 186;
        axfrdns = 187;
@@ -27,18 +27,18 @@ index ab3c9e4..8ff88d5 100644
        nogroup = 65534;
      };
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index 00a98db..46a1bcd 100644
+index 3d5cb9e..5c50c5d 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -183,6 +183,8 @@
-   ./services/mail/mlmmj.nix
+@@ -194,6 +194,8 @@
    ./services/mail/opensmtpd.nix
    ./services/mail/postfix.nix
+   ./services/mail/postsrsd.nix
 +  ./services/mail/qmail.nix
 +  ./services/mail/qmail-smtp.nix
    ./services/mail/spamassassin.nix
-   ./services/misc/apache-kafka.nix
-   #./services/misc/autofs.nix
+   ./services/mail/rspamd.nix
+   ./services/mail/rmilter.nix
 diff --git a/nixos/modules/services/mail/qmail-smtp.nix b/nixos/modules/services/mail/qmail-smtp.nix
 new file mode 100644
 index 0000000..6c5a4f1
