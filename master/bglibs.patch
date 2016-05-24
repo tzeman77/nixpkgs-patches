@@ -42,7 +42,7 @@ index 0000000..a0b4111
 + 	./compile crc-gentab.c
 diff --git a/pkgs/development/libraries/bglibs/default.nix b/pkgs/development/libraries/bglibs/default.nix
 new file mode 100644
-index 0000000..5297117
+index 0000000..6935c3e
 --- /dev/null
 +++ b/pkgs/development/libraries/bglibs/default.nix
 @@ -0,0 +1,40 @@
@@ -56,7 +56,7 @@ index 0000000..5297117
 +  name = "${pkg}-${ver}";
 +
 +  src = fetchurl {
-+    url = "${homepage}/${name}.tar.gz";
++    url = "${homepage}/archive/${name}.tar.gz";
 +    sha256 = "1w4dagl2h1gps2kbzdk9zn3ls1c81q0d6cnczkr8zrc85lffb2jw";
 +  };
 +
@@ -88,7 +88,7 @@ index 0000000..5297117
 +
 diff --git a/pkgs/development/libraries/bglibs/diet.nix b/pkgs/development/libraries/bglibs/diet.nix
 new file mode 100644
-index 0000000..6554768
+index 0000000..dcb5bda
 --- /dev/null
 +++ b/pkgs/development/libraries/bglibs/diet.nix
 @@ -0,0 +1,45 @@
@@ -102,7 +102,7 @@ index 0000000..6554768
 +  name = "${pkg}-${ver}";
 +
 +  src = fetchurl {
-+    url = "${homepage}/${name}.tar.gz";
++    url = "${homepage}/archive/${name}.tar.gz";
 +    sha256 = "1w4dagl2h1gps2kbzdk9zn3ls1c81q0d6cnczkr8zrc85lffb2jw";
 +  };
 +
@@ -138,12 +138,12 @@ index 0000000..6554768
 +
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index cc942c3..2aa88db 100644
+index 3201ee6..061f22b 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -513,6 +513,10 @@ let
+@@ -722,6 +722,10 @@ let
  
-   bfr = callPackage ../tools/misc/bfr { };
+   bluez-tools = callPackage ../tools/bluetooth/bluez-tools { };
  
 +  bglibs = callPackage ../development/libraries/bglibs { };
 +
@@ -151,4 +151,4 @@ index cc942c3..2aa88db 100644
 +
    bmon = callPackage ../tools/misc/bmon { };
  
-   boomerang = callPackage ../development/tools/boomerang {
+   bochs = callPackage ../applications/virtualization/bochs { };

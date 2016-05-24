@@ -3,15 +3,9 @@ Subject: [PATCH] tg/mailfront
 
 mailfront-2.01
 
----
- pkgs/tools/networking/mailfront/default.nix | 38 +++++++++++++++++++++++++++++
- pkgs/tools/networking/mailfront/link.patch  | 12 +++++++++
- pkgs/top-level/all-packages.nix             |  2 ++
- 3 files changed, 52 insertions(+)
-
 diff --git a/pkgs/tools/networking/mailfront/default.nix b/pkgs/tools/networking/mailfront/default.nix
 new file mode 100644
-index 0000000..743afaf
+index 0000000..e4f167c
 --- /dev/null
 +++ b/pkgs/tools/networking/mailfront/default.nix
 @@ -0,0 +1,38 @@
@@ -25,7 +19,7 @@ index 0000000..743afaf
 +  name = "${pkg}-${ver}";
 +
 +  src = fetchurl {
-+    url = "${web}/${pkg}/${pkg}-${ver}.tar.gz";
++    url = "${web}/${pkg}/archive/${pkg}-${ver}.tar.gz";
 +    sha256 = "0qrbqx5h9sc74dk87ddzznyzfdcgak2jl45sw63q9p1ngkpnkc0z";
 +  };
 +
@@ -72,17 +66,15 @@ index 0000000..49d844d
 + pop3front-maildir.o: compile pop3front-maildir.c pop3.h constants.h
 + 	./compile pop3front-maildir.c
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 5b806f5..684cbc6 100644
+index 01c30ab..5188e50 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -1213,6 +1213,8 @@ let
+@@ -2390,6 +2390,8 @@ let
  
-   maildrop = callPackage ../tools/networking/maildrop { };
+   mailpile = callPackage ../applications/networking/mailreaders/mailpile { };
  
 +  mailfront = callPackage ../tools/networking/mailfront { };
 +
    mailutils = callPackage ../tools/networking/mailutils {
      guile = guile_1_8;
-   };
--- 
-tg: (1383fc2..) tg/mailfront (depends on: tg/cvm)
+     # https://debbugs.gnu.org/db/21/21863.html

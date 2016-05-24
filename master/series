@@ -29,8 +29,6 @@ firehol.patch
 firehol-systemd.patch
 clamd-systemd.patch
 php53-restore.patch
-php53-shared-extensions.patch
-php53-mysql55.patch
 freshclam.patch #+check
 nginx-wrapper.patch
 zabbix20-mysql.patch
@@ -39,7 +37,6 @@ diet-runit.patch
 qmail-autoresponder.patch
 php53-fpm-systemd.patch
 php-apc-restored.patch
-php53-apc.patch
 dnscache-logging.patch
 dnsserver-logging.patch
 axfrdns-logging.patch
@@ -47,4 +44,3 @@ qmail-logging.patch
 wvstreams-magic.patch
 usb-modeswitch.patch
 zabbix18-mysql.patch
-php53-url.patch

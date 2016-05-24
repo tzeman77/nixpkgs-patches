@@ -3,16 +3,9 @@ Subject: [PATCH] tg/cvm
 
 cvm-0.96
 
----
- pkgs/development/libraries/cvm/default.nix     | 44 ++++++++++++
- pkgs/development/libraries/cvm/diet.nix        | 50 +++++++++++++
- pkgs/development/libraries/cvm/link-main.patch | 98 ++++++++++++++++++++++++++
- pkgs/top-level/all-packages.nix                |  3 +
- 4 files changed, 195 insertions(+)
-
 diff --git a/pkgs/development/libraries/cvm/default.nix b/pkgs/development/libraries/cvm/default.nix
 new file mode 100644
-index 0000000..e026998
+index 0000000..02943b3
 --- /dev/null
 +++ b/pkgs/development/libraries/cvm/default.nix
 @@ -0,0 +1,44 @@
@@ -26,7 +19,7 @@ index 0000000..e026998
 +  name = "${pkg}-${ver}";
 +
 +  src = fetchurl {
-+    url = "${homepage}/${name}.tar.gz";
++    url = "${homepage}/archive/${name}.tar.gz";
 +    sha256 = "1s94c9h3fzw7l1cv5g5qcm5ysx8nhwxdhnvhjmyb4q5iyjr22ldq";
 +  };
 +
@@ -62,7 +55,7 @@ index 0000000..e026998
 +
 diff --git a/pkgs/development/libraries/cvm/diet.nix b/pkgs/development/libraries/cvm/diet.nix
 new file mode 100644
-index 0000000..ccdb0b3
+index 0000000..34dd109
 --- /dev/null
 +++ b/pkgs/development/libraries/cvm/diet.nix
 @@ -0,0 +1,50 @@
@@ -76,7 +69,7 @@ index 0000000..ccdb0b3
 +  name = "${pkg}-${ver}";
 +
 +  src = fetchurl {
-+    url = "${homepage}/${name}.tar.gz";
++    url = "${homepage}/archive/${name}.tar.gz";
 +    sha256 = "1s94c9h3fzw7l1cv5g5qcm5ysx8nhwxdhnvhjmyb4q5iyjr22ldq";
 +  };
 +
@@ -221,18 +214,16 @@ index 0000000..d25f14b
 + sql-query-test.o: compile sql-query-test.c credentials.h sql.h
 + 	./compile sql-query-test.c
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 2aa88db..5b806f5 100644
+index 061f22b..01c30ab 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -537,6 +537,9 @@ let
+@@ -856,6 +856,9 @@ let
  
-   catdoc = callPackage ../tools/text/catdoc { };
+   ditaa = callPackage ../tools/graphics/ditaa { };
  
 +  cvm = callPackage ../development/libraries/cvm { };
 +  diet-cvm = callPackage ../development/libraries/cvm/diet.nix { };
 +
    dlx = callPackage ../misc/emulators/dlx { };
  
-   eggdrop = callPackage ../tools/networking/eggdrop { };
--- 
-tg: (a4aa775..) tg/cvm (depends on: tg/bglibs)
+   dpic = callPackage ../tools/graphics/dpic { };

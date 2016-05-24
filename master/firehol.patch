@@ -54,15 +54,15 @@ index 0000000..30abcaa
 +
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 9db636f..588c70b 100644
+index 7a773a2..821dd27 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -987,6 +987,8 @@ let
-     platformTools = androidenv.platformTools;
-   };
+@@ -1601,6 +1601,8 @@ let
+ 
+   flashrom = callPackage ../tools/misc/flashrom { };
  
 +  firehol = callPackage ../tools/security/firehol { };
 +
    flpsed = callPackage ../applications/editors/flpsed { };
  
-   flvstreamer = callPackage ../tools/networking/flvstreamer { };
+   fluentd = callPackage ../tools/misc/fluentd { };

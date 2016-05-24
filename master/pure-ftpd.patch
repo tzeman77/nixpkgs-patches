@@ -2,7 +2,7 @@ pure-ftpd-1.0.36: Free (BSD), secure, production-quality and standard-conformant
 
 diff --git a/pkgs/servers/ftp/pure-ftpd/default.nix b/pkgs/servers/ftp/pure-ftpd/default.nix
 new file mode 100644
-index 0000000..24b774e
+index 0000000..fef38e5
 --- /dev/null
 +++ b/pkgs/servers/ftp/pure-ftpd/default.nix
 @@ -0,0 +1,37 @@
@@ -14,13 +14,13 @@ index 0000000..24b774e
 +
 +let
 +  pkg = "pure-ftpd";
-+  ver = "1.0.36";
++  ver = "1.0.42";
 +in stdenv.mkDerivation rec {
 +  name = "${pkg}-${ver}";
 +
 +  src = fetchurl {
 +    url = "http://download.pureftpd.org/pub/pure-ftpd/releases/${pkg}-${ver}.tar.gz";
-+    sha256 = "0c51nf7gxzs1sajfj9680f7gjrc9555wgqzkm5m0fj6lm6qn7ywh";
++    sha256 = "1yg7v1l3ng7c08nhh804k28y1f8ccmg0rq1a9l2sg45ib273mrvv";
 +  };
 +
 +  buildInputs = [ openssl ]
@@ -44,7 +44,7 @@ index 0000000..24b774e
 +
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 2ad8d14..2734234 100644
+index 9a3c4df..91fa151 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
 @@ -9876,6 +9876,11 @@ let

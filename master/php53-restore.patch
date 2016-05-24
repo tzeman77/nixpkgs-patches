@@ -2,6 +2,31 @@ PHP 5.3 restored
 
 Reverted commit 0bbe7231910b1185f5b65bb6179e34cf3329ea3e
 
+
+Header from folded patch 'php53-url.patch':
+
+PHP 5.3: fix url
+
+
+Header from folded patch 'php53-shared-extensions.patch':
+
+php53 shared extensions
+
+
+Header from folded patch 'php53-mcrypt-enable.patch':
+
+php53: mcrypt enable
+
+
+Header from folded patch 'php53-mysql55.patch':
+
+php53: depend on mysql55 instead of mysql
+
+
+Header from folded patch 'php53-apc.patch':
+
+php-apc for php_fpm53
+
 diff --git a/pkgs/development/interpreters/php/5.3-freetype-dirs.patch b/pkgs/development/interpreters/php/5.3-freetype-dirs.patch
 new file mode 100644
 index 0000000..3b78f9b
@@ -74,14 +99,15 @@ index 0000000..3b78f9b
 +   fi
 diff --git a/pkgs/development/interpreters/php/5.3.nix b/pkgs/development/interpreters/php/5.3.nix
 new file mode 100644
-index 0000000..4de87f2
+index 0000000..517737c
 --- /dev/null
 +++ b/pkgs/development/interpreters/php/5.3.nix
-@@ -0,0 +1,245 @@
+@@ -0,0 +1,318 @@
 +{ stdenv, fetchurl, composableDerivation, autoconf, automake, flex, bison
-+, apacheHttpd, mysql, libxml2, readline, zlib, curl, gd, postgresql, gettext
++, apacheHttpd, mysql55, libxml2, readline, zlib, curl, gd, postgresql, gettext
 +, openssl, pkgconfig, sqlite, config, libjpeg, libpng, freetype, libxslt
-+, libmcrypt, bzip2, icu, libssh2, makeWrapper, libiconvOrEmpty, libiconv, uwimap
++, libmcrypt, bzip2, icu, libssh2, makeWrapper, uwimap
++, gdbm, gmp
 +, pam }:
 +
 +let
@@ -119,8 +145,12 @@ index 0000000..4de87f2
 +
 +      # Extensions
 +
++      calendar = {
++        configureFlags = ["--enable-calendar=shared"];
++      };
++
 +      curl = {
-+        configureFlags = ["--with-curl=${curl}" "--with-curlwrappers"];
++        configureFlags = ["--with-curl=shared,${curl}" "--with-curlwrappers"];
 +        buildInputs = [curl openssl];
 +      };
 +
@@ -135,10 +165,8 @@ index 0000000..4de87f2
 +
 +      libxml2 = {
 +        configureFlags
-+          = [ "--with-libxml-dir=${libxml2}" ]
-+            ++ stdenv.lib.optional (libiconvOrEmpty != [])
-+              [ "--with-iconv=${libiconv}" ];
-+        buildInputs = [ libxml2 ] ++ libiconvOrEmpty;
++          = [ "--with-libxml-dir=${libxml2}" ];
++        buildInputs = [ libxml2 ];
 +      };
 +
 +      readline = {
@@ -147,23 +175,38 @@ index 0000000..4de87f2
 +      };
 +
 +      sqlite = {
-+        configureFlags = ["--with-pdo-sqlite=${sqlite}"];
++        configureFlags = [
++#         "--with-sqlite=shared,${sqlite}"
++          "--with-pdo-sqlite=shared,${sqlite}"
++        ];
 +        buildInputs = [ sqlite ];
 +      };
 +
++      posix = {
++        configureFlags = ["--enable-posix=shared"];
++      };
++
 +      postgresql = {
-+        configureFlags = ["--with-pgsql=${postgresql}"];
++        configureFlags = ["--with-pgsql=shared,${postgresql}"];
++        buildInputs = [ postgresql ];
++      };
++
++      pdo_pgsql = {
++        configureFlags = ["--with-pdo-pgsql=shared,${postgresql}"];
 +        buildInputs = [ postgresql ];
 +      };
 +
 +      mysql = {
-+        configureFlags = ["--with-mysql=${mysql}"];
-+        buildInputs = [ mysql ];
++        configureFlags = [
++          "--with-mysql=shared,${mysql55}"
++          "--with-mysql-sock=/tmp/mysql.sock"
++        ];
++        buildInputs = [ mysql55 ];
 +      };
 +
 +      mysqli = {
-+        configureFlags = ["--with-mysqli=${mysql}/bin/mysql_config"];
-+        buildInputs = [ mysql];
++        configureFlags = ["--with-mysqli=${mysql55}/bin/mysql_config"];
++        buildInputs = [ mysql55];
 +      };
 +
 +      mysqli_embedded = {
@@ -173,17 +216,17 @@ index 0000000..4de87f2
 +      };
 +
 +      pdo_mysql = {
-+        configureFlags = ["--with-pdo-mysql=${mysql}"];
-+        buildInputs = [ mysql ];
++        configureFlags = ["--with-pdo-mysql=shared,${mysql55}"];
++        buildInputs = [ mysql55 ];
 +      };
 +
 +      bcmath = {
-+        configureFlags = ["--enable-bcmath"];
++        configureFlags = ["--enable-bcmath=shared"];
 +      };
 +
 +      gd = {
 +        configureFlags = [
-+          "--with-gd=${gd}"
++          "--with-gd=shared,${gd}"
 +          "--with-png-dir=${libpng}"
 +          "--with-jpeg-dir=${libjpeg}"
 +        ];
@@ -191,7 +234,7 @@ index 0000000..4de87f2
 +      };
 +
 +      soap = {
-+        configureFlags = ["--enable-soap"];
++        configureFlags = ["--enable-soap=shared"];
 +      };
 +
 +      sockets = {
@@ -200,7 +243,7 @@ index 0000000..4de87f2
 +
 +      openssl = {
 +        configureFlags = ["--with-openssl=${openssl}"];
-+        buildInputs = ["openssl"];
++        buildInputs = [openssl];
 +      };
 +
 +      mbstring = {
@@ -213,7 +256,7 @@ index 0000000..4de87f2
 +      };
 +
 +      imap = {
-+        configureFlags = [ "--with-imap=${uwimap}" "--with-imap-ssl" ]
++        configureFlags = [ "--with-imap=shared,${uwimap}" "--with-imap-ssl=shared" ]
 +          # uwimap builds with kerberos on darwin
 +          ++ stdenv.lib.optional (stdenv.isDarwin) "--with-kerberos";
 +        buildInputs = [ uwimap openssl ]
@@ -230,17 +273,17 @@ index 0000000..4de87f2
 +      };
 +
 +      xsl = {
-+        configureFlags = ["--with-xsl=${libxslt}"];
++        configureFlags = ["--with-xsl=shared,${libxslt}"];
 +        buildInputs = [libxslt];
 +      };
 +
 +      mcrypt = {
-+        configureFlags = ["--with-mcrypt=${libmcrypt}"];
++        configureFlags = ["--with-mcrypt=shared,${libmcrypt}"];
 +        buildInputs = [libmcryptOverride];
 +      };
 +
 +      bz2 = {
-+        configureFlags = ["--with-bz2=${bzip2}"];
++        configureFlags = ["--with-bz2=shared,${bzip2}"];
 +        buildInputs = [bzip2];
 +      };
 +
@@ -249,7 +292,47 @@ index 0000000..4de87f2
 +      };
 +
 +      ftp = {
-+        configureFlags = ["--enable-ftp"];
++        configureFlags = ["--enable-ftp=shared"];
++      };
++
++      gdbm = {
++        configureFlags = ["--with-gdbm=shared,${gdbm}"];
++      };
++
++      gmp = {
++        configureFlags = ["--with-gmp=shared,${gmp}"];
++      };
++
++      mhash = {
++        configureFlags = ["--with-mhash=shared"];
++      };
++
++#     pspell = {
++#       configureFlags = ["--with-pspell=shared"];
++#     };
++
++      shmop = {
++        configureFlags = ["--enable-shmop=shared"];
++      };
++
++      sysvmsg = {
++        configureFlags = ["--enable-sysvmsg"];
++      };
++
++      sysvsem = {
++        configureFlags = ["--enable-sysvsem=shared"];
++      };
++
++      sysvshm = {
++        configureFlags = ["--enable-sysvsem=shared"];
++      };
++
++#     tidy = {
++#       configureFlags = ["--with-tidy=shared"];
++#     };
++
++      mlrpc = {
++        configureFlags = ["--with-xmlrpc=shared"];
 +      };
 +
 +      fpm = {
@@ -260,29 +343,42 @@ index 0000000..4de87f2
 +  cfg = {
 +    apxs2Support = config.php.apxs2 or true;
 +    bcmathSupport = config.php.bcmath or true;
-+    bz2Support = config.php.bz2 or false;
++    bz2Support = config.php.bz2 or true;
++    calendarSuppport = config.php.calendar or true;
 +    curlSupport = config.php.curl or true;
 +    exifSupport = config.php.exif or true;
 +    ftpSupport = config.php.ftp or true;
 +    fpmSupport = config.php.fpm or false;
 +    gdSupport = config.php.gd or true;
++    gdbmSupport = config.php.gdbm or false;
 +    gettextSupport = config.php.gettext or true;
++    gmpSupport = config.php.gmp or true;
 +    imapSupport = config.php.imap or false;
 +    intlSupport = config.php.intl or true;
 +    libxml2Support = config.php.libxml2 or true;
 +    mbstringSupport = config.php.mbstring or true;
-+    mcryptSupport = config.php.mcrypt or false;
++    mcryptSupport = config.php.mcrypt or true;
++    mhashSupport = config.php.mhash or false;
 +    mysqlSupport = config.php.mysql or true;
 +    mysqliSupport = config.php.mysqli or true;
 +    opensslSupport = config.php.openssl or true;
 +    pcntlSupport = config.php.pcntl or true;
 +    pdo_mysqlSupport = config.php.pdo_mysql or true;
++    pdo_pgsqlSupport = config.php.pdo_pgsql or true;
++    posixSupport = config.php.posix or true;
 +    postgresqlSupport = config.php.postgresql or true;
++#   pspellSupport = config.php.pspell or true;
 +    readlineSupport = config.php.readline or true;
++    shmopSupport = config.php.shmop or true;
++    sysvmsgSupport = config.php.sysvmsg or true;
++    sysvsemSupport = config.php.sysvsem or true;
++    sysvshmSupport = config.php.sysvshm or true;
 +    soapSupport = config.php.soap or true;
 +    socketsSupport = config.php.sockets or true;
 +    sqliteSupport = config.php.sqlite or true;
-+    xslSupport = config.php.xsl or false;
++#   tidySupport = config.php.tidy or true;
++    xmlrpcSupport = config.php.xmlrpc or true;
++    xslSupport = config.php.xsl or true;
 +    zipSupport = config.php.zip or true;
 +    zlibSupport = config.php.zlib or true;
 +  };
@@ -290,7 +386,9 @@ index 0000000..4de87f2
 +  configurePhase = ''
 +    iniFile=$out/etc/php-recommended.ini
 +    [[ -z "$libxml2" ]] || export PATH=$PATH:$libxml2/bin
-+    ./configure --with-config-file-scan-dir=/etc --with-config-file-path=$out/etc --prefix=$out $configureFlags
++    ./configure --with-config-file-scan-dir=/etc --with-config-file-path=$out/etc \
++        --prefix=$out $configureFlags \
++        --enable-shared --enable-magic-quotes --enable-safe-mode
 +    echo configurePhase end
 +  '' + stdenv.lib.optionalString stdenv.isDarwin ''
 +    # don't build php.dSYM as the php binary
@@ -307,7 +405,7 @@ index 0000000..4de87f2
 +  '' );
 +
 +  src = fetchurl {
-+    url = "http://www.php.net/distributions/php-${version}.tar.bz2";
++    url = "http://cz1.php.net/get/php-${version}.tar.bz2/from/this/mirror";
 +    sha256 = "1480pfp4391byqzmvdmbxkdkqwdzhdylj63sfzrcgadjf9lwzqf4";
 +    name = "php-${version}.tar.bz2";
 +  };
@@ -323,11 +421,95 @@ index 0000000..4de87f2
 +  patches = [ ./fix.patch ./5.3-freetype-dirs.patch ];
 +
 +})
+diff --git a/pkgs/development/interpreters/php/fix.patch b/pkgs/development/interpreters/php/fix.patch
+new file mode 100644
+index 0000000..02f2c9c
+--- /dev/null
++++ b/pkgs/development/interpreters/php/fix.patch
+@@ -0,0 +1,78 @@
++--- php-5.0.4/configure	2005-04-03 11:42:50.000000000 +0200
+++++ php-5.0.4-1/configure	2005-07-10 11:06:22.292271176 +0200
++@@ -3381,7 +3381,7 @@
++ 
++   case $host_alias in
++   *aix*)
++-    APXS_LIBEXECDIR=`$APXS -q LIBEXECDIR`
+++    APXS_LIBEXECDIR="$prefix/modules"
++     EXTRA_LDFLAGS="$EXTRA_LDFLAGS -Wl,-brtl -Wl,-bI:$APXS_LIBEXECDIR/httpd.exp"
++     PHP_AIX_LDFLAGS="-Wl,-brtl"
++     build_type=shared
++@@ -3576,7 +3576,7 @@
++   if test "$?" != "0"; then
++     APACHE_INSTALL="$APXS -i -a -n php5 $SAPI_SHARED" # Old apxs does not have -S option
++   else 
++-    APXS_LIBEXECDIR='$(INSTALL_ROOT)'`$APXS -q LIBEXECDIR`
+++    APXS_LIBEXECDIR="$prefix/modules"
++     if test -z `$APXS -q SYSCONFDIR`; then
++       APACHE_INSTALL="\$(mkinstalldirs) '$APXS_LIBEXECDIR' && \
++                        $APXS -S LIBEXECDIR='$APXS_LIBEXECDIR' \
++@@ -4680,7 +4680,7 @@
++     { echo "configure: error: Please note that Apache version >= 2.0.40 is required." 1>&2; exit 1; }
++   fi
++ 
++-  APXS_LIBEXECDIR='$(INSTALL_ROOT)'`$APXS -q LIBEXECDIR`
+++  APXS_LIBEXECDIR="$prefix/modules"
++   if test -z `$APXS -q SYSCONFDIR`; then
++     INSTALL_IT="\$(mkinstalldirs) '$APXS_LIBEXECDIR' && \
++                  $APXS -S LIBEXECDIR='$APXS_LIBEXECDIR' \
++@@ -5510,7 +5510,7 @@
++     { echo "configure: error: Please note that Apache version >= 2.0.44 is required." 1>&2; exit 1; }
++   fi
++ 
++-  APXS_LIBEXECDIR='$(INSTALL_ROOT)'`$APXS -q LIBEXECDIR`
+++  APXS_LIBEXECDIR="$prefix/modules"
++   if test -z `$APXS -q SYSCONFDIR`; then
++     INSTALL_IT="\$(mkinstalldirs) '$APXS_LIBEXECDIR' && \
++                  $APXS -S LIBEXECDIR='$APXS_LIBEXECDIR' \
++@@ -6327,7 +6327,7 @@
++ 
++   case $host_alias in
++   *aix*)
++-    APXS_LIBEXECDIR=`$APXS -q LIBEXECDIR`
+++    APXS_LIBEXECDIR="$prefix/modules"
++     EXTRA_LDFLAGS="$EXTRA_LDFLAGS -Wl,-brtl -Wl,-bI:$APXS_LIBEXECDIR/httpd.exp"
++     PHP_AIX_LDFLAGS="-Wl,-brtl"
++     build_type=shared
++@@ -6522,7 +6522,7 @@
++   if test "$?" != "0"; then
++     APACHE_HOOKS_INSTALL="$APXS -i -a -n php5 $SAPI_SHARED" # Old apxs does not have -S option
++   else 
++-    APXS_LIBEXECDIR='$(INSTALL_ROOT)'`$APXS -q LIBEXECDIR`
+++    APXS_LIBEXECDIR="$prefix/modules"
++     if test -z `$APXS -q SYSCONFDIR`; then
++       APACHE_HOOKS_INSTALL="\$(mkinstalldirs) '$APXS_LIBEXECDIR' && \
++                        $APXS -S LIBEXECDIR='$APXS_LIBEXECDIR' \
++diff -rc php-5.3.18/configure php-5.3.18-new/configure
++*** php-5.3.18/configure	2012-10-17 18:29:10.000000000 +0200
++--- php-5.3.18-new/configure	2012-11-13 05:36:24.730136551 +0100
++***************
++*** 45113,45121 ****
++  
++  
++  if test "$PHP_GETTEXT" != "no"; then
++!   for i in $PHP_GETTEXT /usr/local /usr; do
++!     test -r $i/include/libintl.h && GETTEXT_DIR=$i && break
++!   done
++  
++    if test -z "$GETTEXT_DIR"; then
++      { echo "configure: error: Cannot locate header file libintl.h" 1>&2; exit 1; }
++--- 45113,45119 ----
++  
++  
++  if test "$PHP_GETTEXT" != "no"; then
++!   GETTEXT_DIR=$PHP_GETTEXT
++  
++    if test -z "$GETTEXT_DIR"; then
++      { echo "configure: error: Cannot locate header file libintl.h" 1>&2; exit 1; }
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 7d74e4f..f7bfce7 100644
+index 821dd27..ca9cbdf 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -5088,6 +5088,17 @@ let
+@@ -5505,8 +5505,23 @@ let
      php56
      php70;
  
@@ -344,4 +526,10 @@ index 7d74e4f..f7bfce7 100644
 +
    picoc = callPackage ../development/interpreters/picoc {};
  
++  php_fpm53_apc = callPackage ../development/libraries/php-apc {
++    php = php_fpm53;
++  };
++
    picolisp = callPackage ../development/interpreters/picolisp {};
+ 
+   pltScheme = racket; # just to be sure

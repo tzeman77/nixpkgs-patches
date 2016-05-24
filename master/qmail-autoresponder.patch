@@ -2,7 +2,7 @@ qmail-autoresponder-0.97: simple program to automatically respond to emails
 
 diff --git a/pkgs/servers/mail/qmail-autoresponder/default.nix b/pkgs/servers/mail/qmail-autoresponder/default.nix
 new file mode 100644
-index 0000000..b482408
+index 0000000..b6a23a1
 --- /dev/null
 +++ b/pkgs/servers/mail/qmail-autoresponder/default.nix
 @@ -0,0 +1,53 @@
@@ -16,7 +16,7 @@ index 0000000..b482408
 +  name = "${pkg}-${ver}";
 +
 +  src = fetchurl {
-+    url = "${web}/${pkg}-${ver}.tar.gz";
++    url = "${web}/archive/${pkg}-${ver}.tar.gz";
 +    sha256 = "1739pxx8bjsxx8qxndgypxq8im5anbrldmf910vazh6l1pqkcnj4";
 +  };
 +
@@ -74,10 +74,10 @@ index 0000000..f496ada
 + #include <string.h>
 + #include <str/str.h>
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 12e43ed..721bcf1 100644
+index ccd4ca70..ac468a5 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -6544,6 +6544,8 @@ let
+@@ -9792,6 +9792,8 @@ let
  
    diet-qmail = callPackage ../servers/mail/qmail/diet.nix { };
  
@@ -85,4 +85,4 @@ index 12e43ed..721bcf1 100644
 +
    #monetdb = callPackage ../servers/sql/monetdb { };
  
-   mariadb = callPackage ../servers/sql/mariadb {};
+   mariadb = callPackage ../servers/sql/mariadb {
