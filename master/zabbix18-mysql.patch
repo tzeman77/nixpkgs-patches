@@ -105,7 +105,7 @@ index acd1279..7395954 100644
          serviceConfig.Restart = "always";
          serviceConfig.RestartSec = 2;
 diff --git a/pkgs/servers/monitoring/zabbix/default.nix b/pkgs/servers/monitoring/zabbix/default.nix
-index ca4df9c..205699b 100644
+index 0aa7459..3c67831 100644
 --- a/pkgs/servers/monitoring/zabbix/default.nix
 +++ b/pkgs/servers/monitoring/zabbix/default.nix
 @@ -1,4 +1,4 @@
@@ -143,16 +143,16 @@ index ca4df9c..205699b 100644
      postInstall =
        ''
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index d8fa2e1..24007b8 100644
+index e299ca8..19fc4b0 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -7952,6 +7952,10 @@ let
-     inherit fetchurl stdenv pkgconfig postgresql curl openssl zlib;
-   });
+@@ -10073,6 +10073,10 @@ let
  
-+  zabbix18_mysql = callPackage ../servers/monitoring/zabbix {
+   zabbix = recurseIntoAttrs (callPackages ../servers/monitoring/zabbix {});
+ 
++  zabbix18_mysql = recurseIntoAttrs (callPackage ../servers/monitoring/zabbix {
 +    mysql = mysql55;
-+  };
++  });
 +
    zabbix20 = callPackage ../servers/monitoring/zabbix/2.0.nix { };
    zabbix22 = callPackage ../servers/monitoring/zabbix/2.2.nix { };
