@@ -1,2 +1,123 @@
 runit service
 
+diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
+index 84d57f4..bac438a 100644
+--- a/nixos/modules/module-list.nix
++++ b/nixos/modules/module-list.nix
+@@ -424,6 +424,7 @@
+   ./services/system/kerberos.nix
+   ./services/system/minit.nix
+   ./services/system/nscd.nix
++  ./services/system/runit.nix
+   ./services/system/uptimed.nix
+   ./services/torrent/deluge.nix
+   ./services/torrent/peerflix.nix
+diff --git a/nixos/modules/services/system/runit.nix b/nixos/modules/services/system/runit.nix
+new file mode 100644
+index 0000000..431826a
+--- /dev/null
++++ b/nixos/modules/services/system/runit.nix
+@@ -0,0 +1,103 @@
++{ config, pkgs, lib, ... }:
++
++with lib;
++
++let
++
++  cfg = config.services.runit;
++
++  pkg = cfg.package;
++
++  runitServices = pkgs.stdenv.mkDerivation {
++    name = "runit-services";
++    preferLocalBuild = true;
++    buildCommand = ''
++      mkdir -p $out
++      ${concatStringsSep "\n" (mapAttrsToList (n: v: "ln -sf ${v} $out/${n}") cfg.services)}
++    '';
++  };
++
++  mkService = d: pkgs.stdenv.mkDerivation {
++    name = d.name;
++    preferLocalBuild = true;
++    buildCommand = ''
++      mkdir -p $out
++      echo > $out/run <<EOF
++      ${d.run}
++      EOF
++      chmod 755 $out/run
++      ln -sf /run/sv.${d.name} $out/supervise
++    '';
++  };
++
++in
++
++{
++
++  ###### interface
++
++  options = {
++    services = {
++      runit = {
++        enable = mkOption {
++          default = false;
++          description = "Whether to enable runit service.";
++        };
++
++        package = mkOption {
++          type = types.package;
++          default = pkgs.runit;
++          description = "Runit package to use";
++        };
++
++        services = mkOption {
++          default = {};
++          description = "Runit supervised services";
++        };
++
++      };
++    };
++  };
++
++
++  ###### implementation
++
++  config = mkIf config.services.runit.enable {
++
++    environment.systemPackages = [ pkg ];
++
++    system.activationScripts.runit = ''
++      ${pkg}/bin/runsvchdir ${runitServices}
++    '';
++
++    systemd.services.runit =
++      { description = "Runit service";
++
++        path = [
++          "/run/current-system/sw"
++        ];
++
++        wantedBy = [ "multi-user.target" ];
++        after = [ "network.target" ];
++
++        preStart =
++          ''
++            dir=/etc/runit/runsvdir
++            mkdir -p $dir
++            if ! test -e /service; then
++              ln -sf $dir/current /service
++            fi
++          '';
++
++        serviceConfig = {
++          Type = "simple";
++          ExecStart = "${pkg}/bin/runsvdir -P /etc/runit/runsvdir/current";
++        };
++      };
++
++  };
++
++}
++
++# vim: et ts=2 sw=2
++
