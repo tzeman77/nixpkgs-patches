@@ -14,10 +14,10 @@ index 84d57f4..bac438a 100644
    ./services/torrent/peerflix.nix
 diff --git a/nixos/modules/services/system/runit.nix b/nixos/modules/services/system/runit.nix
 new file mode 100644
-index 0000000..431826a
+index 0000000..de19570
 --- /dev/null
 +++ b/nixos/modules/services/system/runit.nix
-@@ -0,0 +1,103 @@
+@@ -0,0 +1,142 @@
 +{ config, pkgs, lib, ... }:
 +
 +with lib;
@@ -25,28 +25,30 @@ index 0000000..431826a
 +let
 +
 +  cfg = config.services.runit;
++  rcfg = config.runit;
 +
 +  pkg = cfg.package;
++
++  sDerivations = rcfg.serviceDerivations // (mapAttrs mkService rcfg.services);
 +
 +  runitServices = pkgs.stdenv.mkDerivation {
 +    name = "runit-services";
 +    preferLocalBuild = true;
 +    buildCommand = ''
 +      mkdir -p $out
-+      ${concatStringsSep "\n" (mapAttrsToList (n: v: "ln -sf ${v} $out/${n}") cfg.services)}
++      ${concatStringsSep "\n" (mapAttrsToList (n: v: "ln -sf ${v} $out/${n}")
++        sDerivations)}
 +    '';
 +  };
 +
-+  mkService = d: pkgs.stdenv.mkDerivation {
-+    name = d.name;
++  mkService = n: s: pkgs.stdenv.mkDerivation {
++    name = n;
 +    preferLocalBuild = true;
 +    buildCommand = ''
 +      mkdir -p $out
-+      echo > $out/run <<EOF
-+      ${d.run}
-+      EOF
++      echo "${s.run}" > $out/run
 +      chmod 755 $out/run
-+      ln -sf /run/sv.${d.name} $out/supervise
++      ln -sf /run/sv.${n} $out/supervise
 +    '';
 +  };
 +
@@ -57,6 +59,48 @@ index 0000000..431826a
 +  ###### interface
 +
 +  options = {
++
++    runit = {
++
++      serviceDerivations = mkOption {
++        default = {};
++        description = "Runit supervised services";
++      };
++
++      services = mkOption {
++        type = types.attrsOf (types.submodule {
++
++          options = {
++
++            run = mkOption {
++              type = types.str;
++              default = "";
++              description = "Run script";
++            };
++
++            logdirs = mkOption {
++              type = types.attrsOf (types.submodule {
++                options = {
++                  config = mkOption {
++                    type = types.str;
++                    default = "s10";
++                    description = "svlogd logdir config";
++                  };
++                };
++              });
++              default = {};
++              description = "svlogd logdirs";
++            };
++
++          };
++        });
++
++        default = {};
++        description = "Runit supervised services";
++      };
++
++    };
++
 +    services = {
 +      runit = {
 +        enable = mkOption {
@@ -68,11 +112,6 @@ index 0000000..431826a
 +          type = types.package;
 +          default = pkgs.runit;
 +          description = "Runit package to use";
-+        };
-+
-+        services = mkOption {
-+          default = {};
-+          description = "Runit supervised services";
 +        };
 +
 +      };
