@@ -1,10 +1,10 @@
 runit service
 
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index 84d57f4..bac438a 100644
+index d5758fc..80c147c 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -424,6 +424,7 @@
+@@ -425,6 +425,7 @@
    ./services/system/kerberos.nix
    ./services/system/minit.nix
    ./services/system/nscd.nix
@@ -14,10 +14,10 @@ index 84d57f4..bac438a 100644
    ./services/torrent/peerflix.nix
 diff --git a/nixos/modules/services/system/runit.nix b/nixos/modules/services/system/runit.nix
 new file mode 100644
-index 0000000..de19570
+index 0000000..35408c1
 --- /dev/null
 +++ b/nixos/modules/services/system/runit.nix
-@@ -0,0 +1,142 @@
+@@ -0,0 +1,169 @@
 +{ config, pkgs, lib, ... }:
 +
 +with lib;
@@ -49,8 +49,30 @@ index 0000000..de19570
 +      echo "${s.run}" > $out/run
 +      chmod 755 $out/run
 +      ln -sf /run/sv.${n} $out/supervise
++      ${mkLog n "$out" s.logDirs s.logUser}
 +    '';
 +  };
++
++  mkLog = n: out: logDirs: user: ''
++    if [ -n "${concatStringsSep " " (mapAttrsToList (n: v: "${n}") logDirs)}" ]; then
++    mkdir -p ${out}/log
++    mkdir -p ${concatStringsSep " " (mapAttrsToList (n: v: "${out}/log/${n}") logDirs)}
++    ${concatStringsSep "\n" (mapAttrsToList (n: v: "echo -n '${v.config}' > ${out}/log${n}/config") logDirs)}
++    cat <<EOF > ${out}/log/run
++    #!${pkgs.bash}/bin/bash 
++    for d in ${concatStringsSep " " (mapAttrsToList (n: v: "${n}") logDirs)}; do
++      mkdir -p \$d && chown -R ${if user == null then root else "${user}"} \$d
++      if [ ! -e \$d/config ]; then
++        ln -sf ${out}/log\$d/config \$d/config.new
++        mv \$d/config.new \$d/config
++      fi
++    done
++    exec ${if user == null then "" else "${pkg}/bin/chpst -u ${user}"} ${pkg}/bin/svlogd ${concatStringsSep " " (mapAttrsToList (n: v: "${n}") logDirs)}
++    EOF
++    chmod 755 ${out}/log/run
++    ln -sf /run/sv.${n}-log ${out}/log/supervise
++    fi
++  '';
 +
 +in
 +
@@ -78,12 +100,12 @@ index 0000000..de19570
 +              description = "Run script";
 +            };
 +
-+            logdirs = mkOption {
++            logDirs = mkOption {
 +              type = types.attrsOf (types.submodule {
 +                options = {
 +                  config = mkOption {
 +                    type = types.str;
-+                    default = "s10";
++                    default = "n10";
 +                    description = "svlogd logdir config";
 +                  };
 +                };
@@ -92,6 +114,11 @@ index 0000000..de19570
 +              description = "svlogd logdirs";
 +            };
 +
++            logUser = mkOption {
++              type = types.nullOr types.str;
++              default = null;
++              description = "svlogd user";
++            };
 +          };
 +        });
 +
