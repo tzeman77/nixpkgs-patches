@@ -14,10 +14,10 @@ index d5758fc..80c147c 100644
    ./services/torrent/peerflix.nix
 diff --git a/nixos/modules/services/system/runit.nix b/nixos/modules/services/system/runit.nix
 new file mode 100644
-index 0000000..35408c1
+index 0000000..dc9d4fc
 --- /dev/null
 +++ b/nixos/modules/services/system/runit.nix
-@@ -0,0 +1,169 @@
+@@ -0,0 +1,170 @@
 +{ config, pkgs, lib, ... }:
 +
 +with lib;
@@ -62,8 +62,9 @@ index 0000000..35408c1
 +    #!${pkgs.bash}/bin/bash 
 +    for d in ${concatStringsSep " " (mapAttrsToList (n: v: "${n}") logDirs)}; do
 +      mkdir -p \$d && chown -R ${if user == null then root else "${user}"} \$d
-+      if [ ! -e \$d/config ]; then
-+        ln -sf ${out}/log\$d/config \$d/config.new
++      cmp -s \$d/config ${out}/log\$d/config
++      if [ \$? -ne 0 ]; then
++        cp ${out}/log\$d/config \$d/config.new
 +        mv \$d/config.new \$d/config
 +      fi
 +    done
