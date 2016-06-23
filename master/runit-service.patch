@@ -14,10 +14,10 @@ index d5758fc..80c147c 100644
    ./services/torrent/peerflix.nix
 diff --git a/nixos/modules/services/system/runit.nix b/nixos/modules/services/system/runit.nix
 new file mode 100644
-index 0000000..dc9d4fc
+index 0000000..2ef4b80
 --- /dev/null
 +++ b/nixos/modules/services/system/runit.nix
-@@ -0,0 +1,170 @@
+@@ -0,0 +1,204 @@
 +{ config, pkgs, lib, ... }:
 +
 +with lib;
@@ -49,30 +49,43 @@ index 0000000..dc9d4fc
 +      echo "${s.run}" > $out/run
 +      chmod 755 $out/run
 +      ln -sf /run/sv.${n} $out/supervise
-+      ${mkLog n "$out" s.logDirs s.logUser}
++      ${optionalString ([] != attrNames (s.log.dirs)) (mkLog n "$out" s.log)}
 +    '';
 +  };
 +
-+  mkLog = n: out: logDirs: user: ''
-+    if [ -n "${concatStringsSep " " (mapAttrsToList (n: v: "${n}") logDirs)}" ]; then
++  ts2opt = n:
++    if n == "tai64n" then "-t"
++    else if n == "human_" then "-tt"
++    else if n == "iso" then "-ttt"
++    else "";
++
++  mkLog = n: out: l:
++  ''
 +    mkdir -p ${out}/log
-+    mkdir -p ${concatStringsSep " " (mapAttrsToList (n: v: "${out}/log/${n}") logDirs)}
-+    ${concatStringsSep "\n" (mapAttrsToList (n: v: "echo -n '${v.config}' > ${out}/log${n}/config") logDirs)}
++    mkdir -p ${toString (map (n: "${out}/log${n} ") (attrNames l.dirs))}
++    ${concatStringsSep "\n" (mapAttrsToList (n: v:
++      "echo -n '${v.config}' > ${out}/log${n}/config") l.dirs)
++    }
 +    cat <<EOF > ${out}/log/run
 +    #!${pkgs.bash}/bin/bash 
-+    for d in ${concatStringsSep " " (mapAttrsToList (n: v: "${n}") logDirs)}; do
-+      mkdir -p \$d && chown -R ${if user == null then root else "${user}"} \$d
-+      cmp -s \$d/config ${out}/log\$d/config
++    ${concatStrings (mapAttrsToList (n: v: ''
++      mkdir -p ${n}
++      chown -R ${if l.user == null then "root" else l.user} ${n}
++      cmp -s ${n}/config ${out}/log${n}/config
 +      if [ \$? -ne 0 ]; then
-+        cp ${out}/log\$d/config \$d/config.new
-+        mv \$d/config.new \$d/config
++        cp ${out}/log${n}/config ${n}/config.new
++        mv ${n}/config.new ${n}/config
 +      fi
-+    done
-+    exec ${if user == null then "" else "${pkg}/bin/chpst -u ${user}"} ${pkg}/bin/svlogd ${concatStringsSep " " (mapAttrsToList (n: v: "${n}") logDirs)}
++    ''
++    ) l.dirs)}
++    exec ${optionalString (l.user != null)
++      "${pkg}/bin/chpst -u ${l.user} "
++    }${pkg}/bin/svlogd ${(ts2opt l.timestamp) + " "
++    }${optionalString (l.extraOptions != null) "${l.extraOptions} "
++    }${concatStringsSep " " (map (n: "${n}") (attrNames l.dirs))}
 +    EOF
 +    chmod 755 ${out}/log/run
 +    ln -sf /run/sv.${n}-log ${out}/log/supervise
-+    fi
 +  '';
 +
 +in
@@ -101,25 +114,46 @@ index 0000000..dc9d4fc
 +              description = "Run script";
 +            };
 +
-+            logDirs = mkOption {
-+              type = types.attrsOf (types.submodule {
++            log = mkOption {
++              default = {};
++              description = "svlogd configuration";
++              type = types.submodule {
 +                options = {
-+                  config = mkOption {
-+                    type = types.str;
-+                    default = "n10";
-+                    description = "svlogd logdir config";
++                  dirs = mkOption {
++                    type = types.attrsOf (types.submodule {
++                      options = {
++                        config = mkOption {
++                          type = types.str;
++                          default = "n10";
++                          description = "svlogd logdir config";
++                        };
++                      };
++                    });
++                    default = {};
++                    description = "svlogd logdirs";
++                  };
++
++                  user = mkOption {
++                    type = types.nullOr types.str;
++                    default = null;
++                    description = "svlogd user";
++                  };
++
++                  timestamp = mkOption {
++                    type = types.nullOr (types.enum [ "tai64n" "human_" "iso"]);
++                    default = "tai64n";
++                    description = "svlogd timetamp option";
++                  };
++
++                  extraOptions = mkOption {
++                    type = types.nullOr types.str;
++                    default = null;
++                    description = "extra options to be passed to svlogd";
 +                  };
 +                };
-+              });
-+              default = {};
-+              description = "svlogd logdirs";
++              };
 +            };
 +
-+            logUser = mkOption {
-+              type = types.nullOr types.str;
-+              default = null;
-+              description = "svlogd user";
-+            };
 +          };
 +        });
 +
