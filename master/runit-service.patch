@@ -14,10 +14,10 @@ index d5758fc..80c147c 100644
    ./services/torrent/peerflix.nix
 diff --git a/nixos/modules/services/system/runit.nix b/nixos/modules/services/system/runit.nix
 new file mode 100644
-index 0000000..c120b29
+index 0000000..752a63b
 --- /dev/null
 +++ b/nixos/modules/services/system/runit.nix
-@@ -0,0 +1,242 @@
+@@ -0,0 +1,268 @@
 +{ config, pkgs, lib, ... }:
 +
 +with lib;
@@ -81,8 +81,14 @@ index 0000000..c120b29
 +    mkdir -p ${out}/log
 +    mkdir -p ${toString (map (n: "${out}/log${n} ") (attrNames l.dirs))}
 +    ${concatStringsSep "\n" (mapAttrsToList (n: v:
-+      "echo -n '${v.config}' > ${out}/log${n}/config") l.dirs)
-+    }
++      if (v.config != null) then "echo -n '${v.config}' > ${out}/log${n}/config"
++      else ''
++        echo "s${toString v.size}" > ${out}/log${n}/config
++        echo "n${toString v.num}" >> ${out}/log${n}/config
++        ${optionalString (v.extraConfig != null)
++          "echo -n '${v.extraConfig}' >> ${out}/log${n}/config"}
++      ''
++    ) l.dirs)}
 +    cat <<EOF > ${out}/log/run
 +    #!${pkgs.bash}/bin/sh 
 +    ${concatStrings (mapAttrsToList (n: v: ''
@@ -158,17 +164,37 @@ index 0000000..c120b29
 +              type = types.submodule {
 +                options = {
 +                  dirs = mkOption {
-+                    type = types.attrsOf (types.submodule {
-+                      options = {
-+                        config = mkOption {
-+                          type = types.str;
-+                          default = "n10";
-+                          description = "svlogd logdir config";
-+                        };
-+                      };
-+                    });
 +                    default = {};
 +                    description = "svlogd logdirs";
++                    type = types.attrsOf (types.submodule {
++                      options = {
++
++                        config = mkOption {
++                          type = types.nullOr types.str;
++                          default = null;
++                          description = "svlogd logdir config";
++                        };
++
++                        extraConfig = mkOption {
++                          type = types.nullOr types.str;
++                          default = null;
++                          description = "svlogd logdir extra config";
++                        };
++
++                        size = mkOption {
++                          type = types.int;
++                          default = 1000000;
++                          description = "current log file size in bytes";
++                        };
++
++                        num = mkOption {
++                          type = types.int;
++                          default = 10;
++                          description = "number of log files kept";
++                        };
++
++                      };
++                    });
 +                  };
 +
 +                  user = mkOption {
