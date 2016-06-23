@@ -14,10 +14,10 @@ index d5758fc..80c147c 100644
    ./services/torrent/peerflix.nix
 diff --git a/nixos/modules/services/system/runit.nix b/nixos/modules/services/system/runit.nix
 new file mode 100644
-index 0000000..2ef4b80
+index 0000000..c120b29
 --- /dev/null
 +++ b/nixos/modules/services/system/runit.nix
-@@ -0,0 +1,204 @@
+@@ -0,0 +1,242 @@
 +{ config, pkgs, lib, ... }:
 +
 +with lib;
@@ -44,11 +44,28 @@ index 0000000..2ef4b80
 +  mkService = n: s: pkgs.stdenv.mkDerivation {
 +    name = n;
 +    preferLocalBuild = true;
-+    buildCommand = ''
++    buildCommand =
++    ''
 +      mkdir -p $out
-+      echo "${s.run}" > $out/run
++      echo "#!${pkgs.bash}/bin/sh" > $out/run
++      ${optionalString ("" != s.preRun) ''
++        echo '${s.preRun}' > $out/pre-run
++        chmod 755 $out/pre-run
++        echo ./pre-run >> $out/run
++      ''}
++      echo '${s.run}' > $out/run-this
++      chmod 755 $out/run-this
++      cat <<EOF >> $out/run
++      exec ${pkg}/bin/chpst ${optionalString ([] != attrNames s.env) "-e env "
++      }${optionalString (s.user != null) "-u ${s.user} "
++      }./run-this
++      EOF
 +      chmod 755 $out/run
 +      ln -sf /run/sv.${n} $out/supervise
++      ${optionalString ([] != attrNames s.env) "mkdir -p $out/env"}
++      ${concatStringsSep "\n" (mapAttrsToList (n: v:
++        "echo -n '${toString v}' > $out/env/${n}"
++      ) s.env)}
 +      ${optionalString ([] != attrNames (s.log.dirs)) (mkLog n "$out" s.log)}
 +    '';
 +  };
@@ -67,7 +84,7 @@ index 0000000..2ef4b80
 +      "echo -n '${v.config}' > ${out}/log${n}/config") l.dirs)
 +    }
 +    cat <<EOF > ${out}/log/run
-+    #!${pkgs.bash}/bin/bash 
++    #!${pkgs.bash}/bin/sh 
 +    ${concatStrings (mapAttrsToList (n: v: ''
 +      mkdir -p ${n}
 +      chown -R ${if l.user == null then "root" else l.user} ${n}
@@ -108,10 +125,31 @@ index 0000000..2ef4b80
 +
 +          options = {
 +
++            preRun = mkOption {
++              type = types.str;
++              default = "";
++              description = "Pre-run script which prepares environment for service.";
++            };
++
 +            run = mkOption {
 +              type = types.str;
 +              default = "";
 +              description = "Run script";
++            };
++
++            env = mkOption {
++              type = types.attrsOf types.unspecified;
++              default = {};
++              description = "Environment available to run script under env dir.";
++              example = {
++                ENV_FOO_VAR = "abc";
++              };
++            };
++
++            user = mkOption {
++              type = types.nullOr types.str;
++              default = null;
++              description = "service user";
 +            };
 +
 +            log = mkOption {
