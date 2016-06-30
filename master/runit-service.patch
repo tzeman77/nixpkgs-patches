@@ -14,10 +14,10 @@ index d5758fc..80c147c 100644
    ./services/torrent/peerflix.nix
 diff --git a/nixos/modules/services/system/runit.nix b/nixos/modules/services/system/runit.nix
 new file mode 100644
-index 0000000..752a63b
+index 0000000..c23f647
 --- /dev/null
 +++ b/nixos/modules/services/system/runit.nix
-@@ -0,0 +1,268 @@
+@@ -0,0 +1,278 @@
 +{ config, pkgs, lib, ... }:
 +
 +with lib;
@@ -48,17 +48,21 @@ index 0000000..752a63b
 +    ''
 +      mkdir -p $out
 +      echo "#!${pkgs.bash}/bin/sh" > $out/run
-+      ${optionalString ("" != s.preRun) ''
++      ${optionalString (s.preRun != null) ''
 +        echo '${s.preRun}' > $out/pre-run
 +        chmod 755 $out/pre-run
 +        echo ./pre-run >> $out/run
 +      ''}
++      ${optionalString (s.cmd == null && s.run != null) ''
 +      echo '${s.run}' > $out/run-this
 +      chmod 755 $out/run-this
++      ''}
 +      cat <<EOF >> $out/run
 +      exec ${pkg}/bin/chpst ${optionalString ([] != attrNames s.env) "-e env "
 +      }${optionalString (s.user != null) "-u ${s.user} "
-+      }./run-this
++      }${optionalString (s.cmd != null) "${s.cmd}"
++      }${optionalString (s.run != null) "./run-this"
++      }
 +      EOF
 +      chmod 755 $out/run
 +      ln -sf /run/sv.${n} $out/supervise
@@ -132,15 +136,21 @@ index 0000000..752a63b
 +          options = {
 +
 +            preRun = mkOption {
-+              type = types.str;
-+              default = "";
++              type = types.nullOr types.str;
++              default = null;
 +              description = "Pre-run script which prepares environment for service.";
 +            };
 +
 +            run = mkOption {
-+              type = types.str;
-+              default = "";
++              type = types.nullOr types.str;
++              default = null;
 +              description = "Run script";
++            };
++
++            cmd = mkOption {
++              type = types.nullOr types.str;
++              default = null;
++              description = "Command to be run as inline run script";
 +            };
 +
 +            env = mkOption {
