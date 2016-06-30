@@ -14,10 +14,10 @@ index d5758fc..80c147c 100644
    ./services/torrent/peerflix.nix
 diff --git a/nixos/modules/services/system/runit.nix b/nixos/modules/services/system/runit.nix
 new file mode 100644
-index 0000000..c23f647
+index 0000000..ef5ae4f
 --- /dev/null
 +++ b/nixos/modules/services/system/runit.nix
-@@ -0,0 +1,278 @@
+@@ -0,0 +1,289 @@
 +{ config, pkgs, lib, ... }:
 +
 +with lib;
@@ -58,6 +58,9 @@ index 0000000..c23f647
 +      chmod 755 $out/run-this
 +      ''}
 +      cat <<EOF >> $out/run
++      ${optionalString (s.stdErrToOut) ''
++        exec 2>&1
++      ''}
 +      exec ${pkg}/bin/chpst ${optionalString ([] != attrNames s.env) "-e env "
 +      }${optionalString (s.user != null) "-u ${s.user} "
 +      }${optionalString (s.cmd != null) "${s.cmd}"
@@ -166,6 +169,12 @@ index 0000000..c23f647
 +              type = types.nullOr types.str;
 +              default = null;
 +              description = "service user";
++            };
++
++            stdErrToOut = mkOption {
++              type = types.bool;
++              default = false;
++              description = "If stderr should be redirected to stdout";
 +            };
 +
 +            log = mkOption {
@@ -286,7 +295,9 @@ index 0000000..c23f647
 +
 +        serviceConfig = {
 +          Type = "simple";
-+          ExecStart = "${pkg}/bin/runsvdir -P /etc/runit/runsvdir/current";
++          ExecStart = "${pkg}/bin/runsvdir -P /etc/runit/runsvdir/current log:........................................................................................";
++          StandardOutput = "null";
++          StandardError = "inherit";
 +        };
 +      };
 +
