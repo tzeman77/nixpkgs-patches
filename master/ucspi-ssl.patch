@@ -4,7 +4,7 @@ sslserver and sslclient are command-line tools for building SSL client-server
 applications.They conform to the UNIX Client-Server Program Interface, UCSPI.
 diff --git a/pkgs/tools/networking/ucspi-ssl/default.nix b/pkgs/tools/networking/ucspi-ssl/default.nix
 new file mode 100644
-index 0000000..098fb73
+index 0000000..7d01a4b
 --- /dev/null
 +++ b/pkgs/tools/networking/ucspi-ssl/default.nix
 @@ -0,0 +1,54 @@
@@ -12,14 +12,14 @@ index 0000000..098fb73
 +
 +let
 +  pkg = "ucspi-ssl";
-+  ver = "0.92";
++  ver = "0.96";
 +  web = "http://www.fehcom.de/ipnet/ucspi-ssl";
 +in stdenv.mkDerivation rec {
 +  name = "${pkg}-${ver}";
 +
 +  src = fetchurl {
 +    url = "${web}/${pkg}-${ver}.tgz";
-+    sha256 = "1w9j2ynzw5cc2nxib6agiqqyiddvxdwipm7r3hrari8xfc8arz8r";
++    sha256 = "0mm843dhhwddb2ygf924r6b7zab6hnp56n78hvh7xkz8c99gr6x9";
 +  };
 +  sourceRoot = "host/superscript.com/net/${pkg}-${ver}";
 +
@@ -63,10 +63,10 @@ index 0000000..098fb73
 +
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index b5c068f..1a98f8d 100644
+index ddab740..21faac6 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -1829,6 +1829,8 @@ let
+@@ -3570,6 +3570,8 @@ let
  
    ucl = callPackage ../development/libraries/ucl { };
  
@@ -74,4 +74,4 @@ index b5c068f..1a98f8d 100644
 +
    ucspi-tcp = callPackage ../tools/networking/ucspi-tcp { };
  
-   udftools = callPackage ../tools/filesystems/udftools {};
+   diet-ucspi-tcp = callPackage ../tools/networking/ucspi-tcp/diet.nix { };
