@@ -2,10 +2,10 @@ cvm: Credential Validation Modules
 
 diff --git a/pkgs/development/libraries/cvm/default.nix b/pkgs/development/libraries/cvm/default.nix
 new file mode 100644
-index 0000000..064dd73
+index 0000000..3798dd4
 --- /dev/null
 +++ b/pkgs/development/libraries/cvm/default.nix
-@@ -0,0 +1,45 @@
+@@ -0,0 +1,44 @@
 +{ stdenv, fetchurl, libtool, bglibs }:
 +
 +let
@@ -27,7 +27,6 @@ index 0000000..064dd73
 +  patches = [
 +    # fix missing main() - can't find in .a lib.
 +    ./link-main.patch
-+    #./inst.patch
 +  ];
 +
 +  configurePhase = ''
@@ -51,79 +50,6 @@ index 0000000..064dd73
 +
 +# vim: et ts=2 sw=2 
 +
-diff --git a/pkgs/development/libraries/cvm/diet.nix b/pkgs/development/libraries/cvm/diet.nix
-new file mode 100644
-index 0000000..34dd109
---- /dev/null
-+++ b/pkgs/development/libraries/cvm/diet.nix
-@@ -0,0 +1,50 @@
-+{ stdenv, fetchurl, dietlibc, libtool, diet-bglibs }:
-+
-+let
-+  pkg = "cvm";
-+  ver = "0.96";
-+  homepage = http://untroubled.org/cvm;
-+in stdenv.mkDerivation rec {
-+  name = "${pkg}-${ver}";
-+
-+  src = fetchurl {
-+    url = "${homepage}/archive/${name}.tar.gz";
-+    sha256 = "1s94c9h3fzw7l1cv5g5qcm5ysx8nhwxdhnvhjmyb4q5iyjr22ldq";
-+  };
-+
-+  buildInputs = [dietlibc libtool diet-bglibs];
-+
-+  inherit diet-bglibs;
-+
-+  patches = [
-+    # fix missing main() - can't find in .a lib.
-+    ./link-main.patch
-+  ];
-+
-+  configurePhase = ''
-+    echo "diet gcc" > conf-cc
-+    echo "diet gcc -s -static" > conf-ld
-+    echo ${diet-bglibs}/include/bglibs > conf-bgincs
-+    echo ${diet-bglibs}/lib > conf-bglibs
-+    echo $out/lib > conf-lib
-+    echo $out/bin > conf-bin
-+    echo $out/man > conf-man
-+    echo $out/include > conf-include
-+  '';
-+
-+  allowedReferences = ["out"];
-+  dontStrip = true; # diet does not need stripping
-+  dontPatchELF = true; # we produce static binaries
-+
-+  meta = {
-+    description = "Credential Validation Modules";
-+    homepage = homepage;
-+    license = stdenv.lib.licenses.gpl2Plus.fullName;
-+    platforms = stdenv.lib.platforms.gnu;
-+    maintainers = with stdenv.lib.maintainers; [ tzeman ];
-+  };
-+
-+}
-+
-+# vim: et ts=2 sw=2 
-+
-diff --git a/pkgs/development/libraries/cvm/inst.patch b/pkgs/development/libraries/cvm/inst.patch
-new file mode 100644
-index 0000000..7126022
---- /dev/null
-+++ b/pkgs/development/libraries/cvm/inst.patch
-@@ -0,0 +1,11 @@
-+diff -ru cvm-0.97.orig/INSTHIER cvm-0.97/INSTHIER
-+--- cvm-0.97.orig/INSTHIER	2015-01-31 15:00:19.000000000 +0100
-++++ cvm-0.97/INSTHIER	2016-07-25 16:15:07.243179105 +0200
-+@@ -1,7 +1,6 @@
-+ >lib
-+ s:::::libcvm-client.a:libcvm-v2client.a
-+ s:::::libcvm-client.la:libcvm-v2client.la
-+-s:::::libcvm-client.so:libcvm-v2client.so
-+ l:::755::libcvm-command.la
-+ l:::755::libcvm-local.la
-+ l:::755::libcvm-module.la
 diff --git a/pkgs/development/libraries/cvm/link-main.patch b/pkgs/development/libraries/cvm/link-main.patch
 new file mode 100644
 index 0000000..0da1558
@@ -230,18 +156,14 @@ index 0000000..0da1558
 + 	./compile sql-query-test.c
 +
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index b773b8c..3a45fe6 100644
+index 80a3bbd..3e2502f 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -860,6 +860,12 @@ let
+@@ -858,6 +858,8 @@ let
  
    ditaa = callPackage ../tools/graphics/ditaa { };
  
-+  cvm = callPackage ../development/libraries/cvm {
-+    bglibs = bglibs2;
-+  };
-+
-+  diet-cvm = callPackage ../development/libraries/cvm/diet.nix { };
++  cvm = callPackage ../development/libraries/cvm { };
 +
    dlx = callPackage ../misc/emulators/dlx { };
  

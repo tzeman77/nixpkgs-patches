@@ -2,10 +2,10 @@ mailfront: Mail server protocol front-ends
 
 diff --git a/pkgs/tools/networking/mailfront/default.nix b/pkgs/tools/networking/mailfront/default.nix
 new file mode 100644
-index 0000000..62fd882
+index 0000000..e4c06d3
 --- /dev/null
 +++ b/pkgs/tools/networking/mailfront/default.nix
-@@ -0,0 +1,39 @@
+@@ -0,0 +1,37 @@
 +{ stdenv, fetchurl, bglibs, cvm }:
 +
 +let
@@ -22,8 +22,6 @@ index 0000000..62fd882
 +
 +  buildInputs = [cvm bglibs];
 +  inherit bglibs;
-+
-+  #patches = [ ./link.patch ];
 +
 +  configurePhase = ''
 +    echo "gcc -W -Wall -Wshadow -O -g -I$bglibs/include -I$cvm/include" > conf-cc
@@ -45,35 +43,15 @@ index 0000000..62fd882
 +}
 +
 +# vim: et ts=2 sw=2 
-diff --git a/pkgs/tools/networking/mailfront/link.patch b/pkgs/tools/networking/mailfront/link.patch
-new file mode 100644
-index 0000000..49d844d
---- /dev/null
-+++ b/pkgs/tools/networking/mailfront/link.patch
-@@ -0,0 +1,12 @@
-+diff -ru mailfront-2.01.orig/Makefile mailfront-2.01/Makefile
-+--- mailfront-2.01.orig/Makefile	2013-07-16 04:36:34.000000000 +0200
-++++ mailfront-2.01/Makefile	2013-09-16 17:13:15.682406967 +0200
-+@@ -170,7 +170,7 @@
-+ 	./compile pop3front-auth.c
-+ 
-+ pop3front-maildir: pop3front-maildir.o load pop3.a
-+-	./load pop3front-maildir pop3.a -lbg -lcvm-sasl -lcvm-v2client 
-++	./load pop3front-maildir pop3.a -lbg -lcvm-sasl -lcvm-v2client -lbg-net -lbg-crypto -lbg-str -lbg-base64 -lbg-misc
-+ 
-+ pop3front-maildir.o: compile pop3front-maildir.c pop3.h constants.h
-+ 	./compile pop3front-maildir.c
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 3a45fe6..62374e4 100644
+index 3e2502f..ac61a28 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -2397,6 +2397,10 @@ let
+@@ -2391,6 +2391,8 @@ let
  
    mailpile = callPackage ../applications/networking/mailreaders/mailpile { };
  
-+  mailfront = callPackage ../tools/networking/mailfront {
-+    bglibs = bglibs2;
-+  };
++  mailfront = callPackage ../tools/networking/mailfront { };
 +
    mailutils = callPackage ../tools/networking/mailutils {
      guile = guile_1_8;
