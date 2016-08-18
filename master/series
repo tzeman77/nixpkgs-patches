@@ -7,6 +7,7 @@ cvm.patch
 mailfront.patch
 bincimap.patch
 vmailmgr.patch
+checkvpw-dovecot-wrapper.patch
 diet-libowfat.patch
 minit.patch
 djbdns.patch
