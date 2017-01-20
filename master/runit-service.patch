@@ -1,10 +1,10 @@
 runit service
 
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index d5758fc..80c147c 100644
+index 6746a36..ae97ed5 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -425,6 +425,7 @@
+@@ -423,6 +423,7 @@
    ./services/system/kerberos.nix
    ./services/system/minit.nix
    ./services/system/nscd.nix
@@ -14,10 +14,10 @@ index d5758fc..80c147c 100644
    ./services/torrent/peerflix.nix
 diff --git a/nixos/modules/services/system/runit.nix b/nixos/modules/services/system/runit.nix
 new file mode 100644
-index 0000000..ef5ae4f
+index 0000000..cbedcac
 --- /dev/null
 +++ b/nixos/modules/services/system/runit.nix
-@@ -0,0 +1,289 @@
+@@ -0,0 +1,295 @@
 +{ config, pkgs, lib, ... }:
 +
 +with lib;
@@ -271,6 +271,9 @@ index 0000000..ef5ae4f
 +    environment.systemPackages = [ pkg ];
 +
 +    system.activationScripts.runit = ''
++      dir=/etc/runit/runsvdir
++      mkdir -p $dir
++      [ -e $dir/current ] || ln -sf /var/empty $dir/current
 +      ${pkg}/bin/runsvchdir ${runitServices}
 +    '';
 +
@@ -288,6 +291,9 @@ index 0000000..ef5ae4f
 +          ''
 +            dir=/etc/runit/runsvdir
 +            mkdir -p $dir
++            if ! test -e $dir/current; then
++              ln -sf /var/empty $dir/current
++            fi
 +            if ! test -e /service; then
 +              ln -sf $dir/current /service
 +            fi
