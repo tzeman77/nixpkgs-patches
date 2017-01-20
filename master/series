@@ -1,7 +1,4 @@
 maintainer-tzeman.patch
-dietlibc-update.patch
-diet-ucspi-tcp.patch
-daemontools.patch
 bglibs.patch
 cvm.patch
 mailfront.patch
