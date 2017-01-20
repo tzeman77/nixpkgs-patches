@@ -37,11 +37,11 @@ index 0000000..bfa14ba
 +   c(auto_home,"bin","tinydns-conf",-1,-1,0755);
 diff --git a/pkgs/servers/dns/djbdns/default.nix b/pkgs/servers/dns/djbdns/default.nix
 new file mode 100644
-index 0000000..60550f8
+index 0000000..3da9e2e
 --- /dev/null
 +++ b/pkgs/servers/dns/djbdns/default.nix
-@@ -0,0 +1,52 @@
-+{ stdenv, fetchurl, dietlibc, ucspi-tcp }:
+@@ -0,0 +1,46 @@
++{ stdenv, fetchurl, ucspi-tcp }:
 +
 +let
 +  pkg = "djbdns";
@@ -59,6 +59,7 @@ index 0000000..60550f8
 +  sourceRoot = name;
 +
 +  patches = [
++    ./errno.patch
 +    # Avoid need to have secondary groups for compilation
 +    # Install dnsroots.global into $out/etc
 +    ./compile.patch
@@ -67,18 +68,11 @@ index 0000000..60550f8
 +    ./dnscache-cname-handling.patch
 +  ];
 +
-+  buildInputs = [dietlibc];
-+
 +  configurePhase = ''
 +    echo $out > conf-home
-+    echo "diet gcc" > conf-cc
-+    echo "diet gcc -s -static" > conf-ld
 +  '';
 +
 +  installTargets = "setup check";
-+
-+  dontStrip = true; # diet does not need stripping
-+  dontPatchELF = true; # we produce static binaries
 +
 +  meta = {
 +    description = "High-performant & secure DNS services";
@@ -355,16 +349,34 @@ index 0000000..cc683da
 +   return -1;
 + }
 + 
+diff --git a/pkgs/servers/dns/djbdns/errno.patch b/pkgs/servers/dns/djbdns/errno.patch
+new file mode 100644
+index 0000000..5099c16
+--- /dev/null
++++ b/pkgs/servers/dns/djbdns/errno.patch
+@@ -0,0 +1,12 @@
++diff -u djbdns-1.05.old/error.h djbdns-1.05/error.h
++--- djbdns-1.05.old/error.h	2001-02-11 15:11:23.000000000 -0600
+++++ djbdns-1.05/error.h	2003-01-08 16:08:42.000000000 -0600
++@@ -1,7 +1,7 @@
++ #ifndef ERROR_H
++ #define ERROR_H
++ 
++-extern int errno;
+++#include <errno.h>
++ 
++ extern int error_intr;
++ extern int error_nomem;
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 8faec9a..26a9c3a 100644
+index d6fca88..7cdcf13 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -9559,6 +9559,8 @@ let
+@@ -1334,6 +1334,8 @@ in
  
-   diod = callPackage ../servers/diod { lua = lua5_1; };
+   dev86 = callPackage ../development/compilers/dev86 { };
  
 +  djbdns = callPackage ../servers/dns/djbdns { };
 +
-   dnschain = callPackage ../servers/dnschain { };
+   dnscrypt-proxy = callPackage ../tools/networking/dnscrypt-proxy { };
  
-   dovecot = dovecot22;
+   dnscrypt-wrapper = callPackage ../tools/networking/dnscrypt-wrapper { };
