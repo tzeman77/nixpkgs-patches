@@ -1,14 +1,14 @@
 Added tzeman to maintainer list
 
 diff --git a/lib/maintainers.nix b/lib/maintainers.nix
-index 82986fa..57db993 100644
+index aec2e34..9b03b0f 100644
 --- a/lib/maintainers.nix
 +++ b/lib/maintainers.nix
-@@ -162,6 +162,7 @@
-   ttuegel = "Thomas Tuegel <ttuegel@gmail.com>";
+@@ -416,6 +416,7 @@
    tv = "Tomislav Viljetić <tv@shackspace.de>";
+   tvestelind = "Tomas Vestelind <tomas.vestelind@fripost.org>";
    twey = "James ‘Twey’ Kay <twey@twey.co.uk>";
 +  tzeman = "Tomáš Zeman <tzeman@volny.cz>";
+   uralbash = "Svintsov Dmitry <root@uralbash.ru>";
    urkud = "Yury G. Kudryashov <urkud+nix@ya.ru>";
    vandenoever = "Jos van den Oever <jos@vandenoever.info>";
-   vbgl = "Vincent Laporte <Vincent.Laporte@gmail.com>";
