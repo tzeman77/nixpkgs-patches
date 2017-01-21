@@ -6,7 +6,7 @@ bincimap.patch
 vmailmgr.patch
 checkvpw-dovecot-wrapper.patch
 djbdns.patch
-diet-qmail.patch
+qmail.patch
 ipsvd.patch
 ucspi-ssl.patch
 diet-qmail-oversize-dns.patch
