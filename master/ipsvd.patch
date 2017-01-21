@@ -2,11 +2,11 @@ ipsvd-1.0.0: internet protocol service daemons
 
 diff --git a/pkgs/tools/networking/ipsvd/default.nix b/pkgs/tools/networking/ipsvd/default.nix
 new file mode 100644
-index 0000000..5136a37
+index 0000000..24edb71
 --- /dev/null
 +++ b/pkgs/tools/networking/ipsvd/default.nix
-@@ -0,0 +1,56 @@
-+{ stdenv, fetchurl, dietlibc }:
+@@ -0,0 +1,45 @@
++{ stdenv, fetchurl }:
 +
 +let
 +  pkg = "ipsvd";
@@ -27,13 +27,6 @@ index 0000000..5136a37
 +    ./hasshsgr.h.patch
 +  ];
 +
-+  buildInputs = [dietlibc];
-+
-+  configurePhase = ''
-+    echo "diet -Os gcc -O2 -Wall" > src/conf-cc
-+    echo "diet -Os gcc -s -Os -pipe" > src/conf-ld
-+  '';
-+
 +  buildPhase = "./package/compile";
 +
 +  installPhase = ''
@@ -47,10 +40,6 @@ index 0000000..5136a37
 +    for i in doc/*; do cp $i $out/share/doc; done
 +    for i in 5 7 8; do cp man/*.$i $out/share/man/man$i; done
 +  '';
-+
-+  allowedReferences = ["out"];
-+  dontStrip = true; # diet does not need stripping
-+  dontPatchELF = true; # we produce static binaries
 +
 +  meta = {
 +    description = "internet protocol service daemons";
@@ -83,15 +72,15 @@ index 0000000..6229f1c
 + haswaitp.h: choose compile haswaitp.h1 haswaitp.h2 load trywaitp.c
 + 	./choose cl trywaitp haswaitp.h1 haswaitp.h2 >haswaitp.h
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 7cd0615..b5c068f 100644
+index 5398132..2303b82 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -1103,6 +1103,8 @@ let
+@@ -2161,6 +2161,8 @@ in
  
-   ipmiutil = callPackage ../tools/system/ipmiutil {};
+   ipxe = callPackage ../tools/misc/ipxe { };
  
 +  ipsvd = callPackage ../tools/networking/ipsvd { };
 +
    ised = callPackage ../tools/misc/ised {};
  
-   isl = callPackage ../development/libraries/isl { };
+   isl = self.isl_0_15;
