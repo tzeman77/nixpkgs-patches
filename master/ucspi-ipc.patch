@@ -2,11 +2,11 @@ ucspi-ipc-0.67: command-line tools for building local-domain client-server appli
 
 diff --git a/pkgs/tools/networking/ucspi-ipc/default.nix b/pkgs/tools/networking/ucspi-ipc/default.nix
 new file mode 100644
-index 0000000..2a29231
+index 0000000..7a836e3
 --- /dev/null
 +++ b/pkgs/tools/networking/ucspi-ipc/default.nix
-@@ -0,0 +1,51 @@
-+{ stdenv, fetchurl, dietlibc }:
+@@ -0,0 +1,47 @@
++{ stdenv, fetchurl }:
 +
 +let
 +  pkg = "ucspi-ipc";
@@ -26,11 +26,7 @@ index 0000000..2a29231
 +    ./hasshsgr.h.patch
 +  ];
 +
-+  buildInputs = [dietlibc];
-+
 +  configurePhase = ''
-+    echo "diet gcc" > src/conf-cc
-+    echo "diet gcc -s -static" > src/conf-ld
 +    for i in ipccat ipcconnect ipcdo ipcrun; do
 +      substituteInPlace src/$i.sh --replace HOME/command/ $out/bin/
 +    done
@@ -77,10 +73,10 @@ index 0000000..407f071
 + haswaitp.h: choose compile load trywaitp.c haswaitp.h1 haswaitp.h2
 + 	./choose cl trywaitp haswaitp.h1 haswaitp.h2 >haswaitp.h
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 1a98f8d..18cbf55 100644
+index 11cd3e5..22617ac 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -1829,6 +1829,8 @@ let
+@@ -3827,6 +3827,8 @@ in
  
    ucl = callPackage ../development/libraries/ucl { };
  
