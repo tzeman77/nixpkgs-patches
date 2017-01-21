@@ -99,10 +99,10 @@ index 0000000..3b78f9b
 +   fi
 diff --git a/pkgs/development/interpreters/php/5.3.nix b/pkgs/development/interpreters/php/5.3.nix
 new file mode 100644
-index 0000000..517737c
+index 0000000..09f0329
 --- /dev/null
 +++ b/pkgs/development/interpreters/php/5.3.nix
-@@ -0,0 +1,318 @@
+@@ -0,0 +1,319 @@
 +{ stdenv, fetchurl, composableDerivation, autoconf, automake, flex, bison
 +, apacheHttpd, mysql55, libxml2, readline, zlib, curl, gd, postgresql, gettext
 +, openssl, pkgconfig, sqlite, config, libjpeg, libpng, freetype, libxslt
@@ -150,7 +150,7 @@ index 0000000..517737c
 +      };
 +
 +      curl = {
-+        configureFlags = ["--with-curl=shared,${curl}" "--with-curlwrappers"];
++        configureFlags = ["--with-curl=shared,${curl.dev}" "--with-curlwrappers"];
 +        buildInputs = [curl openssl];
 +      };
 +
@@ -159,25 +159,25 @@ index 0000000..517737c
 +      };
 +
 +      zlib = {
-+        configureFlags = ["--with-zlib=${zlib}"];
++        configureFlags = ["--with-zlib=${zlib.dev}"];
 +        buildInputs = [zlib];
 +      };
 +
 +      libxml2 = {
 +        configureFlags
-+          = [ "--with-libxml-dir=${libxml2}" ];
++          = [ "--with-libxml-dir=${libxml2.dev}" ];
 +        buildInputs = [ libxml2 ];
 +      };
 +
 +      readline = {
-+        configureFlags = ["--with-readline=${readline}"];
++        configureFlags = ["--with-readline=${readline.dev}"];
 +        buildInputs = [ readline ];
 +      };
 +
 +      sqlite = {
 +        configureFlags = [
 +#         "--with-sqlite=shared,${sqlite}"
-+          "--with-pdo-sqlite=shared,${sqlite}"
++          "--with-pdo-sqlite=shared,${sqlite.dev}"
 +        ];
 +        buildInputs = [ sqlite ];
 +      };
@@ -199,14 +199,14 @@ index 0000000..517737c
 +      mysql = {
 +        configureFlags = [
 +          "--with-mysql=shared,${mysql55}"
-+          "--with-mysql-sock=/tmp/mysql.sock"
++          #"--with-mysql-sock=/tmp/mysql.sock"
 +        ];
 +        buildInputs = [ mysql55 ];
 +      };
 +
 +      mysqli = {
 +        configureFlags = ["--with-mysqli=${mysql55}/bin/mysql_config"];
-+        buildInputs = [ mysql55];
++        buildInputs = [ mysql55 ];
 +      };
 +
 +      mysqli_embedded = {
@@ -226,11 +226,12 @@ index 0000000..517737c
 +
 +      gd = {
 +        configureFlags = [
-+          "--with-gd=shared,${gd}"
-+          "--with-png-dir=${libpng}"
-+          "--with-jpeg-dir=${libjpeg}"
++          "--with-gd" #=shared,${gd.dev}"
++          "--with-freetype-dir=${freetype.dev}"
++          "--with-png-dir=${libpng.dev}"
++          "--with-jpeg-dir=${libjpeg.dev}"
 +        ];
-+        buildInputs = [gd libpng libjpeg freetype];
++        buildInputs = [libpng libjpeg freetype];
 +      };
 +
 +      soap = {
@@ -242,8 +243,8 @@ index 0000000..517737c
 +      };
 +
 +      openssl = {
-+        configureFlags = ["--with-openssl=${openssl}"];
-+        buildInputs = [openssl];
++        configureFlags = ["--with-openssl"];
++        buildInputs = [openssl openssl.dev];
 +      };
 +
 +      mbstring = {
@@ -273,7 +274,7 @@ index 0000000..517737c
 +      };
 +
 +      xsl = {
-+        configureFlags = ["--with-xsl=shared,${libxslt}"];
++        configureFlags = ["--with-xsl=shared,${libxslt.dev}"];
 +        buildInputs = [libxslt];
 +      };
 +
@@ -283,7 +284,7 @@ index 0000000..517737c
 +      };
 +
 +      bz2 = {
-+        configureFlags = ["--with-bz2=shared,${bzip2}"];
++        configureFlags = ["--with-bz2=shared,${bzip2.dev}"];
 +        buildInputs = [bzip2];
 +      };
 +
@@ -300,7 +301,7 @@ index 0000000..517737c
 +      };
 +
 +      gmp = {
-+        configureFlags = ["--with-gmp=shared,${gmp}"];
++        configureFlags = ["--with-gmp=shared,${gmp.dev}"];
 +      };
 +
 +      mhash = {
@@ -352,7 +353,7 @@ index 0000000..517737c
 +    gdSupport = config.php.gd or true;
 +    gdbmSupport = config.php.gdbm or false;
 +    gettextSupport = config.php.gettext or true;
-+    gmpSupport = config.php.gmp or true;
++    gmpSupport = config.php.gmp or false;
 +    imapSupport = config.php.imap or false;
 +    intlSupport = config.php.intl or true;
 +    libxml2Support = config.php.libxml2 or true;
@@ -506,10 +507,10 @@ index 0000000..02f2c9c
 +    if test -z "$GETTEXT_DIR"; then
 +      { echo "configure: error: Cannot locate header file libintl.h" 1>&2; exit 1; }
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 821dd27..ca9cbdf 100644
+index 6ea4d2e..0ee0bee 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -5505,8 +5505,23 @@ let
+@@ -5898,8 +5898,23 @@ in
      php56
      php70;
  
