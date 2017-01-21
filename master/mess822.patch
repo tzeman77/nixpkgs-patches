@@ -2,11 +2,11 @@ mess822-0.58: library for parsing Internet mail messages
 
 diff --git a/pkgs/tools/networking/mess822/default.nix b/pkgs/tools/networking/mess822/default.nix
 new file mode 100644
-index 0000000..aba6605
+index 0000000..5f846b5
 --- /dev/null
 +++ b/pkgs/tools/networking/mess822/default.nix
-@@ -0,0 +1,47 @@
-+{ stdenv, fetchurl, dietlibc, groff }:
+@@ -0,0 +1,45 @@
++{ stdenv, fetchurl, groff }:
 +
 +let
 +  pkg = "mess822";
@@ -19,12 +19,14 @@ index 0000000..aba6605
 +    sha256 = "1q0kqjhnvd1crkc0xnyml1qfa9zaxafk18d0ppcmrbbl6iw7mlr3";
 +  };
 +
-+  buildInputs = [dietlibc groff];
++  buildInputs = [groff];
++
++  patches = [
++    ./errno.patch
++  ];
 +
 +  configurePhase = ''
 +    echo $out > conf-home
-+    echo "diet gcc" > conf-cc
-+    echo "diet gcc -s -static" > conf-ld
 +    substituteInPlace hier.c --replace /etc $out/etc
 +    substituteInPlace leapsecs_read.c --replace /etc/leapsecs $out/etc/leapsecs
 +  '';
@@ -39,10 +41,6 @@ index 0000000..aba6605
 +    rm -fr $out/man/cat*
 +  '';
 +
-+  allowedReferences = ["out"];
-+  dontStrip = true; # diet does not need stripping
-+  dontPatchELF = true; # we produce static binaries
-+
 +  meta = {
 +    description = "Library for parsing internet mail messages";
 +    homepage = http://cr.yp.to/mess822.html;
@@ -53,16 +51,55 @@ index 0000000..aba6605
 +}
 +
 +# vim: et ts=2 sw=2 
+diff --git a/pkgs/tools/networking/mess822/errno.patch b/pkgs/tools/networking/mess822/errno.patch
+new file mode 100644
+index 0000000..172396e
+--- /dev/null
++++ b/pkgs/tools/networking/mess822/errno.patch
+@@ -0,0 +1,33 @@
++diff -u mess822-0.58.old/cdb_seek.c mess822-0.58/cdb_seek.c
++--- mess822-0.58.old/cdb_seek.c	1998-09-04 21:33:37.000000000 -0500
+++++ mess822-0.58/cdb_seek.c	2003-01-13 23:17:30.000000000 -0600
++@@ -1,6 +1,5 @@
++ #include <sys/types.h>
++ #include <errno.h>
++-extern int errno;
++ #include "cdb.h"
++ 
++ #ifndef SEEK_SET
++diff -u mess822-0.58.old/error.h mess822-0.58/error.h
++--- mess822-0.58.old/error.h	1998-09-04 21:33:37.000000000 -0500
+++++ mess822-0.58/error.h	2003-01-13 23:18:09.000000000 -0600
++@@ -1,7 +1,7 @@
++ #ifndef ERROR_H
++ #define ERROR_H
++ 
++-extern int errno;
+++#include <errno.h>
++ 
++ extern int error_intr;
++ extern int error_nomem;
++diff -u mess822-0.58.old/leapsecs_read.c mess822-0.58/leapsecs_read.c
++--- mess822-0.58.old/leapsecs_read.c	1998-09-04 21:33:37.000000000 -0500
+++++ mess822-0.58/leapsecs_read.c	2003-01-13 23:19:17.000000000 -0600
++@@ -2,7 +2,6 @@
++ #include <sys/stat.h>
++ #include <fcntl.h>
++ #include <errno.h>
++-extern int errno;
++ #include "tai.h"
++ #include "leapsecs.h"
++ 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 162f3b0..54cc492 100644
+index 22617ac..111940f 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -1751,6 +1751,8 @@ let
+@@ -15908,6 +15908,8 @@ in
  
-   mfoc = callPackage ../tools/security/mfoc { };
+   micropolis = callPackage ../games/micropolis { };
  
 +  mess822 = callPackage ../tools/networking/mess822 { };
 +
    minecraft = callPackage ../games/minecraft {
-     pulseaudioSupport = config.pulseaudio or true;
-     pulseaudio = pulseaudio.override { ossWrapper = true; };
+     useAlsa = config.minecraft.alsa or false;
+   };
