@@ -18,8 +18,8 @@ dnscache-systemd.patch
 dnsserver-systemd.patch
 axfrdns-systemd.patch
 qmail-systemd.patch
-pure-ftpd.patch
-pdns.patch
+pure-ftpd.patch #+duplicate
+pdns.patch #+fails
 pure-ftpd-systemd.patch
 firehol.patch
 firehol-systemd.patch
