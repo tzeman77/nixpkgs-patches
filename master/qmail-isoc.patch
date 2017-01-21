@@ -1,11 +1,11 @@
 qmail ISO C fix: smtpd/spawn/cdbmake alloc issues
 
-diff --git a/pkgs/servers/mail/qmail/diet.nix b/pkgs/servers/mail/qmail/diet.nix
-index d6dd0b8..5e8f587 100644
---- a/pkgs/servers/mail/qmail/diet.nix
-+++ b/pkgs/servers/mail/qmail/diet.nix
-@@ -46,6 +46,7 @@ in stdenv.mkDerivation rec {
-     ./qmail-dietlibc.patch
+diff --git a/pkgs/servers/mail/qmail/default.nix b/pkgs/servers/mail/qmail/default.nix
+index a030b14..67341e0 100644
+--- a/pkgs/servers/mail/qmail/default.nix
++++ b/pkgs/servers/mail/qmail/default.nix
+@@ -41,6 +41,7 @@ in stdenv.mkDerivation rec {
+     ./qregex-20060423-qmail.patch
      ./qmail-smtpd.spam.patch
      ./qmail-103-oversize-dns.patch
 +    ./qmail-1.03.isoc.patch
