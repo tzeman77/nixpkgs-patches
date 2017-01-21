@@ -9,7 +9,7 @@ djbdns.patch
 qmail.patch
 ipsvd.patch
 ucspi-ssl.patch
-diet-qmail-oversize-dns.patch
+qmail-oversize-dns.patch
 ucspi-ipc.patch
 mess822.patch
 qmail-isoc.patch

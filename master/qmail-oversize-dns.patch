@@ -1,12 +1,12 @@
 Accept oversize DNS packets; CNAME errors avoidance
 
-diff --git a/pkgs/servers/mail/qmail/diet.nix b/pkgs/servers/mail/qmail/diet.nix
-index dc831e8..d6dd0b8 100644
---- a/pkgs/servers/mail/qmail/diet.nix
-+++ b/pkgs/servers/mail/qmail/diet.nix
-@@ -45,6 +45,7 @@ in stdenv.mkDerivation rec {
+diff --git a/pkgs/servers/mail/qmail/default.nix b/pkgs/servers/mail/qmail/default.nix
+index 39a5ead..a030b14 100644
+--- a/pkgs/servers/mail/qmail/default.nix
++++ b/pkgs/servers/mail/qmail/default.nix
+@@ -40,6 +40,7 @@ in stdenv.mkDerivation rec {
+     ./qmailqueue-patch
      ./qregex-20060423-qmail.patch
-     ./qmail-dietlibc.patch
      ./qmail-smtpd.spam.patch
 +    ./qmail-103-oversize-dns.patch
    ];
