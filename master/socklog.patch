@@ -21,11 +21,11 @@ index 0000000..6f79c18
 + 	./choose cl trywaitp haswaitp.h1 haswaitp.h2 > haswaitp.h
 diff --git a/pkgs/tools/system/socklog/default.nix b/pkgs/tools/system/socklog/default.nix
 new file mode 100644
-index 0000000..d4a7ed2
+index 0000000..074667e
 --- /dev/null
 +++ b/pkgs/tools/system/socklog/default.nix
-@@ -0,0 +1,54 @@
-+{ stdenv, fetchurl, dietlibc }:
+@@ -0,0 +1,42 @@
++{ stdenv, fetchurl }:
 +
 +let
 +  pkg = "socklog";
@@ -45,13 +45,6 @@ index 0000000..d4a7ed2
 +    ./compile.patch
 +  ];
 +
-+  buildInputs = [dietlibc];
-+
-+  configurePhase = ''
-+    echo "diet gcc -nostdinc" > src/conf-cc
-+    echo "diet gcc -s -static" > src/conf-ld
-+  '';
-+
 +  buildPhase = "./package/compile";
 +
 +  installPhase = ''
@@ -64,11 +57,6 @@ index 0000000..d4a7ed2
 +    cp man/*.8 $out/man/man8
 +  '';
 +
-+  allowedReferences = ["out"];
-+  dontPatchShebangs = true; # /bin/sh
-+  dontStrip = true; # diet does not need stripping
-+  dontPatchELF = true; # we produce static binaries
-+
 +  meta = {
 +    description = "System and kernel logging services";
 +    homepage = "${web}";
@@ -80,15 +68,15 @@ index 0000000..d4a7ed2
 +
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 588c70b..b24566e 100644
+index 0ee0bee..42ff53e 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -1994,6 +1994,8 @@ let
-     inherit (pkgsi686Linux.xlibs) libX11;
-   };
+@@ -3559,6 +3559,8 @@ in
+ 
+   softhsm = callPackage ../tools/security/softhsm { };
  
 +  socklog = callPackage ../tools/system/socklog { };
 +
    solr = callPackage ../servers/search/solr { };
  
-   sparsehash = callPackage ../development/libraries/sparsehash { };
+   solvespace = callPackage ../applications/graphics/solvespace { };
