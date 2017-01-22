@@ -29,7 +29,6 @@ freshclam.patch #+check
 nginx-wrapper.patch
 zabbix20-mysql.patch
 socklog.patch
-diet-runit.patch
 qmail-autoresponder.patch
 php53-fpm-systemd.patch
 php-apc-restored.patch
