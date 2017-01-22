@@ -1,15 +1,15 @@
 php53-fpm service
 
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index aaa773d..d5f333e 100644
+index 0617279..2c98476 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -402,6 +402,7 @@
-   ./services/web-servers/lighttpd/default.nix
+@@ -488,6 +488,7 @@
    ./services/web-servers/lighttpd/gitweb.nix
+   ./services/web-servers/lighttpd/inginious.nix
    ./services/web-servers/nginx/default.nix
 +  ./services/web-servers/php53-fpm.nix
-   ./services/web-servers/phpfpm.nix
+   ./services/web-servers/phpfpm/default.nix
    ./services/web-servers/shellinabox.nix
    ./services/web-servers/tomcat.nix
 diff --git a/nixos/modules/services/web-servers/php53-fpm.nix b/nixos/modules/services/web-servers/php53-fpm.nix
