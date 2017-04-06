@@ -1,10 +1,10 @@
 pure-ftpd: A free, secure, production-quality and standard-conformant FTP server
 
 diff --git a/pkgs/servers/ftp/pure-ftpd/default.nix b/pkgs/servers/ftp/pure-ftpd/default.nix
-index e566696..3850951 100644
+index e566696..9bcab03 100644
 --- a/pkgs/servers/ftp/pure-ftpd/default.nix
 +++ b/pkgs/servers/ftp/pure-ftpd/default.nix
-@@ -1,14 +1,31 @@
+@@ -1,13 +1,30 @@
 -{ stdenv, fetchurl }:
 +{ stdenv, fetchurl, openssl
 +, mysqlSupport ? false, mysql ? null
@@ -26,7 +26,6 @@ index e566696..3850951 100644
      sha256 = "1yg7v1l3ng7c08nhh804k28y1f8ccmg0rq1a9l2sg45ib273mrvv";
    };
  
--  meta = with stdenv.lib; {
 +  buildInputs = [ openssl ]
 +    ++ stdenv.lib.optional mysqlSupport mysql;
 +
@@ -37,10 +36,9 @@ index e566696..3850951 100644
 +    ${if mysqlSupport then "--with-mysql=${mysql}" else ""}
 +  '';
 +
-+  meta = with stdenv.lib {
+   meta = with stdenv.lib; {
      description = "A free, secure, production-quality and standard-conformant FTP server";
      homepage = https://www.pureftpd.org;
-     license = licenses.isc; # with some parts covered by BSD3(?)
 @@ -17,3 +34,5 @@ stdenv.mkDerivation rec {
    };
  
