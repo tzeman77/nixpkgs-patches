@@ -1,15 +1,17 @@
-pure-ftpd-1.0.36: Free (BSD), secure, production-quality and standard-conformant FTP server
+pure-ftpd: A free, secure, production-quality and standard-conformant FTP server
 
 diff --git a/pkgs/servers/ftp/pure-ftpd/default.nix b/pkgs/servers/ftp/pure-ftpd/default.nix
-new file mode 100644
-index 0000000..fef38e5
---- /dev/null
+index e566696..3850951 100644
+--- a/pkgs/servers/ftp/pure-ftpd/default.nix
 +++ b/pkgs/servers/ftp/pure-ftpd/default.nix
-@@ -0,0 +1,37 @@
+@@ -1,14 +1,31 @@
+-{ stdenv, fetchurl }:
 +{ stdenv, fetchurl, openssl
 +, mysqlSupport ? false, mysql ? null
 +}:
-+
+ 
+-stdenv.mkDerivation rec {
+-  name = "pure-ftpd-1.0.42";
 +assert mysqlSupport -> mysql != null;
 +
 +let
@@ -17,12 +19,14 @@ index 0000000..fef38e5
 +  ver = "1.0.42";
 +in stdenv.mkDerivation rec {
 +  name = "${pkg}-${ver}";
-+
-+  src = fetchurl {
-+    url = "http://download.pureftpd.org/pub/pure-ftpd/releases/${pkg}-${ver}.tar.gz";
-+    sha256 = "1yg7v1l3ng7c08nhh804k28y1f8ccmg0rq1a9l2sg45ib273mrvv";
-+  };
-+
+ 
+   src = fetchurl {
+-    url = "https://download.pureftpd.org/pub/pure-ftpd/releases/${name}.tar.gz";
++    url = "https://download.pureftpd.org/pub/pure-ftpd/releases/${pkg}-${ver}.tar.gz";
+     sha256 = "1yg7v1l3ng7c08nhh804k28y1f8ccmg0rq1a9l2sg45ib273mrvv";
+   };
+ 
+-  meta = with stdenv.lib; {
 +  buildInputs = [ openssl ]
 +    ++ stdenv.lib.optional mysqlSupport mysql;
 +
@@ -33,29 +37,29 @@ index 0000000..fef38e5
 +    ${if mysqlSupport then "--with-mysql=${mysql}" else ""}
 +  '';
 +
-+  meta = {
-+    description = "Free (BSD), secure, production-quality and standard-conformant FTP server";
-+    homepage = http://www.pureftpd.org/project/pure-ftpd;
-+    license = stdenv.lib.licenses.mit.shortName;
-+    platforms = stdenv.lib.platforms.all;
-+    maintainers = with stdenv.lib.maintainers; [ tzeman ];
-+  };
-+}
++  meta = with stdenv.lib {
+     description = "A free, secure, production-quality and standard-conformant FTP server";
+     homepage = https://www.pureftpd.org;
+     license = licenses.isc; # with some parts covered by BSD3(?)
+@@ -17,3 +34,5 @@ stdenv.mkDerivation rec {
+   };
+ 
+ }
 +
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 9a3c4df..91fa151 100644
+index 23be56b..cf35dd9 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -9876,6 +9876,11 @@ let
+@@ -10647,7 +10647,10 @@ in
  
    pumpio = callPackage ../servers/web-apps/pump.io { };
  
+-  pure-ftpd = callPackage ../servers/ftp/pure-ftpd { };
 +  pure-ftpd = callPackage ../servers/ftp/pure-ftpd {
 +    mysqlSupport = true;
 +    mysql = mysql55;
 +  };
-+
+ 
    pyIRCt = callPackage ../servers/xmpp/pyIRCt {};
  
-   pyMAILt = callPackage ../servers/xmpp/pyMAILt {};
