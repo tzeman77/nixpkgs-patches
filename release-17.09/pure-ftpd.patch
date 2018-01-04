@@ -1,0 +1,60 @@
+pure-ftpd: A free, secure, production-quality and standard-conformant FTP server
+
+diff --git a/pkgs/servers/ftp/pure-ftpd/default.nix b/pkgs/servers/ftp/pure-ftpd/default.nix
+index 4e39b78..d014b70 100644
+--- a/pkgs/servers/ftp/pure-ftpd/default.nix
++++ b/pkgs/servers/ftp/pure-ftpd/default.nix
+@@ -1,16 +1,26 @@
+-{ stdenv, fetchurl, openssl }:
++{ stdenv, fetchurl, openssl
++, mysqlSupport ? false, mysql ? null
++}:
++
++assert mysqlSupport -> mysql != null;
+ 
+ stdenv.mkDerivation rec {
+-  name = "pure-ftpd-1.0.46";
++  name = "pure-ftpd-1.0.47";
+ 
+   src = fetchurl {
+     url = "https://download.pureftpd.org/pub/pure-ftpd/releases/${name}.tar.gz";
+-    sha256 = "0p0arcaz63fbb03fkavbc8z6m1f90p5vbnxb8mqlvpma6mrq0286";
++    sha256 = "1b97ixva8m10vln8xrfwwwzi344bkgxqji26d0nrm1yzylbc6h27";
+   };
+ 
+-  buildInputs = [ openssl ];
++  buildInputs = [ openssl ]
++    ++ stdenv.lib.optional mysqlSupport mysql;
+ 
+-  configureFlags = [ "--with-tls" ];
++  configureFlags = ''
++    --with-ftpwho --with-quotas
++    --with-ratios --with-puredb --with-altlog --with-throttling
++    --with-privsep --with-tls
++    ${if mysqlSupport then "--with-mysql=${mysql}" else ""}
++  '';
+ 
+   meta = with stdenv.lib; {
+     description = "A free, secure, production-quality and standard-conformant FTP server";
+@@ -20,3 +30,5 @@ stdenv.mkDerivation rec {
+     platforms = platforms.unix;
+   };
+ }
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 33cea03..44d8701 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -11751,7 +11751,10 @@ with pkgs;
+ 
+   pumpio = callPackage ../servers/web-apps/pump.io { };
+ 
+-  pure-ftpd = callPackage ../servers/ftp/pure-ftpd { };
++  pure-ftpd = callPackage ../servers/ftp/pure-ftpd {
++    mysqlSupport = true;
++    mysql = mysql55;
++  };
+ 
+   pyIRCt = callPackage ../servers/xmpp/pyIRCt {};
+ 

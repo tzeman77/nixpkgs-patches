@@ -1,0 +1,170 @@
+cvm: Credential Validation Modules
+
+diff --git a/pkgs/development/libraries/cvm/default.nix b/pkgs/development/libraries/cvm/default.nix
+new file mode 100644
+index 0000000..3798dd4
+--- /dev/null
++++ b/pkgs/development/libraries/cvm/default.nix
+@@ -0,0 +1,44 @@
++{ stdenv, fetchurl, libtool, bglibs }:
++
++let
++  pkg = "cvm";
++  ver = "0.97";
++  homepage = http://untroubled.org/cvm;
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  src = fetchurl {
++    url = "${homepage}/archive/${name}.tar.gz";
++    sha256 = "0iqc1akzzidazps9a1jg5l41vssvi0k572z2awafjancccfpbrw2";
++  };
++
++  buildInputs = [libtool bglibs];
++
++  inherit bglibs;
++
++  patches = [
++    # fix missing main() - can't find in .a lib.
++    ./link-main.patch
++  ];
++
++  configurePhase = ''
++    echo $out/bin > conf-bin
++    echo "gcc -W -Wall -Wshadow -O -g -I$bglibs/include" > conf-cc
++    echo $out/include > conf-include
++    echo "gcc -g -L$bglibs/lib" > conf-ld
++    echo $out/lib > conf-lib
++    #echo $bglibs/lib/libvmailmgr.la > vmailmgr.lib
++  '';
++
++  meta = {
++    description = "Credential Validation Modules";
++    homepage = homepage;
++    license = stdenv.lib.licenses.gpl2Plus.fullName;
++    platforms = stdenv.lib.platforms.gnu;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++
++}
++
++# vim: et ts=2 sw=2 
++
+diff --git a/pkgs/development/libraries/cvm/link-main.patch b/pkgs/development/libraries/cvm/link-main.patch
+new file mode 100644
+index 0000000..0da1558
+--- /dev/null
++++ b/pkgs/development/libraries/cvm/link-main.patch
+@@ -0,0 +1,99 @@
++diff -ru cvm-0.97.orig/Makefile cvm-0.97/Makefile
++--- cvm-0.97.orig/Makefile	2015-01-31 14:00:19.000000000 +0000
+++++ cvm-0.97/Makefile	2016-07-21 16:25:31.790404794 +0000
++@@ -58,7 +58,7 @@
++ 	./compile cvm-benchclient.c
++ 
++ cvm-chain: cvm-chain.o ltload libcvm-module.la libcvm-v2client.la socket.lib s.lib
++-	./ltload cvm-chain libcvm-module.la libcvm-v2client.la -lbg `cat socket.lib` `cat s.lib`
+++	./ltload cvm-chain .libs/module_command_main.o libcvm-module.la libcvm-v2client.la -lbg `cat socket.lib` `cat s.lib`
++ 
++ cvm-chain.o: compile cvm-chain.c module.h credentials.h errors.h facts.h v2client.h
++ 	./compile cvm-chain.c
++@@ -70,7 +70,7 @@
++ 	./compile cvm-checkpassword.c
++ 
++ cvm-mysql: cvm-mysql.o ltload libcvm-module.la libcvm-sql.la crypt.lib
++-	./ltload cvm-mysql libcvm-module.la libcvm-sql.la -lbg -lpwcmp -L/usr/lib/mysql -lmysqlclient `cat crypt.lib`
+++	./ltload cvm-mysql .libs/module_command_main.o libcvm-module.la libcvm-sql.la -lbg -lpwcmp -L/usr/lib/mysql -lmysqlclient `cat crypt.lib`
++ 
++ cvm-mysql-local: cvm-mysql-local.o ltload cvm-mysql.o libcvm-local.la libcvm-sql.la crypt.lib
++ 	./ltload cvm-mysql-local cvm-mysql.o libcvm-local.la libcvm-sql.la -lbg -lpwcmp -L/usr/lib/mysql -lmysqlclient `cat crypt.lib`
++@@ -88,7 +88,7 @@
++ 	./compile cvm-mysql.c
++ 
++ cvm-pgsql: cvm-pgsql.o ltload libcvm-module.la libcvm-sql.la crypt.lib
++-	./ltload cvm-pgsql libcvm-module.la libcvm-sql.la -lbg -lpwcmp -lpq `cat crypt.lib`
+++	./ltload cvm-pgsql .libs/module_command_main.o libcvm-module.la libcvm-sql.la -lbg -lpwcmp -lpq `cat crypt.lib`
++ 
++ cvm-pgsql-local: cvm-pgsql-local.o ltload cvm-pgsql.o libcvm-local.la libcvm-sql.la crypt.lib
++ 	./ltload cvm-pgsql-local cvm-pgsql.o libcvm-local.la libcvm-sql.la -lbg -lpwcmp -lpq `cat crypt.lib`
++@@ -106,19 +106,19 @@
++ 	./compile cvm-pgsql.c
++ 
++ cvm-pwfile: cvm-pwfile.o ltload libcvm-module.la crypt.lib socket.lib
++-	./ltload cvm-pwfile libcvm-module.la -lbg -lpwcmp `cat crypt.lib` `cat socket.lib`
+++	./ltload cvm-pwfile .libs/module_command_main.o libcvm-module.la -lbg -lpwcmp `cat crypt.lib` `cat socket.lib`
++ 
++ cvm-pwfile.o: compile cvm-pwfile.c module.h credentials.h errors.h facts.h
++ 	./compile cvm-pwfile.c
++ 
++ cvm-qmail: cvm-qmail.o ltload getpwnam.o libcvm-module.la libcvm-qmail.la crypt.lib
++-	./ltload cvm-qmail getpwnam.o libcvm-module.la libcvm-qmail.la -lbg `cat crypt.lib`
+++	./ltload cvm-qmail .libs/module_command_main.o getpwnam.o libcvm-module.la libcvm-qmail.la -lbg `cat crypt.lib`
++ 
++ cvm-qmail.o: compile cvm-qmail.c module.h credentials.h errors.h facts.h qmail.h
++ 	./compile cvm-qmail.c
++ 
++ cvm-sqlite: cvm-sqlite.o ltload libcvm-module.la libcvm-sql.la crypt.lib
++-	./ltload cvm-sqlite libcvm-module.la libcvm-sql.la -lbg -lpwcmp -L/usr/lib/sqlite -lsqlite3 `cat crypt.lib`
+++	./ltload cvm-sqlite .libs/module_command_main.o libcvm-module.la libcvm-sql.la -lbg -lpwcmp -L/usr/lib/sqlite -lsqlite3 `cat crypt.lib`
++ 
++ cvm-sqlite.o: compile cvm-sqlite.c module.h credentials.h errors.h facts.h sql.h
++ 	./compile cvm-sqlite.c
++@@ -130,7 +130,7 @@
++ 	./compile cvm-testclient.c
++ 
++ cvm-unix: cvm-unix.o ltload getpwnam.o libcvm-module.la crypt.lib shadow.lib s.lib socket.lib
++-	./ltload cvm-unix getpwnam.o libcvm-module.la -lbg `cat crypt.lib` `cat shadow.lib` `cat s.lib` `cat socket.lib`
+++	./ltload cvm-unix getpwnam.o .libs/module_command_main.o libcvm-module.la -lbg `cat crypt.lib` `cat shadow.lib` `cat s.lib` `cat socket.lib`
++ 
++ cvm-unix.o: compile cvm-unix.c module.h credentials.h errors.h facts.h
++ 	./compile cvm-unix.c
++@@ -154,22 +154,22 @@
++ 	./compile cvm-v1testclient.c
++ 
++ cvm-vchkpw: cvm-vchkpw.o ltload libcvm-module.la crypt.lib shadow.lib s.lib socket.lib
++-	./ltload cvm-vchkpw libcvm-module.la -L/usr/local/vpopmail/lib -L/var/vpopmail/lib -L/usr/local/lib/mysql -lbg -lvpopmail -lmysqlclient `cat crypt.lib` `cat shadow.lib` `cat s.lib` `cat socket.lib`
+++	./ltload cvm-vchkpw .libs/module_command_main.o libcvm-module.la -L/usr/local/vpopmail/lib -L/var/vpopmail/lib -L/usr/local/lib/mysql -lbg -lvpopmail -lmysqlclient `cat crypt.lib` `cat shadow.lib` `cat s.lib` `cat socket.lib`
++ 
++ cvm-vchkpw.o: compile cvm-vchkpw.c module.h credentials.h errors.h facts.h
++ 	./compile cvm-vchkpw.c
++ 
++ cvm-vmailmgr: cvm-vmailmgr.o ltload vmautoconvert.o vmlookup.o getpwnam.o libcvm-module.la libcvm-qmail.la socket.lib crypt.lib
++-	./ltload cvm-vmailmgr vmautoconvert.o vmlookup.o getpwnam.o libcvm-module.la libcvm-qmail.la -lbg -lvmailmgr `cat socket.lib` `cat crypt.lib`
+++	./ltload cvm-vmailmgr .libs/module_command_main.o vmautoconvert.o vmlookup.o getpwnam.o libcvm-module.la libcvm-qmail.la -lbg -lvmailmgr `cat socket.lib` `cat crypt.lib`
++ 
++ cvm-vmailmgr-local: cvm-vmailmgr-local.o ltload cvm-vmailmgr.o vmautoconvert.o vmlookup.o getpwnam.o libcvm-local.la libcvm-qmail.la socket.lib crypt.lib
++-	./ltload cvm-vmailmgr-local cvm-vmailmgr.o vmautoconvert.o vmlookup.o getpwnam.o libcvm-local.la libcvm-qmail.la -lbg -lvmailmgr `cat socket.lib` `cat crypt.lib`
+++	./ltload cvm-vmailmgr-local .libs/module_local_main.o cvm-vmailmgr.o vmautoconvert.o vmlookup.o getpwnam.o libcvm-local.la libcvm-qmail.la -lbg -lvmailmgr `cat socket.lib` `cat crypt.lib`
++ 
++ cvm-vmailmgr-local.o: compile cvm-vmailmgr-local.c
++ 	./compile cvm-vmailmgr-local.c
++ 
++ cvm-vmailmgr-udp: cvm-vmailmgr-udp.o ltload cvm-vmailmgr.o vmautoconvert.o vmlookup.o getpwnam.o libcvm-udp.la libcvm-qmail.la socket.lib crypt.lib
++-	./ltload cvm-vmailmgr-udp cvm-vmailmgr.o vmautoconvert.o vmlookup.o getpwnam.o libcvm-udp.la libcvm-qmail.la -lbg -lvmailmgr `cat socket.lib` `cat crypt.lib`
+++	./ltload cvm-vmailmgr-udp .libs/module_udp_main.o cvm-vmailmgr.o vmautoconvert.o vmlookup.o getpwnam.o libcvm-udp.la libcvm-qmail.la -lbg -lvmailmgr `cat socket.lib` `cat crypt.lib`
++ 
++ cvm-vmailmgr-udp.o: compile cvm-vmailmgr-udp.c
++ 	./compile cvm-vmailmgr-udp.c
++@@ -363,7 +363,7 @@
++ 	./ltcompile sql-auth.c
++ 
++ sql-query-test: sql-query-test.o load sql-query.o
++-	./load sql-query-test sql-query.o -lbg 
+++	./load sql-query-test .libs/sql-query.o -lbg 
++ 
++ sql-query-test.o: compile sql-query-test.c credentials.h sql.h
++ 	./compile sql-query-test.c
++
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 80a3bbd..3e2502f 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -858,6 +858,8 @@ let
+ 
+   ditaa = callPackage ../tools/graphics/ditaa { };
+ 
++  cvm = callPackage ../development/libraries/cvm { };
++
+   dlx = callPackage ../misc/emulators/dlx { };
+ 
+   dpic = callPackage ../tools/graphics/dpic { };

@@ -1,0 +1,80 @@
+axfrdns service: separate logging
+
+diff --git a/nixos/modules/services/networking/axfrdns.nix b/nixos/modules/services/networking/axfrdns.nix
+index 29a1a9c..122d9a2 100644
+--- a/nixos/modules/services/networking/axfrdns.nix
++++ b/nixos/modules/services/networking/axfrdns.nix
+@@ -39,6 +39,22 @@ in
+         default = "/var/db/axfrdns/tcp.cdb";
+         description = "tcp rules database (service access list rules)";
+       };
++
++      logDir = mkOption {
++        default = "/var/log/dns/axfr";
++        description = "axfrdns log dir";
++      };
++
++      logSize = mkOption {
++        default = 1048576;
++        description = "axfrdns log file size, see `s' parameter of multilog(8)";
++      };
++
++      logNum = mkOption {
++        default = 10;
++        description = "axfrdns log file number, see `n' parameter of multilog(8)";
++      };
++
+     };
+   };
+ 
+@@ -68,18 +84,48 @@ in
+ 
+       preStart = ''
+         mkdir -p ${tcfg.root}
++        if [ ! -p ${tcfg.root}/.axfrout ]; then
++          mkfifo -m640 ${tcfg.root}/.axfrout
++          chown axfrdns:dnslog ${tcfg.root}/.axfrout
++        fi
+       '';
+ 
+       serviceConfig = {
+         ExecStart =
+-          "${dtools}/bin/envuidgid axfrdns ${dtools}/bin/softlimit " +
++          "${pkgs.bash}/bin/sh -c '" +
++          "exec 1> ${tcfg.root}/.axfrout; " +
++          "exec 2>&1; " +
++          "exec ${dtools}/bin/envuidgid axfrdns ${dtools}/bin/softlimit " +
+           "-d ${toString cfg.dataLimit} " +
+           "${ucspi}/bin/tcpserver -vDRHl0 -x ${cfg.rules} -- $IP 53 " +
+-          "${pkg}/bin/axfrdns";
++          "${pkg}/bin/axfrdns" +
++          "'";
++        Restart = "always";
++        Type = "simple";
++      };
++    };
++
++    systemd.services.axfrdns-log = {
++      description = "AXFR server logging service";
++      wantedBy = [ "multi-user.target" ];
++      after = [ "network.target" ];
++
++      preStart = ''
++        mkdir -p ${cfg.logDir}
++        chown -R dnslog:dnslog ${cfg.logDir}
++      '';
++
++      serviceConfig = {
++        ExecStart =
++          "${pkgs.bash}/bin/sh -c 'exec <${tcfg.root}/.axfrout; " +
++          "exec ${dtools}/bin/setuidgid dnslog " +
++          "${dtools}/bin/multilog t n${toString cfg.logNum} s${toString cfg.logSize} ${cfg.logDir} " +
++          "'";
+         Restart = "always";
+         Type = "simple";
+       };
+     };
++
+   };
+ 
+ }

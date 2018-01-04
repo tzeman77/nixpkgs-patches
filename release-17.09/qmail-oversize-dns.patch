@@ -1,0 +1,91 @@
+Accept oversize DNS packets; CNAME errors avoidance
+
+diff --git a/pkgs/servers/mail/qmail/default.nix b/pkgs/servers/mail/qmail/default.nix
+index 39a5ead..a030b14 100644
+--- a/pkgs/servers/mail/qmail/default.nix
++++ b/pkgs/servers/mail/qmail/default.nix
+@@ -40,6 +40,7 @@ in stdenv.mkDerivation rec {
+     ./qmailqueue-patch
+     ./qregex-20060423-qmail.patch
+     ./qmail-smtpd.spam.patch
++    ./qmail-103-oversize-dns.patch
+   ];
+ 
+   buildFlags = "it man";
+diff --git a/pkgs/servers/mail/qmail/qmail-103-oversize-dns.patch b/pkgs/servers/mail/qmail/qmail-103-oversize-dns.patch
+new file mode 100644
+index 0000000..0927b84
+--- /dev/null
++++ b/pkgs/servers/mail/qmail/qmail-103-oversize-dns.patch
+@@ -0,0 +1,71 @@
++http://www.ckdhr.com/ckd/qmail-103.patch
++
++Description from http://qmail.ruk.cuni.cz/top.html :
++Christopher K. Davis has a patch to accept oversize DNS packets which works on
++both qmail's dns.c and tcpserver's dns.c. If you don't want to patch qmail, you
++can ameliorate the problem somewhat using djbdns, which returns only the
++records you ask for, making for a smaller ANSWER section. 
++
++--- qmail-1.03/dns.c.103	Mon Aug 17 16:06:58 1998
+++++ qmail-1.03/dns.c	Wed Aug 26 16:28:56 1998
++@@ -21,10 +21,12 @@
++ static unsigned short getshort(c) unsigned char *c;
++ { unsigned short u; u = c[0]; return (u << 8) + c[1]; }
++ 
++-static union { HEADER hdr; unsigned char buf[PACKETSZ]; } response;
+++static struct { unsigned char *buf; } response;
+++static int responsebuflen = 0;
++ static int responselen;
++ static unsigned char *responseend;
++ static unsigned char *responsepos;
+++static unsigned long saveresoptions;
++ 
++ static int numanswers;
++ static char name[MAXDNAME];
++@@ -45,18 +47,33 @@
++  errno = 0;
++  if (!stralloc_copy(&glue,domain)) return DNS_MEM;
++  if (!stralloc_0(&glue)) return DNS_MEM;
++- responselen = lookup(glue.s,C_IN,type,response.buf,sizeof(response));
+++ if (!responsebuflen)
+++  if (response.buf = (unsigned char *)alloc(PACKETSZ+1))
+++   responsebuflen = PACKETSZ+1;
+++  else return DNS_MEM;
+++
+++ responselen = lookup(glue.s,C_IN,type,response.buf,responsebuflen);
+++ if ((responselen >= responsebuflen) ||
+++     (responselen > 0 && (((HEADER *)response.buf)->tc)))
+++  {
+++   if (responsebuflen < 65536)
+++    if (alloc_re(&response.buf, responsebuflen, 65536))
+++     responsebuflen = 65536;
+++    else return DNS_MEM;
+++    saveresoptions = _res.options;
+++    _res.options |= RES_USEVC;
+++    responselen = lookup(glue.s,C_IN,type,response.buf,responsebuflen);
+++    _res.options = saveresoptions;
+++  }
++  if (responselen <= 0)
++   {
++    if (errno == ECONNREFUSED) return DNS_SOFT;
++    if (h_errno == TRY_AGAIN) return DNS_SOFT;
++    return DNS_HARD;
++   }
++- if (responselen >= sizeof(response))
++-   responselen = sizeof(response);
++  responseend = response.buf + responselen;
++  responsepos = response.buf + sizeof(HEADER);
++- n = ntohs(response.hdr.qdcount);
+++ n = ntohs(((HEADER *)response.buf)->qdcount);
++  while (n-- > 0)
++   {
++    i = dn_expand(response.buf,responseend,responsepos,name,MAXDNAME);
++@@ -66,7 +83,7 @@
++    if (i < QFIXEDSZ) return DNS_SOFT;
++    responsepos += QFIXEDSZ;
++   }
++- numanswers = ntohs(response.hdr.ancount);
+++ numanswers = ntohs(((HEADER *)response.buf)->ancount);
++  return 0;
++ }
++ 

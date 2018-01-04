@@ -1,0 +1,104 @@
+dnsserver module (supervised via systemd)
+
+diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
+index b4b2fa1..41acf8d 100644
+--- a/nixos/modules/module-list.nix
++++ b/nixos/modules/module-list.nix
+@@ -344,6 +344,7 @@
+   ./services/networking/teamspeak3.nix
+   ./services/networking/tinc.nix
+   ./services/networking/tftpd.nix
++  ./services/networking/tinydns.nix
+   ./services/networking/tlsdated.nix
+   ./services/networking/tox-bootstrapd.nix
+   ./services/networking/tvheadend.nix
+diff --git a/nixos/modules/services/networking/tinydns.nix b/nixos/modules/services/networking/tinydns.nix
+new file mode 100644
+index 0000000..9517eae
+--- /dev/null
++++ b/nixos/modules/services/networking/tinydns.nix
+@@ -0,0 +1,84 @@
++{ config, pkgs, lib, ... }:
++
++with lib;
++
++let
++
++  cfg = config.services.tinydns;
++  dtools = pkgs.daemontools;
++  pkg = pkgs.djbdns;
++
++in
++
++{
++
++  ###### interface
++
++  options = {
++
++    services.tinydns = {
++
++      enable = mkOption {
++        default = false;
++        description = "Whether to enable tinydns (authoritative) service.";
++      };
++
++      dataLimit = mkOption {
++        default = 1048576;
++        description = "Data segment limit";
++      };
++
++      listenIp = mkOption {
++        default = "127.0.0.1";
++        description = "Listening IP address. Should be the external IP.";
++      };
++
++      root = mkOption {
++        default = "/var/db/tinydns/root";
++        description = "tinydns root dir";
++      };
++    };
++  };
++
++
++  ###### implementation
++
++  config = mkIf cfg.enable {
++
++    environment.systemPackages = [ pkg dtools ];
++
++    users.extraUsers.tinydns = {
++      uid = config.ids.uids.tinydns;
++      group = "tinydns";
++      description = "tinydns service user";
++    };
++
++    users.extraGroups.tinydns.gid = config.ids.gids.tinydns;
++
++    systemd.services.tinydns = {
++      description = "DNS server (tinydns) service";
++      wantedBy = [ "multi-user.target" ];
++      after = [ "network.target" ];
++      environment = {
++        IP = cfg.listenIp;
++        ROOT = cfg.root;
++      };
++
++      preStart = ''
++        mkdir -p ${cfg.root}
++      '';
++
++      serviceConfig = {
++        ExecStart =
++          "${dtools}/bin/envuidgid tinydns ${dtools}/bin/softlimit " +
++          "-d ${toString cfg.dataLimit} ${pkg}/bin/tinydns";
++        Restart = "always";
++        Type = "simple";
++      };
++    };
++  };
++
++}
++
++# vim: et ts=2 sw=2
++

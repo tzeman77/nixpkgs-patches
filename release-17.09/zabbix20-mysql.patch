@@ -1,0 +1,12 @@
+Zabbix 2.0 mysql support
+
+diff --git a/pkgs/servers/monitoring/zabbix/2.0.nix b/pkgs/servers/monitoring/zabbix/2.0.nix
+index 399fb54..21d0166 100644
+--- a/pkgs/servers/monitoring/zabbix/2.0.nix
++++ b/pkgs/servers/monitoring/zabbix/2.0.nix
+@@ -1,4 +1,5 @@
+ { stdenv, fetchurl, pkgconfig, postgresql, curl, openssl, zlib, gettext
++, mysql55
+ , enableJabber ? false, minmay ? null }:
+ 
+ assert enableJabber -> minmay != null;

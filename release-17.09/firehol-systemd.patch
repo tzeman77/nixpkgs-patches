@@ -1,0 +1,93 @@
+firehol service
+
+diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
+index 3b204b9..d8c7c7e 100644
+--- a/nixos/modules/module-list.nix
++++ b/nixos/modules/module-list.nix
+@@ -437,6 +437,7 @@
+   ./services/networking/fakeroute.nix
+   ./services/networking/ferm.nix
+   ./services/networking/firefox/sync-server.nix
++  ./services/networking/firehol.nix
+   ./services/networking/fireqos.nix
+   ./services/networking/firewall.nix
+   ./services/networking/flannel.nix
+diff --git a/nixos/modules/services/networking/firehol.nix b/nixos/modules/services/networking/firehol.nix
+new file mode 100644
+index 0000000..d55efa1
+--- /dev/null
++++ b/nixos/modules/services/networking/firehol.nix
+@@ -0,0 +1,73 @@
++{ config, pkgs, lib, ... }:
++
++with lib;
++
++let
++
++  cfg = config.networking.firehol;
++  pkg = pkgs.firehol;
++
++in
++
++{
++
++  ###### interface
++
++  options = {
++
++    networking.firehol.enable = mkOption {
++      default = false;
++      description = "Whether to enable firehol firewall.";
++    };
++
++    networking.firehol.configuration = mkOption {
++      default = ''
++        version 5
++
++        interface any world
++          client all accept
++      '';
++      description = "Firehol configuration, see firehol.conf(5).";
++    };
++
++  };
++
++  ###### implementation
++
++  config = mkIf cfg.enable {
++
++    networking.firewall.enable = false; # mutually exclusive with nixos default firewall.
++
++    boot.kernelModules = [ "configs" ];
++
++    environment.etc."firehol/firehol.conf".text = cfg.configuration;
++
++    environment.systemPackages = [ pkg pkgs.iptables ];
++
++    systemd.services.firehol = {
++      description = "Firehol firewall";
++      wantedBy = [ "network.target" ];
++      after = [ "network-interfaces.target" ];
++      path = with pkgs; [ gnugrep findutils gawk gnused procps gzip iproute iprange
++        which iptables kmod utillinux ];
++
++      preStart = "mkdir -p /var/spool";
++
++      serviceConfig = {
++        Type = "oneshot";
++        RemainAfterExit = true;
++        ExecStop = ''
++          ${pkg}/sbin/firehol stop
++        '';
++      };
++
++      script = ''
++        ${pkg}/sbin/firehol start
++      '';
++    };
++
++  };
++
++}
++
++# vim: et ts=2 sw=2 
