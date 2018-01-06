@@ -1,0 +1,380 @@
+diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
+index 663d2dd..eee115c 100644
+--- a/nixos/modules/module-list.nix
++++ b/nixos/modules/module-list.nix
+@@ -319,6 +319,7 @@
+   ./services/networking/atftpd.nix
+   ./services/networking/avahi-daemon.nix
+   ./services/networking/axfrdns.nix
++  ./services/networking/axfrdns-runit.nix
+   ./services/networking/bind.nix
+   ./services/networking/autossh.nix
+   ./services/networking/bird.nix
+@@ -335,6 +336,7 @@
+   ./services/networking/dhcpcd.nix
+   ./services/networking/dhcpd.nix
+   ./services/networking/dnscache.nix
++  ./services/networking/dnscache-runit.nix
+   ./services/networking/dnschain.nix
+   ./services/networking/dnscrypt-proxy.nix
+   ./services/networking/dnsmasq.nix
+@@ -424,6 +426,7 @@
+   ./services/networking/tinc.nix
+   ./services/networking/tftpd.nix
+   ./services/networking/tinydns.nix
++  ./services/networking/tinydns-runit.nix
+   ./services/networking/tlsdated.nix
+   ./services/networking/tox-bootstrapd.nix
+   ./services/networking/toxvpn.nix
+diff --git a/nixos/modules/services/networking/axfrdns-runit.nix b/nixos/modules/services/networking/axfrdns-runit.nix
+new file mode 100644
+index 0000000..ffa251d
+--- /dev/null
++++ b/nixos/modules/services/networking/axfrdns-runit.nix
+@@ -0,0 +1,82 @@
++{ config, pkgs, lib, ... }:
++
++with lib;
++
++let
++
++  cfg = config.runit.axfrdns;
++  tcfg = config.runit.tinydns;
++  pkg = pkgs.djbdns;
++  ucspi = pkgs.ucspi-tcp;
++
++in
++
++{
++
++  ###### interface
++
++  options = {
++
++    runit.axfrdns = {
++
++      enable = mkOption {
++        default = false;
++        description = "Whether to enable axfrdns service.";
++      };
++
++      dataLimit = mkOption {
++        default = 1048576;
++        description = "Data segment limit";
++      };
++
++      listenIp = mkOption {
++        default = "127.0.0.1";
++        description = "Listening IP address. Should be the external IP.";
++      };
++
++      log = mkOption {
++        default = {
++          user = "dnslog";
++          dirs = { "/var/log/dns/axfr" = {}; };
++        };
++        description = "Logging configuration (as per runit log service)";
++      };
++
++    };
++  };
++
++
++  ###### implementation
++
++  config = mkIf cfg.enable {
++
++    environment.systemPackages = [ pkg ];
++
++    users.extraUsers.axfrdns = {
++      uid = config.ids.uids.axfrdns;
++      group = "axfrdns";
++      description = "axfrdns service user";
++    };
++
++    users.extraGroups.axfrdns.gid = config.ids.gids.axfrdns;
++
++    runit.services.axfrdns = {
++      env = {
++        IP = cfg.listenIp;
++        ROOT = tcfg.root; # shared w/ tinydns service
++        AXFR = "none"; # disable zone transfers
++      };
++
++      stdErrToOut = true;
++
++      cmd = "${pkgs.runit}/bin/chpst -U axfrdns -d ${toString cfg.dataLimit} ${ucspi}/bin/tcpserver -vDRHl0 -- ${cfg.listenIp} 53 ${pkg}/bin/axfrdns";
++
++      log = cfg.log;
++    };
++
++  };
++
++}
++
++# vim: et ts=2 sw=2
++
+diff --git a/nixos/modules/services/networking/dnscache-runit.nix b/nixos/modules/services/networking/dnscache-runit.nix
+new file mode 100644
+index 0000000..249721f
+--- /dev/null
++++ b/nixos/modules/services/networking/dnscache-runit.nix
+@@ -0,0 +1,169 @@
++{ config, pkgs, lib, ... }:
++
++with lib;
++
++let
++
++  cfg = config.runit.dnscache;
++  pkg = pkgs.djbdns;
++
++  useGlobalRootServers = if cfg.nameservers == [] then "1" else "0";
++
++  mkDomain = out: n: v:
++  ''
++    echo "${concatStringsSep "\n" v}" > ${out}/servers/${n}
++  '';
++
++  rootDir = pkg.stdenv.mkDerivation {
++    name = "dnscache";
++    preferLocalBuild = true;
++    buildCommand = ''
++      mkdir -p $out/{ip,servers}
++      for i in ${toString cfg.allowFrom}; do touch $out/ip/$i; done
++      if [ "${useGlobalRootServers}" = "1" ]; then
++        cp ${pkg}/etc/dnsroots.global $out/servers/@
++      else
++        echo "${concatStringsSep "\n" cfg.nameservers}" > $out/servers/@
++      fi
++      ${concatStringsSep "\n" (mapAttrsToList (n: v: mkDomain "$out" n v) cfg.domains)}
++      dd if=/dev/urandom of=$out/seed bs=512 count=1
++      cat <<EOF > $out/run
++      #!${pkgs.bash}/bin/sh
++      exec < $out/seed
++      exec ${pkgs.runit}/bin/chpst -U dnscache -o 250 -d ${toString cfg.dataLimit} ${pkg}/bin/dnscache
++      EOF
++      chmod 755 $out/run
++    '';
++  };
++
++in
++
++{
++
++  ###### interface
++
++  options = {
++
++    runit.dnscache = {
++
++      enable = mkOption {
++        default = false;
++        description = "Whether to enable dnscache service.";
++      };
++
++      cacheSize = mkOption {
++        default = 10000000;
++        description = "Cache size";
++      };
++
++      dataLimit = mkOption {
++        default = 10485760;
++        description = "Data segment limit";
++      };
++
++      listenIp = mkOption {
++        default = "127.0.0.1";
++        description = "Listening IP address";
++      };
++
++      sendIp = mkOption {
++        default = "0.0.0.0";
++        description = "Source IP";
++      };
++
++#     root = mkOption {
++#       default = "/var/db/dnscache/root";
++#       description = "dnscache root dir";
++#     };
++
++      allowFrom = mkOption {
++        default = [ "127.0.0.1" ];
++        description = "List of IP addresses/prefixes to allow query";
++      };
++
++      forwardOnly = mkOption {
++        default = false;
++        description = "If the cache forwards queries to recursive nameservers";
++      };
++
++      nameservers = mkOption {
++        default = [];
++        description = "List of root servers IP addresses. Uses dnsroots.global if empty";
++      };
++
++      domains = mkOption {
++        default = {};
++        description = ''
++          IP addresses for domains (will send queries for those domains directly
++          to configured IP addresses.
++          '';
++        type = types.attrsOf (types.listOf types.str);
++        example = {
++          "example.org" = ["1.2.3.4" "1.2.3.5"];
++        };
++      };
++
++      log = mkOption {
++        default = {
++          user = "dnslog";
++          dirs = { "/var/log/dns/cache" = {}; };
++        };
++        description = "Logging configuration (as per runit log service)";
++      };
++
++    };
++
++  };
++
++
++  ###### implementation
++
++  config = mkIf cfg.enable {
++
++    environment.systemPackages = [ pkg pkgs.diffutils ];
++
++#   environment.etc."dnscache-root-servers" =
++#     if cfg.nameservers == [] then
++#       { source = "${pkgs.djbdns}/etc/dnsroots.global"; }
++#     else
++#       { text = concatStringsSep "\n" cfg.nameservers; };
++
++    users.extraUsers.dnscache = {
++      uid = config.ids.uids.dnscache;
++      group = "dnscache";
++      description = "dnscache service user";
++    };
++
++    users.extraGroups.dnscache.gid = config.ids.gids.dnscache;
++
++    users.extraUsers.dnslog = {
++      uid = config.ids.uids.dnslog;
++      group = "dnslog";
++      description = "dnslog service user";
++    };
++
++    users.extraGroups.dnslog.gid = config.ids.gids.dnslog;
++
++    runit.services.dnscache = {
++      env = {
++        CACHESIZE = toString cfg.cacheSize;
++        DATALIMIT = toString cfg.dataLimit;
++        IP = cfg.listenIp;
++        IPSEND = cfg.sendIp;
++        ROOT = rootDir;
++      } // optionalAttrs (cfg.forwardOnly) {
++        FORWARDONLY = "1";
++      };
++
++      stdErrToOut = true;
++
++      cmd = "${rootDir}/run";
++
++      log = cfg.log;
++    };
++  };
++
++}
++
++# vim: et ts=2 sw=2
++
+diff --git a/nixos/modules/services/networking/tinydns-runit.nix b/nixos/modules/services/networking/tinydns-runit.nix
+new file mode 100644
+index 0000000..98098e4
+--- /dev/null
++++ b/nixos/modules/services/networking/tinydns-runit.nix
+@@ -0,0 +1,83 @@
++{ config, pkgs, lib, ... }:
++
++with lib;
++
++let
++
++  cfg = config.runit.tinydns;
++  pkg = pkgs.djbdns;
++
++in
++
++{
++
++  ###### interface
++
++  options = {
++
++    runit.tinydns = {
++
++      enable = mkOption {
++        default = false;
++        description = "Whether to enable tinydns (authoritative) service.";
++      };
++
++      dataLimit = mkOption {
++        default = 1048576;
++        description = "Data segment limit";
++      };
++
++      listenIp = mkOption {
++        default = "127.0.0.1";
++        description = "Listening IP address. Should be the external IP.";
++      };
++
++      root = mkOption {
++        default = "/var/db/tinydns/root";
++        description = "tinydns root dir";
++      };
++
++      log = mkOption {
++        default = {
++          user = "dnslog";
++          dirs = { "/var/log/dns/server" = {}; };
++        };
++        description = "Logging configuration (as per runit log service)";
++      };
++
++    };
++  };
++
++
++  ###### implementation
++
++  config = mkIf cfg.enable {
++
++    environment.systemPackages = [ pkg ];
++
++    users.extraUsers.tinydns = {
++      uid = config.ids.uids.tinydns;
++      group = "tinydns";
++      description = "tinydns service user";
++    };
++
++    users.extraGroups.tinydns.gid = config.ids.gids.tinydns;
++
++    runit.services.tinydns = {
++      env = {
++        IP = cfg.listenIp;
++        ROOT = cfg.root;
++      };
++
++      stdErrToOut = true;
++
++      cmd = "${pkgs.runit}/bin/chpst -U tinydns -d ${toString cfg.dataLimit} ${pkg}/bin/tinydns";
++
++      log = cfg.log;
++    };
++
++  };
++
++}
++
++# vim: et ts=2 sw=2
