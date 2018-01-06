@@ -40,3 +40,4 @@ wvstreams-magic.patch
 usb-modeswitch.patch
 zabbix18-mysql.patch
 runit-service.patch
+dnscache-runit.patch
