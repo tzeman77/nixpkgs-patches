@@ -40,3 +40,5 @@ wvstreams-magic.patch
 usb-modeswitch.patch
 zabbix18-mysql.patch
 runit-service.patch
+dns-runit.patch
+phpfpm-runit.patch
