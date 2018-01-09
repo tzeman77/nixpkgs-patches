@@ -24,16 +24,16 @@ nginx-wrapper.patch
 qmail-autoresponder.patch
 zabbix20-mysql.patch
 zabbix18-mysql.patch
-qmail-runit.patch
-dnscache-systemd.patch
-dnsserver-systemd.patch
-axfrdns-systemd.patch
-qmail-systemd.patch
+qmail-runit.patch #-systemd
+dnscache-systemd.patch #+systemd
+dnsserver-systemd.patch #+systemd
+axfrdns-systemd.patch #+systemd
+qmail-systemd.patch #+systemd
 pdns.patch #+fails
-pure-ftpd-systemd.patch
-clamd-systemd.patch
+pure-ftpd-systemd.patch #+systemd
+clamd-systemd.patch #+systemd
 freshclam.patch #+check
-php53-fpm-systemd.patch
+php53-fpm-systemd.patch #+systemd
 dnscache-logging.patch
 dnsserver-logging.patch
 axfrdns-logging.patch

@@ -1,5 +1,5 @@
 diff --git a/nixos/modules/misc/ids.nix b/nixos/modules/misc/ids.nix
-index cb75845..f5d7812 100644
+index cb75845baaf..f5d7812a59a 100644
 --- a/nixos/modules/misc/ids.nix
 +++ b/nixos/modules/misc/ids.nix
 @@ -298,6 +298,14 @@
@@ -27,7 +27,7 @@ index cb75845..f5d7812 100644
        nogroup = 65534;
      };
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index d8c7c7e..bf51543 100644
+index d8c7c7e5c23..bf515435aba 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
 @@ -271,6 +271,7 @@
@@ -40,10 +40,10 @@ index d8c7c7e..bf51543 100644
    ./services/mail/rmilter.nix
 diff --git a/nixos/modules/services/mail/qmail.nix b/nixos/modules/services/mail/qmail.nix
 new file mode 100644
-index 0000000..63d3ca4
+index 00000000000..49b971a4de2
 --- /dev/null
 +++ b/nixos/modules/services/mail/qmail.nix
-@@ -0,0 +1,201 @@
+@@ -0,0 +1,207 @@
 +{ config, pkgs, lib, ... }:
 +
 +with lib;
@@ -51,37 +51,31 @@ index 0000000..63d3ca4
 +let
 +
 +  cfg = config.runit.qmail;
-+  pkg = pkgs.diet-qmail;
++  pkg = pkgs.qmail;
 +  uids = config.ids.uids;
 +  gids = config.ids.gids;
 +
-+  aliasOpts = { name, ... }: {
-+    options = {
-+      alias = mkOption {
-+        example = "postmaster";
-+        type = types.uniq types.string;
-+        description = "Alias name";
-+      };
-+      real = mkOption {
-+        example = "jsmith";
-+        default = null;
-+        type = types.nullOr types.string;
-+        description = "Real user to receive mail.";
-+      };
-+      content = mkOption {
-+        example = "anotheruser";
-+        default = null;
-+        type = types.nullOr types.string;
-+        description = "Verbatim content of the alias file. See dot-qmail(5).";
-+      };
-+    };
-+    config = {
-+      alias = mkDefault name;
-+    };
-+  };
++  #virtualDomainsF = concatStringsSep "\n" (map (d: u: "d:u") cfg.virtualdomains);
++  virtualDomainsF = concatStringsSep "\n" (mapAttrsToList (d: u:
++    "${d}:${u}") cfg.virtualdomains);
 +
-+  aliasF = alias: nameValuePair "qmail/alias/.qmail-${alias.alias}" {
-+    text = if alias.real != null then alias.real else alias.content;
++  qmailDerivation = pkgs.stdenv.mkDerivation {
++    name = "qmail";
++    preferLocalBuild = true;
++    buildCommand = ''
++      mkdir -p $out/{alias,control}
++      echo "${cfg.me}" > $out/control/me
++      echo "${concatStringsSep "\n" cfg.locals}" > $out/control/locals
++      echo "${cfg.plusdomain}" > $out/control/plusdomain
++      echo "${concatStringsSep "\n" cfg.rcpthosts}" > $out/control/rcpthosts
++      echo "${virtualDomainsF}" > $out/control/virtualdomains
++      ${concatStringsSep "\n" (mapAttrsToList (n: v:
++        "echo -n '${v}' > $out/alias/.qmail-${n}"
++      ) cfg.aliases)}
++      ${concatStringsSep "\n" (mapAttrsToList (n: v:
++        "echo -n '${v}' | sed -e 's/^  \+//' > $out/control/${n}"
++      ) cfg.control)}
++    '';
 +  };
 +
 +in
@@ -139,20 +133,21 @@ index 0000000..63d3ca4
 +      };
 +
 +      virtualdomains = mkOption {
-+        default = [];
-+        description = ''
-+          List of virtual domains (domain:user).
-+        '';
++        default = {};
++        type = types.attrsOf types.str;
++        description = "List of virtual users or domains. See qmail-send(8).";
++        example = {
++          "example.org" = "jsmith";
++        };
 +      };
 +
 +      aliases = mkOption {
 +        default = {};
-+        type = types.loaOf types.optionSet;
++        type = types.attrsOf types.str;
 +        example = {
-+          root = { real = "jsmith"; };
-+          postmaster = { content = "another user"; };
++          root = "jsmith";
++          postmaster = "another user";
 +        };
-+        options = [ aliasOpts ];
 +        description = ''
 +          Global qmail aliases configuration. Addresses that don't start with a
 +          username are controlled by a special user, alias. Delivery
@@ -162,8 +157,24 @@ index 0000000..63d3ca4
 +        '';
 +      };
 +
++      control = mkOption {
++        default = {};
++        type = types.attrsOf types.str;
++        description = "Additional qmail control files. See qmail-control(8).";
++        example = {
++          "concurrencylocal" = "25";
++          "badmailfrom" = ''
++            .*spam.*
++            # force users to fully qualify themselves (ie deny "user", accept "user@domain")
++            !@
++            xxx
++          '';
++        };
++      };
++
 +      log = mkOption {
 +        default = {};
++        description = "Qmail log configuration. See runit logging.";
 +      };
 +
 +    };
@@ -176,13 +187,13 @@ index 0000000..63d3ca4
 +
 +    environment.systemPackages = [ pkg ];
 +
-+    security.setuidOwners = [ {
-+      program = "qmail-queue";
-+      owner = "qmailq";
-+      group = "qmail";
-+      setuid = true;
-+      setgid = false;
-+    } ];
++    security.wrappers = {
++      "qmail-queue" = {
++        source = "${pkg}/bin/qmail-queue";
++        owner = "qmailq";
++        group = "qmail";
++      };
++    };
 +
 +    # groups
 +    users.extraGroups = {
@@ -205,15 +216,6 @@ index 0000000..63d3ca4
 +      qmails = { uid = uids.qmails; group = "qmail"; };
 +    };
 +
-+    environment.etc = {
-+      "qmail/control/me".text = cfg.me;
-+      "qmail/control/defaultdomain".text = cfg.defaultdomain;
-+      "qmail/control/locals".text = concatStringsSep "\n" cfg.locals;
-+      "qmail/control/plusdomain".text = cfg.plusdomain;
-+      "qmail/control/rcpthosts".text = concatStringsSep "\n" cfg.rcpthosts;
-+      "qmail/control/virtualdomains".text = concatStringsSep "\n" cfg.virtualdomains;
-+    } // listToAttrs (map aliasF (attrValues cfg.aliases));
-+
 +    runit.services.qmail = {
 +
 +      preRun = ''
@@ -223,13 +225,17 @@ index 0000000..63d3ca4
 +        adir=/var/qmail/alias
 +        bdir=/var/qmail/bin
 +        [ -d $qdir ] || ${pkg}/bin/queue-fix $qdir
-+        [ -e $cdir ] || ln -sf /etc/qmail/control $cdir
-+        [ -e $adir ] || ln -sf /etc/qmail/alias $adir
++        [ -d $cdir -a ! -L $cdir ] && mv $cdir $cdir.bak
++        ln -sfn ${qmailDerivation}/control $cdir
++        [ -d $adir -a ! -L $adir ] && mv $adir $adir.bak
++        ln -sfn ${qmailDerivation}/alias $adir
 +        [ -d $bdir ] || mkdir -p $bdir
-+        [ -e $bdir/qmail-queue ] || ln -s /var/setuid-wrappers/qmail-queue $bdir/qmail-queue
 +        for i in ${pkg}/bin/*; do
-+          n=`basename $i`
-+          [ -e $bdir/$n ] || ln -s /run/current-system/sw/bin/$n $bdir/$n
++          if [ `basename $i` = "qmail-queue" ]; then
++            ln -sfn /run/wrappers/bin/qmail-queue $bdir
++          else
++            ln -sfn $i $bdir
++          fi
 +        done
 +      '';
 +
