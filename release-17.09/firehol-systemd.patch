@@ -1,7 +1,7 @@
 firehol service
 
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index 3b204b9..d8c7c7e 100644
+index 3b204b97a36..d8c7c7e5c23 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
 @@ -437,6 +437,7 @@
@@ -14,7 +14,7 @@ index 3b204b9..d8c7c7e 100644
    ./services/networking/flannel.nix
 diff --git a/nixos/modules/services/networking/firehol.nix b/nixos/modules/services/networking/firehol.nix
 new file mode 100644
-index 0000000..d55efa1
+index 00000000000..3dd2bdf5912
 --- /dev/null
 +++ b/nixos/modules/services/networking/firehol.nix
 @@ -0,0 +1,73 @@
@@ -69,7 +69,7 @@ index 0000000..d55efa1
 +      wantedBy = [ "network.target" ];
 +      after = [ "network-interfaces.target" ];
 +      path = with pkgs; [ gnugrep findutils gawk gnused procps gzip iproute iprange
-+        which iptables kmod utillinux ];
++        which iptables kmod  ];
 +
 +      preStart = "mkdir -p /var/spool";
 +
@@ -91,3 +91,17 @@ index 0000000..d55efa1
 +}
 +
 +# vim: et ts=2 sw=2 
+diff --git a/pkgs/applications/networking/firehol/default.nix b/pkgs/applications/networking/firehol/default.nix
+index 0f1928fff2b..746045aff99 100644
+--- a/pkgs/applications/networking/firehol/default.nix
++++ b/pkgs/applications/networking/firehol/default.nix
+@@ -65,6 +65,9 @@ stdenv.mkDerivation rec {
+                      "--disable-doc" "--disable-man" ] ++
+                    lib.optional onlyQOS [ "--disable-firehol" ];
+ 
++  postFixup = ''
++    substituteInPlace $out/libexec/firehol/${version}/install.config --replace "SYSCONFDIR=\"$out/etc\"" "SYSCONFDIR=/etc"
++  '';
+   meta = with stdenv.lib; {
+     description = "A firewall for humans";
+     longDescription = ''
