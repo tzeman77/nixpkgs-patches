@@ -12,7 +12,7 @@ index 76c200f..ff96280 100644
    ./services/mail/rspamd.nix
 diff --git a/nixos/modules/services/mail/qmail-runit.nix b/nixos/modules/services/mail/qmail-runit.nix
 new file mode 100644
-index 0000000..49b971a
+index 0000000..8fc79eb
 --- /dev/null
 +++ b/nixos/modules/services/mail/qmail-runit.nix
 @@ -0,0 +1,207 @@
@@ -159,13 +159,13 @@ index 0000000..49b971a
 +
 +    environment.systemPackages = [ pkg ];
 +
-+    security.wrappers = {
-+      "qmail-queue" = {
-+        source = "${pkg}/bin/qmail-queue";
-+        owner = "qmailq";
-+        group = "qmail";
-+      };
-+    };
++    security.setuidOwners = [ {
++      program = "qmail-queue";
++      owner = "qmailq";
++      group = "qmail";
++      setuid = true;
++      setgid = false;
++    } ];
 +
 +    # groups
 +    users.extraGroups = {
@@ -204,7 +204,7 @@ index 0000000..49b971a
 +        [ -d $bdir ] || mkdir -p $bdir
 +        for i in ${pkg}/bin/*; do
 +          if [ `basename $i` = "qmail-queue" ]; then
-+            ln -sfn /run/wrappers/bin/qmail-queue $bdir
++            ln -sfn /var/setuid-wrappers/qmail-queue $bdir
 +          else
 +            ln -sfn $i $bdir
 +          fi
