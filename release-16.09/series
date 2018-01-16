@@ -42,3 +42,4 @@ zabbix18-mysql.patch
 runit-service.patch
 dns-runit.patch
 phpfpm-runit.patch
+qmail-runit.patch
