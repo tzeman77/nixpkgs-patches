@@ -26,19 +26,8 @@ zabbix20-mysql.patch
 zabbix18-mysql.patch
 dns-runit.patch
 phpfpm-runit.patch
-qmail-runit.patch #-systemd
-dnscache-systemd.patch #+systemd
-dnsserver-systemd.patch #+systemd
-axfrdns-systemd.patch #+systemd
-qmail-systemd.patch #+systemd
-pdns.patch #+fails
-pure-ftpd-systemd.patch #+systemd
-clamd-systemd.patch #+systemd
-freshclam.patch #+check
-php53-fpm-systemd.patch #+systemd
-dnscache-logging.patch
-dnsserver-logging.patch
-axfrdns-logging.patch
-qmail-logging.patch
+qmail-runit.patch
+pure-ftpd-systemd.patch
+clamd-systemd.patch
 wvstreams-magic.patch
 usb-modeswitch.patch
