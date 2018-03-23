@@ -29,5 +29,5 @@ phpfpm-runit.patch
 qmail-runit.patch
 pure-ftpd-systemd.patch
 clamd-systemd.patch
-wvstreams-magic.patch
 usb-modeswitch.patch
+wvstreams-magic.patch #+check
