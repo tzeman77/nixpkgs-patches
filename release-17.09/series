@@ -25,6 +25,7 @@ qmail-autoresponder.patch
 zabbix20-mysql.patch
 zabbix18-mysql.patch
 dns-runit.patch
+phpfpm-runit.patch
 qmail-runit.patch #-systemd
 dnscache-systemd.patch #+systemd
 dnsserver-systemd.patch #+systemd
