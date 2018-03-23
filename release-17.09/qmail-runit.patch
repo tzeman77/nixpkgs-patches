@@ -1,8 +1,8 @@
 diff --git a/nixos/modules/misc/ids.nix b/nixos/modules/misc/ids.nix
-index cb75845baaf..f5d7812a59a 100644
+index 64eafe345a6..2c21e2b5a8a 100644
 --- a/nixos/modules/misc/ids.nix
 +++ b/nixos/modules/misc/ids.nix
-@@ -298,6 +298,14 @@
+@@ -302,6 +302,14 @@
        minio = 280;
        kanboard = 281;
  
@@ -17,32 +17,32 @@ index cb75845baaf..f5d7812a59a 100644
        # When adding a uid, make sure it doesn't match an existing gid. And don't use uids above 399!
  
        nixbld = 30000; # start of range of uids
-@@ -569,6 +577,8 @@
-       # uids and gids. Also, don't use gids above 399!
- 
-       users = 100;
+@@ -577,6 +585,8 @@
+       tinydns = 185;
+       dnslog = 186;
+       axfrdns = 187;
 +      qmail = 2107;
 +      nofiles = 2108;
        nixbld = 30000;
        nogroup = 65534;
      };
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index d8c7c7e5c23..bf515435aba 100644
+index 55ac5aa6694..67cf174984a 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
 @@ -271,6 +271,7 @@
    ./services/mail/postfix.nix
    ./services/mail/postsrsd.nix
    ./services/mail/postgrey.nix
-+  ./services/mail/qmail.nix
++  ./services/mail/qmail-runit.nix
    ./services/mail/spamassassin.nix
    ./services/mail/rspamd.nix
    ./services/mail/rmilter.nix
-diff --git a/nixos/modules/services/mail/qmail.nix b/nixos/modules/services/mail/qmail.nix
+diff --git a/nixos/modules/services/mail/qmail-runit.nix b/nixos/modules/services/mail/qmail-runit.nix
 new file mode 100644
 index 00000000000..49b971a4de2
 --- /dev/null
-+++ b/nixos/modules/services/mail/qmail.nix
++++ b/nixos/modules/services/mail/qmail-runit.nix
 @@ -0,0 +1,207 @@
 +{ config, pkgs, lib, ... }:
 +
