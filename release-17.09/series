@@ -30,4 +30,5 @@ qmail-runit.patch
 pure-ftpd-systemd.patch
 clamd-systemd.patch
 usb-modeswitch.patch
+zabbix34.patch
 wvstreams-magic.patch #+check
