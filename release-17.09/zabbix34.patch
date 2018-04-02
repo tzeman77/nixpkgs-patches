@@ -1,1 +1,130 @@
 Zabbix 3.4
+diff --git a/pkgs/servers/monitoring/zabbix/3.4.nix b/pkgs/servers/monitoring/zabbix/3.4.nix
+new file mode 100644
+index 00000000000..f4bc80b7d69
+--- /dev/null
++++ b/pkgs/servers/monitoring/zabbix/3.4.nix
+@@ -0,0 +1,111 @@
++{ stdenv, fetchurl, pkgconfig, postgresql, curl, openssl, zlib, gettext
++, net_snmp , libssh2, openldap
++, pcre
++, enableJabber ? false, minmay ? null
++, enableSnmp ? false
++, enableSsh ? false
++, enableLdap ? false
++, mysql
++}:
++
++assert enableJabber -> minmay != null;
++
++let
++
++  version = "3.4.0";
++  branch = "3.4";
++
++  src = fetchurl {
++    url = "mirror://sourceforge/zabbix/zabbix-${version}.tar.gz";
++    sha256 = "04zha047f0zyxkb7fbrf8ryrl6sm0kv3hrsfw5sbrvjpvr2dy9ki";
++  };
++
++  preConfigure =
++    ''
++      substituteInPlace ./configure \
++        --replace " -static" "" \
++        ${stdenv.lib.optionalString (stdenv.cc.libc != null) ''
++          --replace /usr/include/iconv.h ${stdenv.lib.getDev stdenv.cc.libc}/include/iconv.h
++        ''}
++    '';
++
++in
++
++{
++  recurseForDerivations = true;
++
++  server = stdenv.mkDerivation {
++    name = "zabbix-${version}";
++
++    inherit src preConfigure;
++
++    configureFlags = [
++      "--enable-agent"
++      "--enable-server"
++      "--with-postgresql"
++      "--with-mysql"
++      "--with-libcurl"
++      "--with-gettext"
++    ]
++    ++ stdenv.lib.optional enableJabber "--with-jabber=${minmay}"
++    ++ stdenv.lib.optional enableSnmp "--with-net-snmp"
++    ++ stdenv.lib.optional enableSsh "--with-ssh2=${libssh2.dev}"
++    ++ stdenv.lib.optional enableLdap "--with-ldap=${openldap.dev}";
++
++    postPatch = ''
++      sed -i -e 's/iksemel/minmay/g' configure src/libs/zbxmedia/jabber.c
++      sed -i \
++        -e '/^static ikstransport/,/}/d' \
++        -e 's/iks_connect_with\(.*\), &zbx_iks_transport/mmay_connect_via\1/' \
++        -e 's/iks/mmay/g' -e 's/IKS/MMAY/g' src/libs/zbxmedia/jabber.c
++    '';
++
++    buildInputs = [ pkgconfig postgresql curl openssl zlib mysql ]
++      ++ stdenv.lib.optional enableSnmp net_snmp
++      ++ stdenv.lib.optional enableSsh libssh2
++      ++ stdenv.lib.optional enableLdap openldap;
++
++    postInstall =
++      ''
++        mkdir -p $out/share/zabbix
++        cp -prvd frontends/php $out/share/zabbix/php
++        mkdir -p $out/share/zabbix/db/postgresql
++        cp -prvd database/postgresql $out/share/zabbix/db/postgresql
++        mkdir -p $out/share/zabbix/db/mysql
++        cp -prvd database/mysql $out/share/zabbix/db/mysql
++      '';
++
++    meta = {
++      inherit branch;
++      description = "An enterprise-class open source distributed monitoring solution";
++      homepage = http://www.zabbix.com/;
++      license = "GPL";
++      maintainers = [ stdenv.lib.maintainers.eelco ];
++      platforms = stdenv.lib.platforms.linux;
++    };
++  };
++
++  agent = stdenv.mkDerivation {
++    name = "zabbix-agent-${version}";
++
++    inherit src preConfigure;
++
++    configureFlags = [
++      "--enable-agent"
++      "--with-libpcre=${pcre}"
++    ];
++
++    buildInputs = [ pcre ];
++
++    meta = with stdenv.lib; {
++      inherit branch;
++      description = "An enterprise-class open source distributed monitoring solution (client-side agent)";
++      homepage = http://www.zabbix.com/;
++      license = licenses.gpl2;
++      maintainers = [ maintainers.eelco ];
++      platforms = platforms.linux;
++    };
++  };
++
++}
++
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 58f2b65c88e..9e90287f287 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -12030,6 +12030,7 @@ with pkgs;
+ 
+   zabbix20 = callPackage ../servers/monitoring/zabbix/2.0.nix { };
+   zabbix22 = callPackage ../servers/monitoring/zabbix/2.2.nix { };
++  zabbix34 = callPackage ../servers/monitoring/zabbix/3.4.nix { };
+ 
+ 
+   ### OS-SPECIFIC
