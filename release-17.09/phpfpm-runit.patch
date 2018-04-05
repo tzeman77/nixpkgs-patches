@@ -1,18 +1,18 @@
 diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
-index eee115c..76c200f 100644
+index dfafec6c8d4..889469afb81 100644
 --- a/nixos/modules/module-list.nix
 +++ b/nixos/modules/module-list.nix
-@@ -495,6 +495,7 @@
+@@ -625,6 +625,7 @@
+   ./services/web-servers/minio.nix
    ./services/web-servers/nginx/default.nix
-   ./services/web-servers/php53-fpm.nix
    ./services/web-servers/phpfpm/default.nix
 +  ./services/web-servers/phpfpm/runit.nix
    ./services/web-servers/shellinabox.nix
    ./services/web-servers/tomcat.nix
-   ./services/web-servers/uwsgi.nix
+   ./services/web-servers/traefik.nix
 diff --git a/nixos/modules/services/web-servers/phpfpm/runit.nix b/nixos/modules/services/web-servers/phpfpm/runit.nix
 new file mode 100644
-index 0000000..9de4e7a
+index 00000000000..ec9cd7f7757
 --- /dev/null
 +++ b/nixos/modules/services/web-servers/phpfpm/runit.nix
 @@ -0,0 +1,139 @@
@@ -46,7 +46,7 @@ index 0000000..9de4e7a
 +  '';
 +
 +  phpIni = c: pkgs.writeText "php.ini" ''
-+    ${readFile "${c.phpPackage}/etc/php-recommended.ini"}
++    ${readFile "${c.phpPackage}/etc/php.ini"}
 +
 +    ${c.phpOptions}
 +  '';
