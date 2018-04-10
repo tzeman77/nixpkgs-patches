@@ -2,11 +2,12 @@ mailfront-addons: Plugins for mailfront SMTP daemon
 
 diff --git a/pkgs/tools/networking/mailfront/addons.nix b/pkgs/tools/networking/mailfront/addons.nix
 new file mode 100644
-index 00000000000..15f908fb21b
+index 00000000000..4b53e1b1568
 --- /dev/null
 +++ b/pkgs/tools/networking/mailfront/addons.nix
-@@ -0,0 +1,45 @@
-+{ stdenv, fetchFromGitHub, bglibs, mailfront, openssl, opendkim }:
+@@ -0,0 +1,46 @@
++{ stdenv, fetchFromGitHub, bglibs, mailfront, openssl, opendkim, libspf2
++, opendmarc }:
 +
 +let
 +  pkg = "mailfront-addons";
@@ -26,16 +27,16 @@ index 00000000000..15f908fb21b
 +    ./addons.patch
 +  ];
 +
-+  buildInputs = [bglibs mailfront openssl opendkim];
++  buildInputs = [bglibs mailfront openssl opendkim libspf2 opendmarc];
 +  inherit bglibs mailfront;
 +
 +  configurePhase = ''
 +    ln -sf Makefile.local Makefile
 +    ln -sf $mailfront/include/mailfront/*.h .
 +    echo "/var/qmail" > conf-qmail
-+    echo "gcc -W -Wall -Wshadow -O -g -I$bglibs/include -I$openssl/include -I$opendkim/include" > conf-cc
-+    echo "gcc -s -L$bglibs/lib" > conf-ld
-+    echo "gcc -W -Wall -Wshadow -O -g -I$bglibs/include -I$openssl/include -I$opendkim/include -fPIC -shared" > conf-ccso
++    echo "gcc -W -Wall -Wshadow -O -g -DHAVE_NS_TYPE" > conf-cc
++    echo "gcc -s " > conf-ld
++    echo "gcc -W -Wall -Wshadow -O -g -fPIC -shared -DHAVE_NS_TYPE" > conf-ccso
 +    echo $out/bin > conf-bin
 +    echo $out/include > conf-include
 +    echo $out/lib/mailfront-addons > conf-modules
@@ -53,10 +54,24 @@ index 00000000000..15f908fb21b
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/tools/networking/mailfront/addons.patch b/pkgs/tools/networking/mailfront/addons.patch
 new file mode 100644
-index 00000000000..61c134b2b64
+index 00000000000..227ece660c2
 --- /dev/null
 +++ b/pkgs/tools/networking/mailfront/addons.patch
-@@ -0,0 +1,209 @@
+@@ -0,0 +1,233 @@
++diff -u mailfront-addons-src/INSTHIER.local mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/INSTHIER.local
++--- mailfront-addons-src/INSTHIER.local	2013-05-31 17:14:21.000000000 +0200
+++++ mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/INSTHIER.local	2018-04-10 14:08:41.100502902 +0200
++@@ -3,9 +3,6 @@
++ c:::755::plugin-batv.so
++ c:::755::plugin-dcc.so
++ c:::755::plugin-greylist.so
++-c:::755::plugin-spamassassin.so
++-c:::755::plugin-sqlog.so
+++c:::755::plugin-sauser.so
++ c:::755::plugin-chkdns.so
++ c:::755::plugin-authres.so
++-c:::755::plugin-arlog.so
++-c:::755::sqllib.so
 +diff -u mailfront-addons-src/Makefile.local mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/Makefile.local
 +--- mailfront-addons-src/Makefile.local	2013-05-31 17:14:21.000000000 +0200
 ++++ mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/Makefile.local	2018-04-10 09:09:04.285305523 +0200
@@ -162,7 +177,7 @@ index 00000000000..61c134b2b64
 + #undef CLOCK_MONOTONIC
 +diff -u mailfront-addons-src/plugin-authres.c mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/plugin-authres.c
 +--- mailfront-addons-src/plugin-authres.c	2013-05-31 17:14:21.000000000 +0200
-++++ mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/plugin-authres.c	2018-04-10 09:21:49.879466134 +0200
+++++ mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/plugin-authres.c	2018-04-10 14:03:05.018744074 +0200
 +@@ -15,12 +15,11 @@
 + #include <string.h>
 + #include "mailfront.h"
@@ -180,6 +195,16 @@ index 00000000000..61c134b2b64
 ++#include <bglibs/dict.h>
 + 
 + #include <opendkim/dkim.h>
++ 
++@@ -29,8 +28,8 @@
++ # include <netinet/in.h>   /* inet_ functions / structs */
++ # include <arpa/inet.h> /* in_addr struct */
++ 
++-#include <spf2/spf.h>
++ #include <opendmarc/dmarc.h>
+++#include <spf2/spf.h>
++ 
++ static str arstr = {0,0,0};		/* authentication results header */
 + 
 +diff -u mailfront-addons-src/plugin-batv.c mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/plugin-batv.c
 +--- mailfront-addons-src/plugin-batv.c	2013-05-31 17:14:21.000000000 +0200
@@ -267,7 +292,7 @@ index 00000000000..61c134b2b64
 + static dict sanf;
 + static str sasender;
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index c76b0fa7f01..2cd0f2d24de 100644
+index e618d9912a7..22d82b44200 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
 @@ -3223,6 +3223,8 @@ with pkgs;
