@@ -56,12 +56,11 @@ index 00000000000..8ddf8bfc4a0
 + ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 diff --git a/pkgs/development/libraries/libspf2/default.nix b/pkgs/development/libraries/libspf2/default.nix
 new file mode 100644
-index 00000000000..f466449ca4d
+index 00000000000..e9fccd1169c
 --- /dev/null
 +++ b/pkgs/development/libraries/libspf2/default.nix
-@@ -0,0 +1,27 @@
-+{ stdenv, fetchurl, pkgconfig, libbsd, openssl, libmilter
-+, perl, makeWrapper }:
+@@ -0,0 +1,20 @@
++{ stdenv, fetchurl }:
 +
 +stdenv.mkDerivation rec {
 +  name = "libspf2-${version}";
@@ -73,12 +72,6 @@ index 00000000000..f466449ca4d
 +  };
 +
 +  patches = [ ./fix-variadic-macros.patch ./compile.patch ];
-+
-+  #configureFlags= [ "--with-milter=${libmilter}" ];
-+
-+  #nativeBuildInputs = [ pkgconfig makeWrapper ];
-+
-+  #buildInputs = [ libmilter ];
 +
 +  meta = with stdenv.lib; {
 +    description = "Sender Policy Framework record checking library";
