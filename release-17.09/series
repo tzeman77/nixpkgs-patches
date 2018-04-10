@@ -33,4 +33,5 @@ usb-modeswitch.patch
 zabbix34.patch
 zabbix-runit.patch
 mailfront-addons.patch
+libspf2.patch
 wvstreams-magic.patch #+check
