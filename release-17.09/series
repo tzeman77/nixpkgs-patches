@@ -32,4 +32,5 @@ clamd-systemd.patch
 usb-modeswitch.patch
 zabbix34.patch
 zabbix-runit.patch
+mailfront-addons.patch
 wvstreams-magic.patch #+check
