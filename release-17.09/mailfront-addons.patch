@@ -54,7 +54,7 @@ index 00000000000..4b53e1b1568
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/tools/networking/mailfront/addons.patch b/pkgs/tools/networking/mailfront/addons.patch
 new file mode 100644
-index 00000000000..227ece660c2
+index 00000000000..e5ce9b89415
 --- /dev/null
 +++ b/pkgs/tools/networking/mailfront/addons.patch
 @@ -0,0 +1,233 @@
@@ -105,7 +105,7 @@ index 00000000000..227ece660c2
 + 
 + plugin-chkdns.so: makeso plugin-chkdns.c mailfront.h responses.h constants.h
 +-	./makeso plugin-chkdns.c  -lbg -lbg-sysdeps 
-++	./makeso plugin-chkdns.c  -lbg
+++	./makeso plugin-chkdns.c  -lbg -lresolv
 + 
 + plugin-sqlog.so: makeso plugin-sqlog.c sqllib.so mailfront.h responses.h constants.h
 + 	./makeso plugin-sqlog.c ${CONFMODULES}/sqllib.so -lbg -lbg-sysdeps
