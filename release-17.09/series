@@ -35,4 +35,6 @@ zabbix-runit.patch
 libspf2.patch
 opendmarc.patch
 mailfront-addons.patch
+mailfront-lua.patch
+mailfront-auth-to-env.patch
 wvstreams-magic.patch #+check

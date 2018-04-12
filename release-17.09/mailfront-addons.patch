@@ -2,10 +2,10 @@ mailfront-addons: Plugins for mailfront SMTP daemon
 
 diff --git a/pkgs/tools/networking/mailfront/addons.nix b/pkgs/tools/networking/mailfront/addons.nix
 new file mode 100644
-index 00000000000..4b53e1b1568
+index 00000000000..833dd7437a7
 --- /dev/null
 +++ b/pkgs/tools/networking/mailfront/addons.nix
-@@ -0,0 +1,46 @@
+@@ -0,0 +1,47 @@
 +{ stdenv, fetchFromGitHub, bglibs, mailfront, openssl, opendkim, libspf2
 +, opendmarc }:
 +
@@ -25,6 +25,7 @@ index 00000000000..4b53e1b1568
 +
 +  patches = [
 +    ./addons.patch
++    ./authres.patch
 +  ];
 +
 +  buildInputs = [bglibs mailfront openssl opendkim libspf2 opendmarc];
@@ -291,6 +292,57 @@ index 00000000000..227ece660c2
 + 
 + static dict sanf;
 + static str sasender;
+diff --git a/pkgs/tools/networking/mailfront/authres.patch b/pkgs/tools/networking/mailfront/authres.patch
+new file mode 100644
+index 00000000000..d7c4bf1f16d
+--- /dev/null
++++ b/pkgs/tools/networking/mailfront/authres.patch
+@@ -0,0 +1,45 @@
++diff -ru mailfront-addons-orig/plugin-authres.c mailfront-addons-build/plugin-authres.c
++--- mailfront-addons-orig/plugin-authres.c	2018-04-11 08:25:38.104345911 +0200
+++++ mailfront-addons-build/plugin-authres.c	2018-04-11 08:53:50.950583388 +0200
++@@ -6,6 +6,7 @@
++  * Check SPF, too
++  * env DMARCREJECT=y means actually do reject
++  * file control/nodmarcpolicy lists domains not to reject
+++ * Check is skipped if RELAYCLIENT is set or user is authenticated.
++  *
++ */
++ 
++@@ -52,6 +53,9 @@
++ 	ip = getprotoenv("REMOTEIP");
++ 	if(!ip) return 0;		/* can't tell IP, no SPF */
++ 
+++	if (session_getenv("RELAYCLIENT") != 0 || session_getnum("authenticated", 0))
+++		return 0;
+++
++ 	spf_server = SPF_server_new(SPF_DNS_CACHE, 0);
++ 	if(!spf_server) return 0;
++ 	spf_request = SPF_request_new(spf_server);
++@@ -71,7 +75,12 @@
++ 	str_cat2s(&arstr, "; spf=", SPF_strresult(SPF_response_result(spf_response)));
++ 
++ 	str_cat4s(&arstr, " spf.mailfrom=", sender->s, " spf.helo=", helo);
++-	
+++
+++	session_setenv("PLUGIN_AUTHRES_SPF_RESULT",
+++		SPF_strresult(SPF_response_result(spf_response)), 1);
+++	session_setenv("PLUGIN_AUTHRES_SPF_MAILFROM", sender->s, 1);
+++	session_setenv("PLUGIN_AUTHRES_SPF_HELO", helo, 1);
+++
++ 	/* for DMARC later */
++ 	if(!spf_domain.s) str_init(&spf_domain);
++ 	str_copys(&spf_domain, sender->s);
++@@ -275,6 +284,9 @@
++ 				  " policy=",dmpol);
++ 
++ 			msg6("dmarc: ",dmres," for ", fromdom.s, " policy=",dmpol);
+++			session_setenv("PLUGIN_AUTHRES_DMARC_RESULT", dmres, 1);
+++			session_setenv("PLUGIN_AUTHRES_DMARC_HEADER_FROM", fromdom.s, 1);
+++			session_setenv("PLUGIN_AUTHRES_DMARC_POLICY", dmpol, 1);
++ 		}
++ 
++ 		/* do this only so many percent */
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
 index e618d9912a7..22d82b44200 100644
 --- a/pkgs/top-level/all-packages.nix
