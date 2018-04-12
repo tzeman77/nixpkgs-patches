@@ -55,7 +55,7 @@ index 00000000000..833dd7437a7
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/tools/networking/mailfront/addons.patch b/pkgs/tools/networking/mailfront/addons.patch
 new file mode 100644
-index 00000000000..e5ce9b89415
+index 00000000000..227ece660c2
 --- /dev/null
 +++ b/pkgs/tools/networking/mailfront/addons.patch
 @@ -0,0 +1,233 @@
@@ -106,7 +106,7 @@ index 00000000000..e5ce9b89415
 + 
 + plugin-chkdns.so: makeso plugin-chkdns.c mailfront.h responses.h constants.h
 +-	./makeso plugin-chkdns.c  -lbg -lbg-sysdeps 
-++	./makeso plugin-chkdns.c  -lbg -lresolv
+++	./makeso plugin-chkdns.c  -lbg
 + 
 + plugin-sqlog.so: makeso plugin-sqlog.c sqllib.so mailfront.h responses.h constants.h
 + 	./makeso plugin-sqlog.c ${CONFMODULES}/sqllib.so -lbg -lbg-sysdeps
@@ -294,13 +294,13 @@ index 00000000000..e5ce9b89415
 + static str sasender;
 diff --git a/pkgs/tools/networking/mailfront/authres.patch b/pkgs/tools/networking/mailfront/authres.patch
 new file mode 100644
-index 00000000000..d7c4bf1f16d
+index 00000000000..171f9dad6e2
 --- /dev/null
 +++ b/pkgs/tools/networking/mailfront/authres.patch
-@@ -0,0 +1,45 @@
+@@ -0,0 +1,55 @@
 +diff -ru mailfront-addons-orig/plugin-authres.c mailfront-addons-build/plugin-authres.c
 +--- mailfront-addons-orig/plugin-authres.c	2018-04-11 08:25:38.104345911 +0200
-++++ mailfront-addons-build/plugin-authres.c	2018-04-11 08:53:50.950583388 +0200
+++++ mailfront-addons-build/plugin-authres.c	2018-04-12 20:24:50.879188589 +0200
 +@@ -6,6 +6,7 @@
 +  * Check SPF, too
 +  * env DMARCREJECT=y means actually do reject
@@ -333,7 +333,17 @@ index 00000000000..d7c4bf1f16d
 + 	/* for DMARC later */
 + 	if(!spf_domain.s) str_init(&spf_domain);
 + 	str_copys(&spf_domain, sender->s);
-+@@ -275,6 +284,9 @@
++@@ -123,6 +132,9 @@
++ 	str fromdom;             /* from domain name */
++ 	const char *qh;
++ 
+++	if (session_getenv("RELAYCLIENT") != 0 || session_getnum("authenticated", 0))
+++		return 0;
+++
++ 	if(!authservid) authservid = getprotoenv("LOCALHOST");
++ 	if(!authservid) authservid = "localhost";
++ 
++@@ -275,6 +287,9 @@
 + 				  " policy=",dmpol);
 + 
 + 			msg6("dmarc: ",dmres," for ", fromdom.s, " policy=",dmpol);
