@@ -106,7 +106,7 @@ index 00000000000..227ece660c2
 + 
 + plugin-chkdns.so: makeso plugin-chkdns.c mailfront.h responses.h constants.h
 +-	./makeso plugin-chkdns.c  -lbg -lbg-sysdeps 
-++	./makeso plugin-chkdns.c  -lbg
+++	./makeso plugin-chkdns.c  -lbg -lresolv
 + 
 + plugin-sqlog.so: makeso plugin-sqlog.c sqllib.so mailfront.h responses.h constants.h
 + 	./makeso plugin-sqlog.c ${CONFMODULES}/sqllib.so -lbg -lbg-sysdeps
