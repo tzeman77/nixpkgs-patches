@@ -37,4 +37,5 @@ opendmarc.patch
 mailfront-addons.patch
 mailfront-lua.patch
 mailfront-auth-to-env.patch
+zabbix-scripts.patch
 wvstreams-magic.patch #+check
