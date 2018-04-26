@@ -1,0 +1,3378 @@
+omail-admin: PHP-based qmail+vmailmgrd maildomain administration Web interface
+
+diff --git a/pkgs/applications/misc/omail-admin/default.nix b/pkgs/applications/misc/omail-admin/default.nix
+new file mode 100644
+index 0000000..899895c
+--- /dev/null
++++ b/pkgs/applications/misc/omail-admin/default.nix
+@@ -0,0 +1,32 @@
++{ stdenv, fetchurl }:
++
++let
++  name = "omail-admin";
++  #version = "1.2rc1";
++  version = "1.0-alpha";
++
++in stdenv.mkDerivation {
++  name = "${name}-${version}";
++
++  src = fetchurl {
++    url = "mirror://sourceforge/omail/${name}-${version}.tar.gz";
++    #sha256 = "1a65mc998s1sfpah6dmhn2z740m1fz7jqby0p27ps4rf9v1kmz96";
++    sha256 = "0h34625a8vzh2svg7rghr9kwk9v6npj7nkz6qxd2z71pin91wdji";
++  };
++
++  patches = [ ./php5-vars.patch ./virusform.temp.patch ];
++
++  buildInputs = [ ];
++
++  installPhase = ''
++    mkdir -p $out
++    cp -ar . $out/
++  '';
++
++  meta = {
++    description = "PHP-based qmail+vmailmgrd maildomain administration Web interface";
++    homepage = "https://sourceforge.net/projects/omail/";
++    license = stdenv.lib.licenses.gpl2Plus;
++    platforms = stdenv.lib.platforms.unix;
++  };
++}
+diff --git a/pkgs/applications/misc/omail-admin/php5-vars.patch b/pkgs/applications/misc/omail-admin/php5-vars.patch
+new file mode 100644
+index 0000000..b348754
+--- /dev/null
++++ b/pkgs/applications/misc/omail-admin/php5-vars.patch
+@@ -0,0 +1,3258 @@
++diff -ru omail-admin/config.php omail-admin-new/config.php
++--- omail-admin/config.php	1970-01-01 01:00:01.000000000 +0100
+++++ omail-admin-new/config.php	2014-07-02 09:41:34.000000000 +0200
++@@ -1,4 +1,4 @@
++-<?
+++<?php
++ 
++ /* 
++ 	-----------
++@@ -290,7 +298,7 @@
++ 
++ // script URL
++ 
++-$script_url = "$SCRIPT_URL";
+++$script_url = $_SERVER["SCRIPT_NAME"];
++ $script = $script_url;
++ 
++ // default lang
++diff -ru omail-admin/func.php omail-admin-new/func.php
++--- omail-admin/func.php	1970-01-01 01:00:01.000000000 +0100
+++++ omail-admin-new/func.php	2014-07-01 22:41:47.000000000 +0200
++@@ -1,4 +1,4 @@
++-<?
+++<?php
++ 
++ /*
++         -----------
++@@ -40,10 +40,10 @@
++ 		
++ 	// 1. expired ?  auto session expiration after N minutes
++ 	
++-	if ($expire > time()) {
+++	if ($_SESSION['expire'] > time()) {
++ 
++ 		// ok, we update actual expire time
++-		$expire = time() + $expire_after*60;
+++		$_SESSION['expire'] = time() + $expire_after*60;
++ 
++ 	} else {
++ 
++@@ -53,7 +53,7 @@
++ 
++ 	// 2. ip ?   check if the host is the same (in case of url spoofing...)
++ 
++-	if ($arg_ip != $ip) {
+++	if ($arg_ip != $_SESSION['ip']) {
++ 
++ 		// ip doesn't match -> exit
++ 		return 0;
++@@ -76,17 +76,17 @@
++ 
++ 	if (preg_match("/(.*)\@(.*)/", $arg_login, $parts)) {
++ 	
++-		$username = $parts[1];
++-		$domain = $parts[2];
++-		$passwd = base64_encode($arg_passwd);
++-		$type = "user";
+++		$_SESSION['username'] = $parts[1];
+++		$_SESSION['domain'] = $parts[2];
+++		$_SESSION['passwd'] = base64_encode($arg_passwd);
+++		$_SESSION['type'] = "user";
++ 
++ 	} else {
++ 
++-		$username = "";
++-		$domain = $arg_login;
++-		$passwd = base64_encode($arg_passwd);
++-		$type = "domain";
+++		$_SESSION['username'] = "";
+++		$_SESSION['domain'] = $arg_login;
+++		$_SESSION['passwd'] = base64_encode($arg_passwd);
+++		$_SESSION['type'] = "domain";
++ 
++ 	}
++ 
++@@ -99,27 +99,27 @@
++ 
++ 	// 4. initalize some variables
++ 	
++-	$mb_start = 0;
++-	$al_start = 0;
+++	$_SESSION['mb_start'] = 0;
+++	$_SESSION['al_start'] = 0;
++ 
++ 	// 5. authenticate
++ 
++-	if ($type == "domain") {
+++	if ($_SESSION['type'] == "domain") {
++ 
++-		$test = listdomain($domain, base64_decode($passwd));
+++		$test = listdomain($_SESSION['domain'], base64_decode($_SESSION['passwd']));
++ 
++ 		if (is_array($test[0]) || ($test[0] != 2)) {
++ 
++ 			SetCookie("cookie_omail_last_login","", Time()+993600);
++-			SetCookie("cookie_omail_last_domain",$domain, Time()+993600);
+++			SetCookie("cookie_omail_last_domain",$_SESSION['domain'], Time()+993600);
++ 			if ($tcphostname) {
++ 				SetCookie("cookie_omail_last_server",$tcphostname, Time()+993600);
++ 			}
++-			SetCookie("cookie_omail_lang",$lang, Time()+993600);
++-			$expire = time() + $expire_after*60;	
++-			$ip = $arg_ip;
+++			SetCookie("cookie_omail_lang",$_SESSION['lang'], Time()+993600);
+++			$_SESSION['expire'] = time() + $expire_after*60;	
+++			$_SESSION['ip'] = $arg_ip;
++ 
++-			load_quota_info($domain);
+++			load_quota_info($_SESSION['domain']);
++ 			get_catchall_account();
++ 
++ 			return 1;
++@@ -129,20 +129,20 @@
++ 			return 0;	
++ 		}
++ 
++-	} elseif ($type == "user") {
+++	} elseif ($_SESSION['type'] == "user") {
++ 
++-		$test = vchattr($domain, base64_decode($passwd), $username, "PASS", base64_decode($passwd));
+++		$test = vchattr($_SESSION['domain'], base64_decode($_SESSION['passwd']), $_SESSION['username'], "PASS", base64_decode($_SESSION['passwd']));
++ 
++ 		if ($test[0] == 0) {
++ 	
++-			SetCookie("cookie_omail_last_login",$username, Time()+993600);
++-			SetCookie("cookie_omail_last_domain",$domain, Time()+993600);
+++			SetCookie("cookie_omail_last_login",$_SESSION['username'], Time()+993600);
+++			SetCookie("cookie_omail_last_domain",$_SESSION['domain'], Time()+993600);
++ 
++-			SetCookie("cookie_omail_lang",$lang, Time()+993600);
++-			$expire = time() + $expire_after*60;	
++-			$ip = $arg_ip;
+++			SetCookie("cookie_omail_lang",$_SESSION['lang'], Time()+993600);
+++			$_SESSION['expire'] = time() + $expire_after*60;	
+++			$_SESSION['ip'] = $arg_ip;
++ 
++-			load_quota_info($domain);
+++			load_quota_info($_SESSION['domain']);
++ 			get_catchall_account();
++ 
++ 			return 1;
++@@ -165,7 +165,7 @@
++ function load_quota_info($domain) {
++ 
++ 	global $vmailmgrquota_file, $quota_on, $quota_data;
++-	$quota_on = 0; 
+++	$_SESSION['quota_on'] = 0; 
++ 	$domain = strtolower($domain);
++ 
++ 	if (file_exists($vmailmgrquota_file)) {
++@@ -181,64 +181,64 @@
++ 				// catch current domain (also if quota_on is set : could happen if default domain definied at start)
++ 
++ 				if ($entry[0] == $domain) {
++-					$quota_on = 1;
++-					$quota_data["nb_users"] = 0;			// current number of users
++-					$quota_data["nb_alias"] = 0;			// and aliases (will be set later)
++-					$quota_data["max_users"] = $entry[1];
++-					$quota_data["max_alias"] = $entry[2];
++-					$quota_data["users_support"] = $entry[3];
++-					$quota_data["alias_support"] = $entry[4];
++-					$quota_data["user_login_allowed"] = $entry[5];
++-					$quota_data["autoresp_support"] = $entry[6];
++-					$quota_data["user_quota_support"] = $entry[7];
++-					$quota_data["catchall_use_allowed"] = $entry[8];
++-					$quota_data["softquota"] = $entry[9] * 1024;
++-					$quota_data["hardquota"] = $entry[10] * 1024;
++-					$quota_data["msgsize"] = $entry[11] * 1024;
++-					$quota_data["new_mailbox_forbidden"] = $entry[12];
++-					$quota_data["new_alias_forbidden"] = $entry[13];
++-					$quota_data["spamassassin_use_forbidden"] = $entry[14];
++-					$quota_data["spamassassin_default_status"] = $entry[15];
+++					$_SESSION['quota_on'] = 1;
+++					$_SESSION['quota_data']["nb_users"] = 0;			// current number of users
+++					$_SESSION['quota_data']["nb_alias"] = 0;			// and aliases (will be set later)
+++					$_SESSION['quota_data']["max_users"] = $entry[1];
+++					$_SESSION['quota_data']["max_alias"] = $entry[2];
+++					$_SESSION['quota_data']["users_support"] = $entry[3];
+++					$_SESSION['quota_data']["alias_support"] = $entry[4];
+++					$_SESSION['quota_data']["user_login_allowed"] = $entry[5];
+++					$_SESSION['quota_data']["autoresp_support"] = $entry[6];
+++					$_SESSION['quota_data']["user_quota_support"] = $entry[7];
+++					$_SESSION['quota_data']["catchall_use_allowed"] = $entry[8];
+++					$_SESSION['quota_data']["softquota"] = $entry[9] * 1024;
+++					$_SESSION['quota_data']["hardquota"] = $entry[10] * 1024;
+++					$_SESSION['quota_data']["msgsize"] = $entry[11] * 1024;
+++					$_SESSION['quota_data']["new_mailbox_forbidden"] = $entry[12];
+++					$_SESSION['quota_data']["new_alias_forbidden"] = $entry[13];
+++					$_SESSION['quota_data']["spamassassin_use_forbidden"] = $entry[14];
+++					$_SESSION['quota_data']["spamassassin_default_status"] = $entry[15];
++ 
++ 				
++ 					// dirty hack, but should be ok for the moment :]  (index.php will be updated soon)
++-					if (!$quota_data["max_users"]) { $quota_data["max_users"] = 99999999; } 
++-					if (!$quota_data["max_alias"]) { $quota_data["max_alias"] = 99999999; } 
++-					if (!$quota_data["softquota"]) { $quota_data["softquota"] = '-'; }
++-					if (!$quota_data["hardquota"]) { $quota_data["hardquota"] = '-'; }
++-					if (!$quota_data["msgsize"]) { $quota_data["msgsize"] = '-'; }
+++					if (!$_SESSION['quota_data']["max_users"]) { $_SESSION['quota_data']["max_users"] = 99999999; } 
+++					if (!$_SESSION['quota_data']["max_alias"]) { $_SESSION['quota_data']["max_alias"] = 99999999; } 
+++					if (!$_SESSION['quota_data']["softquota"]) { $_SESSION['quota_data']["softquota"] = '-'; }
+++					if (!$_SESSION['quota_data']["hardquota"]) { $_SESSION['quota_data']["hardquota"] = '-'; }
+++					if (!$_SESSION['quota_data']["msgsize"]) { $_SESSION['quota_data']["msgsize"] = '-'; }
++ 				}					
++ 
++ 				// catch default domain, but only if quota_on not yet set.
++ 
++-				if (!$quota_on && ($entry[0] == "*" || $entry[0] == "+" || $entry[0] == "default")) {
+++				if (!$_SESSION['quota_on'] && ($entry[0] == "*" || $entry[0] == "+" || $entry[0] == "default")) {
++ 
++-					$quota_on = 1;
++-					$quota_data["nb_users"] = 0;			// current number of users
++-					$quota_data["nb_alias"] = 0;			// and aliases (will be set later)
++-					$quota_data["max_users"] = $entry[1];
++-					$quota_data["max_alias"] = $entry[2];
++-					$quota_data["users_support"] = $entry[3];
++-					$quota_data["alias_support"] = $entry[4];
++-					$quota_data["user_login_allowed"] = $entry[5];
++-					$quota_data["autoresp_support"] = $entry[6];
++-					$quota_data["user_quota_support"] = $entry[7];
++-					$quota_data["catchall_use_allowed"] = $entry[8];
++-					$quota_data["softquota"] = $entry[9] * 1024;
++-					$quota_data["hardquota"] = $entry[10] * 1024;
++-					$quota_data["msgsize"] = $entry[11] * 1024;
++-					$quota_data["new_mailbox_forbidden"] = $entry[12];
++-					$quota_data["new_alias_forbidden"] = $entry[13];
++-					$quota_data["spamassassin_use_forbidden"] = $entry[14];
++-					$quota_data["spamassassin_default_status"] = $entry[15];
+++					$_SESSION['quota_on'] = 1;
+++					$_SESSION['quota_data']["nb_users"] = 0;			// current number of users
+++					$_SESSION['quota_data']["nb_alias"] = 0;			// and aliases (will be set later)
+++					$_SESSION['quota_data']["max_users"] = $entry[1];
+++					$_SESSION['quota_data']["max_alias"] = $entry[2];
+++					$_SESSION['quota_data']["users_support"] = $entry[3];
+++					$_SESSION['quota_data']["alias_support"] = $entry[4];
+++					$_SESSION['quota_data']["user_login_allowed"] = $entry[5];
+++					$_SESSION['quota_data']["autoresp_support"] = $entry[6];
+++					$_SESSION['quota_data']["user_quota_support"] = $entry[7];
+++					$_SESSION['quota_data']["catchall_use_allowed"] = $entry[8];
+++					$_SESSION['quota_data']["softquota"] = $entry[9] * 1024;
+++					$_SESSION['quota_data']["hardquota"] = $entry[10] * 1024;
+++					$_SESSION['quota_data']["msgsize"] = $entry[11] * 1024;
+++					$_SESSION['quota_data']["new_mailbox_forbidden"] = $entry[12];
+++					$_SESSION['quota_data']["new_alias_forbidden"] = $entry[13];
+++					$_SESSION['quota_data']["spamassassin_use_forbidden"] = $entry[14];
+++					$_SESSION['quota_data']["spamassassin_default_status"] = $entry[15];
++ 					
++ 				
++ 					// dirty hack, but should be ok for the moment :]  (index.php will be updated later)
++-					if (!$quota_data["max_users"]) { $quota_data["max_users"] = 99999999; } 
++-					if (!$quota_data["max_alias"]) { $quota_data["max_alias"] = 99999999; } 
++-					if (!$quota_data["softquota"]) { $quota_data["softquota"] = '-'; }
++-					if (!$quota_data["hardquota"]) { $quota_data["hardquota"] = '-'; }
++-					if (!$quota_data["msgsize"]) { $quota_data["msgsize"] = '-'; }
+++					if (!$_SESSION['quota_data']["max_users"]) { $_SESSION['quota_data']["max_users"] = 99999999; } 
+++					if (!$_SESSION['quota_data']["max_alias"]) { $_SESSION['quota_data']["max_alias"] = 99999999; } 
+++					if (!$_SESSION['quota_data']["softquota"]) { $_SESSION['quota_data']["softquota"] = '-'; }
+++					if (!$_SESSION['quota_data']["hardquota"]) { $_SESSION['quota_data']["hardquota"] = '-'; }
+++					if (!$_SESSION['quota_data']["msgsize"]) { $_SESSION['quota_data']["msgsize"] = '-'; }
++ 				}					
++ 			}
++ 		}
++@@ -275,12 +275,12 @@
++ 
++ 	if ($arg_action) {
++ 
++-		$list = listdomain($domain, base64_decode($passwd));
+++		$list = listdomain($_SESSION['domain'], base64_decode($_SESSION['passwd']));
++ 		$j = 0;
++ 
++-		if ($quota_on) { 
++-			if ($arg_action == 1 || $arg_action == 3) { $quota_data["nb_users"] = 0; }
++-			if ($arg_action == 2 || $arg_action == 3) { $quota_data["nb_alias"] = 0; }
+++		if ($_SESSION['quota_on']) { 
+++			if ($arg_action == 1 || $arg_action == 3) { $_SESSION['quota_data']["nb_users"] = 0; }
+++			if ($arg_action == 2 || $arg_action == 3) { $_SESSION['quota_data']["nb_alias"] = 0; }
++ 		}
++ 		
++ 	        for ($i = 0; $i <  sizeof($list); $i++) {
++@@ -296,19 +296,19 @@
++ 			// findout autoresp status (only lookup for mailboxes)
++ 			if ($mbox && $action != 3) { $resp = load_resp_status($username); }  else { $resp = 0; }
++ 
++-                        if (($arg_action == 1) && $mb_letter && !eregi("^[$mb_letter]",$username)) {
+++                        if (($arg_action == 1) && $_SESSION['mb_letter'] && !eregi("^[".$_SESSION['mb_letter']."]",$username)) {
++                                if ($mbox) {
++                                    if (!(in_array($username, $readonly_accounts_list) || in_array($username, $system_accounts_list))) {
++-                                           $quota_data["nb_users"]++;
+++                                           $_SESSION['quota_data']["nb_users"]++;
++                                    }
++                                }
++                                 continue;
++                         }
++ 
++-                        if ($arg_action == 2 && $al_letter && !eregi("^[$al_letter]",$username)) {
+++                        if ($arg_action == 2 && $_SESSION['al_letter'] && !eregi("^[".$_SESSION['al_letter']."]",$username)) {
++                                if (!$mbox) {
++                                    if (!(in_array($username, $readonly_accounts_list) || in_array($username, $system_accounts_list))) {
++-                                           $quota_data["nb_alias"]++;
+++                                           $_SESSION['quota_data']["nb_alias"]++;
++                                    }
++                                }
++                                 continue;
++@@ -319,14 +319,14 @@
++ 			if ($mbox && ($arg_action == 1 || $arg_action == 3)) { 
++ 				$new_list[$j++] = $list[$i];  
++ 				if (!(in_array($username, $readonly_accounts_list) || in_array($username, $system_accounts_list))) { 
++-					$quota_data["nb_users"]++; 
+++					$_SESSION['quota_data']["nb_users"]++; 
++ 				}
++ 			}	
++ 
++ 			if (!$mbox && ($arg_action == 2 || $arg_action == 3)) { 
++ 				$new_list[$j++] = $list[$i]; 
++ 				if (!(in_array($username, $readonly_accounts_list) || in_array($username, $system_accounts_list))) { 
++-					$quota_data["nb_alias"]++; 
+++					$_SESSION['quota_data']["nb_alias"]++; 
++ 				}
++ 			}
++ 	
++@@ -336,7 +336,7 @@
++ 
++ 		// try to sort on username
++ 
++-		if ($sort_order == "info") {
+++		if ($_SESSION['sort_order'] == "info") {
++ 			usort($new_list, get_accounts_sort_by_info);
++ 		} else {
++ 			usort($new_list, get_accounts_sort_by_name);
++@@ -345,7 +345,7 @@
++ 
++ 	} else {  // user
++ 
++-		$lookup_data = lookup($domain, $arg_username, base64_decode($passwd));
+++		$lookup_data = lookup($_SESSION['domain'], $arg_username, base64_decode($_SESSION['passwd']));
++ 		$alias = array();
++ 		$i = -1;
++ 
++@@ -369,10 +369,10 @@
++ 
++         global $type, $domain, $passwd;
++ 
++-	$result = vchpass($domain, base64_decode($passwd), $arg_username, $arg_passwd);
+++	$result = vchpass($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username, $arg_passwd);
++ 
++ 	// update session password if necessary
++-	if ($type == "user") { $passwd = base64_encode($arg_passwd); }  
+++	if ($_SESSION['type'] == "user") { $_SESSION['passwd'] = base64_encode($arg_passwd); }  
++ 
++         if (!$result[0]) { return "PASSW ok : " . $result[1] ; }
++                 else { return "PASSW error : " . $result[1] ; }
++@@ -383,7 +383,7 @@
++ 
++         global $type, $domain, $passwd;
++ 
++-	$result = vchattr($domain, base64_decode($passwd), $arg_username, "PERSONAL", $arg_detail);
+++	$result = vchattr($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username, "PERSONAL", $arg_detail);
++ 
++         if (!$result[0]) { return "USERINFO ok : " . $result[1] ; }
++                 else { return "USERINFO error : " . $result[1] ; }
++@@ -405,12 +405,12 @@
++ 		else { $arg_msgsize = $arg_msgsize * 1024; }
++ 	if ($arg_msgcount == "") { $arg_msgcount = "-" ; }
++ 
++-	$result1 = vchattr($domain, base64_decode($passwd), $arg_username, "HARDQUOTA", $arg_hardquota);
++-	$result2 = vchattr($domain, base64_decode($passwd), $arg_username, "SOFTQUOTA", $arg_softquota);
++-	$result3 = vchattr($domain, base64_decode($passwd), $arg_username, "MSGSIZE", $arg_msgsize);
++-	$result4 = vchattr($domain, base64_decode($passwd), $arg_username, "MSGCOUNT", $arg_msgcount);
++-	$result5 = vchattr($domain, base64_decode($passwd), $arg_username, "EXPIRY", $arg_expiry);
++-	$result6 = vchattr($domain, base64_decode($passwd), $arg_username, "MAILBOX_ENABLED", $arg_enabled);
+++	$result1 = vchattr($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username, "HARDQUOTA", $arg_hardquota);
+++	$result2 = vchattr($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username, "SOFTQUOTA", $arg_softquota);
+++	$result3 = vchattr($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username, "MSGSIZE", $arg_msgsize);
+++	$result4 = vchattr($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username, "MSGCOUNT", $arg_msgcount);
+++	$result5 = vchattr($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username, "EXPIRY", $arg_expiry);
+++	$result6 = vchattr($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username, "MAILBOX_ENABLED", $arg_enabled);
++ 
++         if (!$result1[0] && !$result2[0] && !$result3[0] && !$result4[0] && !$result5[0] && !$result6[0]) { return "QUOTA ok : " . $result6[1] ; }
++                 else { return "QUOTA error : " . $result6[1] ; }
++@@ -421,7 +421,7 @@
++ 
++         global $type, $domain, $passwd;
++ 	
++-	$result = vchattr($domain, base64_decode($passwd), $arg_username, "MAILBOX_ENABLED", $arg_enabled);
+++	$result = vchattr($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username, "MAILBOX_ENABLED", $arg_enabled);
++ 
++         if (!$result[0]) { return "SETTINGS ok : " . $result[1] ; }
++                 else { return "SETTINGS error : " . $result[1] ; }
++@@ -447,7 +447,7 @@
++ 		}
++ 	}   
++ 
++-	$result = vchforward($domain, base64_decode($passwd), $arg_username, $new_fwd);
+++	$result = vchforward($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username, $new_fwd);
++ 
++         if (!$result[0]) { return "UPDATE ok : " . $result[1] ; }
++                 else { return "UPDATE error : " . $result[1] ; }
++@@ -458,7 +458,7 @@
++ 
++         global $type, $domain, $passwd;
++ 
++-	$result = vadduser($domain, base64_decode($passwd), $arg_username, $arg_passwd, $arg_fwd);
+++	$result = vadduser($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username, $arg_passwd, $arg_fwd);
++ 
++         if (!$result[0]) { return "NEWUSER ok : " . $result[1] ; }
++                 else { return "NEWUSER error : " . $result[1] ; }
++@@ -468,7 +468,7 @@
++ 
++         global $type, $domain, $passwd;
++ 
++-	$result = vaddalias($domain, base64_decode($passwd), $arg_username, $arg_passwd, $arg_fwd);
+++	$result = vaddalias($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username, $arg_passwd, $arg_fwd);
++ 
++         if (!$result[0]) { return "NEWALIAS ok : " . $result[1] ; }
++                 else { return "NEWALIAS error : " . $result[1] ; }
++@@ -478,7 +478,7 @@
++ 
++         global $type, $domain, $passwd;
++ 
++-	$result = vdeluser($domain, base64_decode($passwd), $arg_username);
+++	$result = vdeluser($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username);
++ 
++         if (!$result[0]) { return "DELETE ok :  " . $result[1] ; }
++                 else { return "DELETE error : " . $result[1] ; }
++@@ -489,7 +489,7 @@
++ 
++         global $type, $domain, $passwd;
++ 
++-	$return_data = vreadautoresponse($domain, base64_decode($passwd), $arg_username);
+++	$return_data = vreadautoresponse($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username);
++ 	
++ 	return $return_data;
++ 
++@@ -499,7 +499,7 @@
++ 
++         global $type, $domain, $passwd;
++ 
++-	$data = vautoresponsestatus($domain, base64_decode($passwd), $arg_username);
+++	$data = vautoresponsestatus($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username);
++ 	$status = $data[1];
++ 
++ 	if ($status == "enabled") { return 1; } else { return 0; }
++@@ -535,21 +535,21 @@
++ 
++ 	// activate autoresponder (needed to be able to write to the file...)
++ 
++-	venableautoresponse($domain, base64_decode($passwd), $arg_username);
+++	venableautoresponse($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username);
++ 
++ 	// write text	
++ 
++-	$result = vwriteautoresponse($domain, base64_decode($passwd), $arg_username, $arg_resptext);
+++	$result = vwriteautoresponse($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username, $arg_resptext);
++ 
++         if (!$result[0]) { $return_msg = "AUTORESP_TXT ok :  " . $result[1] . "<br>"; }
++                 else { $return_msg = "AUTORESP_TXT error : " . $result[1] . "<br>"; }
++ 
++ 	if ($arg_status) { 
++ 		$stat = "ON";
++-		$result2 = venableautoresponse($domain, base64_decode($passwd), $arg_username);
+++		$result2 = venableautoresponse($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username);
++ 	} else {
++ 		$stat = "OFF";
++-		$result2 = vdisableautoresponse($domain, base64_decode($passwd), $arg_username);
+++		$result2 = vdisableautoresponse($_SESSION['domain'], base64_decode($_SESSION['passwd']), $arg_username);
++ 	}			
++ 
++ 	if (!$result2[0]) { $return_msg .= "AUTORESP $stat ok :  " . $result2[1] ; }
++@@ -563,7 +563,7 @@
++ 
++ 	global $catchall_active;
++ 
++-	$catchall_active = "";   // reset
+++	$_SESSION['catchall_active'] = "";   // reset
++ 
++ 	// will return the name of the actual catchall account, but only if it is an "official"
++ 	// one (created by omail-admin, only one forwarder pointing to an existing account)
++@@ -584,7 +584,7 @@
++ 		    $nb_fwd = count($aliases);
++ 
++ 		    if ($nb_fwd == 1 && $aliases[0] && (!(preg_match("/@/i", $aliases[0]))))  {
++-			$catchall_active = $aliases[0];
+++			$_SESSION['catchall_active'] = $aliases[0];
++ 			break;
++ 		    }
++ 		}
++@@ -865,7 +865,7 @@
++     // as it's always possible to have two people sharing the same name.
++     // But an e-mail address has to be unique in a domain so it's perfect
++     // to use as CN.
++-    $ou = get_ou($domain);
+++    $ou = get_ou($_SESSION['domain']);
++     $base_dn = "ou=".$ou.", ".$ldap_base;
++     $dn = "uid=".$username.", ".$base_dn;
++ 
++@@ -882,7 +882,7 @@
++     $info["ou"]=$ou;
++     $info["sn"]=$lastname;
++     $info["givenname"]=$firstname;
++-    $info["mail"]=$username."@".$domain;
+++    $info["mail"]=$username."@".$_SESSION['domain'];
++     $info["uid"]=$username;
++ 
++ 
++diff -ru omail-admin/htmlstuff.php omail-admin-new/htmlstuff.php
++--- omail-admin/htmlstuff.php	1970-01-01 01:00:01.000000000 +0100
+++++ omail-admin-new/htmlstuff.php	2014-07-01 22:42:06.000000000 +0200
++@@ -1,4 +1,4 @@
++-<?
+++<?php
++ 
++ /* 	-----------
++ 	oMail-admin  -  A PHP4 based Vmailmgrd Web interface
++@@ -39,41 +39,42 @@
++ 	global $script_url, $A, $lang, $version, $cookie_omail_last_login, $cookie_omail_last_domain, $domains_list;
++ 	global $use_vmailmgrd_tcp, $vmailmgrd_tcp_host_method, $vmailmgrd_tcp_hosts_list;
++ 	global $cookie_omail_last_server;
+++	global $script;
++ 	include("strings.php");
++ 
++         $templdata["script"]=$script;
++-        $templdata["SID"]=SID;
++-	$templdata["txt_dom_ident"]=$txt_dom_ident[$lang];
++-	$templdata["txt_domain_or_email"]=$txt_domain_or_email[$lang];
++-	$templdata["txt_password_str"]=$txt_password_str[$lang];
++-	$templdata["txt_mailhost_str"]=$txt_mailhost_str[$lang];
++-	$templdata["txt_login"]=$txt_login[$lang];
++-	$templdata["lang"]=$lang;
+++        $templdata["SID"]="PHPSESSID=".session_id();
+++	$templdata["txt_dom_ident"]=$txt_dom_ident[$_SESSION['lang']];
+++	$templdata["txt_domain_or_email"]=$txt_domain_or_email[$_SESSION['lang']];
+++	$templdata["txt_password_str"]=$txt_password_str[$_SESSION['lang']];
+++	$templdata["txt_mailhost_str"]=$txt_mailhost_str[$_SESSION['lang']];
+++	$templdata["txt_login"]=$txt_login[$_SESSION['lang']];
+++	$templdata["lang"]=$_SESSION['lang'];
++ 
++ 	$ii = 0;
++         reset($txt_langname);
++         while(list ($id,$tmplang) = each ($txt_langname) ) {
++-                if ($id != $lang) {
+++                if ($id != $_SESSION['lang']) {
++ 			$templdata[bla][$ii][id] = $id;
++-			$templdata[bla][$ii][url] = $script . "?setlang=$id&" . SID;
+++			$templdata[bla][$ii][url] = $script . "?setlang=$id&" . "PHPSESSID=".session_id();
++ 			$templdata[bla][$ii][txt] = $tmplang;
++ 			$templdata[bla][$ii][sel] = "";
++                 } else {
++ 			$templdata[bla][$ii][id] = $id;
++-			$templdata[bla][$ii][url] = $script . "?setlang=$id&" . SID;
+++			$templdata[bla][$ii][url] = $script . "?setlang=$id&" . "PHPSESSID=".session_id();
++ 			$templdata[bla][$ii][txt] = "<font color=\"red\">$tmplang</font>";
++-			$templdata[bla][$ii][sel] = "SELECTEd";
+++			$templdata[bla][$ii][sel] = "SELECTED";
++                 }
++ 		$ii++;
++         }
++ 
++ 	$templdata["domain_value"]= "";
++-	if (!count($domains_list) && $cookie_omail_last_domain && !$cookie_omail_last_login) { 
++-		$templdata["domain_value"]=htmlentities($cookie_omail_last_domain); 
++-	} elseif (!count($domains_list) && $cookie_omail_last_login && $cookie_omail_last_domain) { 
++-	        $templdata["domain_value"]= htmlentities($cookie_omail_last_login) . "@" . htmlentities($cookie_omail_last_domain); 
++-	} elseif (count($domains_list) && $cookie_omail_last_login) { 
++-		$templdata["domain_value"] = htmlentities($cookie_omail_last_login); 
+++	if (!count($domains_list) && $_COOKIE['cookie_omail_last_domain'] && !$_COOKIE['cookie_omail_last_login']) { 
+++		$templdata["domain_value"]=htmlentities($_COOKIE['cookie_omail_last_domain']); 
+++	} elseif (!count($domains_list) && $_COOKIE['cookie_omail_last_login'] && $_COOKIE['cookie_omail_last_domain']) { 
+++	        $templdata["domain_value"]= htmlentities($_COOKIE['cookie_omail_last_login']) . "@" . htmlentities($_COOKIE['cookie_omail_last_domain']); 
+++	} elseif (count($domains_list) && $_COOKIE['cookie_omail_last_login']) { 
+++		$templdata["domain_value"] = htmlentities($_COOKIE['cookie_omail_last_login']); 
++ 	}
++ 
++ 	$templdata["domain_select"]="";
++@@ -84,7 +85,7 @@
++                 reset($domains_list);
++                 while(list ($id,$tmp) = each ($domains_list) ) {
++ 
++-                        if ($cookie_omail_last_domain == $tmp) {
+++                        if ($_COOKIE['cookie_omail_last_domain'] == $tmp) {
++                                 $templdata["domain_select"] .= "<option selected>$tmp</option>";
++                         } else {
++                                 $templdata["domain_select"] .= "<option>$tmp</option>";
++@@ -102,7 +103,7 @@
++ 		reset($vmailmgrd_tcp_hosts_list);
++ 		while(list ($id,$tmp) = each ($vmailmgrd_tcp_hosts_list)) {
++ 
++-			if ($cookie_omail_last_server == $id) {
+++			if ($_COOKIE['cookie_omail_last_server'] == $id) {
++ 				$templdata["tcphost_select_list"] .= "<option selected>$id</option>";
++ 			} else {
++ 				$templdata["tcphost_select_list"] .= "<option>$id</option>";
++@@ -122,15 +123,15 @@
++ 	include("strings.php");
++ 
++ 	// needed for 'ru' (at least with no-russian browsers)	
++-	if ($txt_charset[$lang]) { 
++-		Header("Content-Type: text/html; charset=" . $txt_charset[$lang] . "\n");
++-	} elseif ($txt_charset[$setlang]) { 
++-		Header("Content-Type: text/html; charset=" . $txt_charset[$setlang] . "\n");
+++	if ($txt_charset[$_SESSION['lang']]) { 
+++		Header("Content-Type: text/html; charset=" . $txt_charset[$_SESSION['lang']] . "\n");
+++	} elseif ($txt_charset[$_REQUEST['setlang']]) { 
+++		Header("Content-Type: text/html; charset=" . $txt_charset[$_REQUEST['setlang']] . "\n");
++ 	}
++ 
++ 	$templdata["version"]=$version;
++ 	$templdata["cvs_version"]=$cvs_version;
++-	$templdata["lang"]=$lang;
+++	$templdata["lang"]=$_SESSION['lang'];
++ 	$templdata["title"]=$title;
++ 
++ 	print parseTemplate($templdata, "templates/html_header_standard.temp");
++@@ -148,40 +149,40 @@
++ 	$array["msg"] = $msg;
++ 
++ 	if ($popup) { 
++-		$array[buttonlabels][0][url] = $script . "?" . SID;
++-		$array[buttonlabels][0][txt] = $txt_close[$lang];
+++		$array[buttonlabels][0][url] = $script . "?" . "PHPSESSID=".session_id();
+++		$array[buttonlabels][0][txt] = $txt_close[$_SESSION['lang']];
++ 		$array[buttonlabels][0][onClick] = 'onClick="return gO(this,true,true)"';
++-		$array[buttonlabels][1][url] = $script . "?A=logout&" . SID;
++-		$array[buttonlabels][1][txt] = $txt_logout[$lang];
+++		$array[buttonlabels][1][url] = $script . "?A=logout&" . "PHPSESSID=".session_id();
+++		$array[buttonlabels][1][txt] = $txt_logout[$_SESSION['lang']];
++ 		$array[buttonlabels][1][onClick] = 'onClick="return gO(this,true)"';
++-		$array[buttonlabels][2][url] = $script . "?A=help&" . SID;
++-		$array[buttonlabels][2][txt] = $txt_help[$lang];
+++		$array[buttonlabels][2][url] = $script . "?A=help&" . "PHPSESSID=".session_id();
+++		$array[buttonlabels][2][txt] = $txt_help[$_SESSION['lang']];
++ 		$array[buttonlabels][2][onClick] = "onClick=\"oW(this,'pop2')\"";
++ 	} elseif ($A == "menu") { 	
++-		$array[buttonlabels][0][url] = $script . "?" . SID;
++-		$array[buttonlabels][0][txt] = $txt_refresh_menu[$lang];
+++		$array[buttonlabels][0][url] = $script . "?" . "PHPSESSID=".session_id();
+++		$array[buttonlabels][0][txt] = $txt_refresh_menu[$_SESSION['lang']];
++ 		$array[buttonlabels][0][onClick] = '';
++-		$array[buttonlabels][1][url] = $script . "?A=logout&" . SID;
++-		$array[buttonlabels][1][txt] = $txt_logout[$lang];
+++		$array[buttonlabels][1][url] = $script . "?A=logout&" . "PHPSESSID=".session_id();
+++		$array[buttonlabels][1][txt] = $txt_logout[$_SESSION['lang']];
++ 		$array[buttonlabels][1][onClick] = '';
++-		$array[buttonlabels][2][url] = $script . "?A=help&" . SID;
++-		$array[buttonlabels][2][txt] = $txt_help[$lang];
+++		$array[buttonlabels][2][url] = $script . "?A=help&" . "PHPSESSID=".session_id();
+++		$array[buttonlabels][2][txt] = $txt_help[$_SESSION['lang']];
++ 		$array[buttonlabels][2][onClick] = "onClick=\"oW(this,'pop2')\"";
++ 		if (!$hide_about_button) {
++-			$array[buttonlabels][3][url] = $script . "?A=about&" . SID;
++-			$array[buttonlabels][3][txt] = $txt_about[$lang];
+++			$array[buttonlabels][3][url] = $script . "?A=about&" . "PHPSESSID=".session_id();
+++			$array[buttonlabels][3][txt] = $txt_about[$_SESSION['lang']];
++ 			$array[buttonlabels][3][onClick] = "onClick=\"oW3(this,'pop2')\"";
++ 		}
++ 	} elseif (($A == "login" || $A == "" || $A == "splash") && !$hide_about_button) {
++-		$array[buttonlabels][0][url] = $script . "?A=about&" . SID;
++-		$array[buttonlabels][0][txt] = $txt_about[$lang];
+++		$array[buttonlabels][0][url] = $script . "?A=about&" . "PHPSESSID=".session_id();
+++		$array[buttonlabels][0][txt] = $txt_about[$_SESSION['lang']];
++ 		$array[buttonlabels][0][onClick] = "onClick=\"oW3(this,'pop2')\"";
++-		$array[buttonlabels][1][url] = $script . "?A=help&" . SID;
++-		$array[buttonlabels][1][txt] = $txt_help[$lang];
+++		$array[buttonlabels][1][url] = $script . "?A=help&" . "PHPSESSID=".session_id();
+++		$array[buttonlabels][1][txt] = $txt_help[$_SESSION['lang']];
++ 		$array[buttonlabels][1][onClick] = "onClick=\"oW(this,'pop2')\"";
++ 	} elseif ($A == "about" || $A == "help") { 
++-		$array[buttonlabels][0][url] = $script . "?" . SID;
++-		$array[buttonlabels][0][txt] = $txt_close[$lang];
+++		$array[buttonlabels][0][url] = $script . "?" . "PHPSESSID=".session_id();
+++		$array[buttonlabels][0][txt] = $txt_close[$_SESSION['lang']];
++ 		$array[buttonlabels][0][onClick] = 'onClick="return gO(this,true,true)"';
++ 	} else {
++ 		$array[buttonlabels][0]='';
++@@ -209,16 +210,16 @@
++ 
++ 	$templdata["spamsettings"] = "";
++         $templdata["script"]=$script;
++-        $templdata["SID"]=SID;
++-        $templdata["txt_username"]=$txt_username[$lang];
+++        $templdata["SID"]="PHPSESSID=".session_id();
+++        $templdata["txt_username"]=$txt_username[$_SESSION['lang']];
++         $templdata["userinfo0"]=$userinfo[0];
++-        $templdata["domain"]=$domain;
++-        $templdata["txt_details"]=$txt_details[$lang];
+++        $templdata["domain"]=$_SESSION['domain'];
+++        $templdata["txt_details"]=$txt_details[$_SESSION['lang']];
++         $templdata["userinfo4"]=htmlentities($userinfo[4]);
++-        $templdata["txt_date_of_creation"]=$txt_date_of_creation[$lang];
++-	$templdata["txt_firstname"]=$txt_firstname[$lang];
++-	$templdata["txt_lastname"]=$txt_lastname[$lang];
++-	$templdata["txt_one_per_line"]=$txt_one_per_line[$lang];
+++        $templdata["txt_date_of_creation"]=$txt_date_of_creation[$_SESSION['lang']];
+++	$templdata["txt_firstname"]=$txt_firstname[$_SESSION['lang']];
+++	$templdata["txt_lastname"]=$txt_lastname[$_SESSION['lang']];
+++	$templdata["txt_one_per_line"]=$txt_one_per_line[$_SESSION['lang']];
++ 
++ 	if ($action == "edit") {
++ 		// find how many forwarders there are
++@@ -255,21 +256,22 @@
++         $templdata["userinfo2"]=$userinfo[2]; if (!($templdata["userinfo2"])) { $templdata["userinfo2"]= "-"; }
++         $templdata["userinfo0"]=$userinfo[0];
++ 
++-        $templdata["txt_directory"]=$txt_directory[$lang];
++-        $templdata["txt_passwd"]=$txt_passwd[$lang];
+++        $templdata["txt_directory"]=$txt_directory[$_SESSION['lang']];
+++        $templdata["txt_passwd"]=$txt_passwd[$_SESSION['lang']];
++ 
++-	if ($action == "newalias") { $templdata["txt_facultatif"]= " (" . $txt_facultatif[$lang] . ") "; }
+++	if ($action == "newalias") { $templdata["txt_facultatif"]= " (" . $txt_facultatif[$_SESSION['lang']] . ") "; }
++ 	else {  $templdata["txt_facultatif"] = " "; }
++ 
++ 	for ($i = 0; $i < ($nb_fwd); $i++) {
++ 	
++ 		if ($type == "user") {
++-			$templdata[alias1][$i][txt_fwd] = $txt_fwd[$lang] . " " . ($i + 1);   // no select list...	
+++			$templdata[alias1][$i][txt_fwd] = $txt_fwd[$_SESSION['lang']] . " " . ($i + 1);   // no select list...	
++ 		} else {
++-			$templdata[alias1][$i][txt_fwd] = $txt_fwd[$lang] . " " . ($i + 2);	
+++			$templdata[alias1][$i][txt_fwd] = $txt_fwd[$_SESSION['lang']] . " " . ($i + 2);	
++ 		}
++ 
++ 		$templdata[alias1][$i][aliases] = $aliases[$i];	
+++		$templdata[alias1][$i][fwd] = "fwd_".($i+2);	
++ 
++ 		if ($i/2 == floor($i/2)) { $templdata[alias1][$i][fwdcolor] = "#DDDDDD"; }
++ 				else { $templdata[alias1][$i][fwdcolor] = "#CCCCCC"; }
++@@ -282,14 +284,14 @@
++ 		$templdata["fwd_part"] = "";
++ 	}
++ 
++-        $templdata["txt_submit"]=$txt_submit[$lang];
++-        $templdata["txt_cancel"]=$txt_cancel[$lang];
+++        $templdata["txt_submit"]=$txt_submit[$_SESSION['lang']];
+++        $templdata["txt_cancel"]=$txt_cancel[$_SESSION['lang']];
++         $templdata["action"]=$action;
++ 
++ 	if ($i/2 == floor($i/2)) { $templdata["sub_color"]="#DDDDDD"; }
++ 		else { $templdata["sub_color"]="#CCCCCC"; }
++ 
++-	$templdata["txt_fwd1"] =  $txt_fwd[$lang];
+++	$templdata["txt_fwd1"] =  $txt_fwd[$_SESSION['lang']];
++ 	$templdata["select_account_contents"] = '<option value=""> - </option>';
++ 
++ 	for ($i=0; $i<sizeof($mboxlist);$i++) {
++@@ -329,33 +331,33 @@
++ 	// cleanup userinfo field, if containing SPAM settings
++ 	$templdata["spamsettings"] = "";
++         $templdata["script"]=$script;
++-        $templdata["SID"]=SID;
++-        $templdata["txt_username"]=$txt_username[$lang];
+++        $templdata["SID"]="PHPSESSID=".session_id();
+++        $templdata["txt_username"]=$txt_username[$_SESSION['lang']];
++         $templdata["userinfo0"]=$userinfo[0];
++-        $templdata["domain"]=$domain;
++-        $templdata["txt_details"]=$txt_details[$lang];
+++        $templdata["domain"]=$_SESSION['domain'];
+++        $templdata["txt_details"]=$txt_details[$_SESSION['lang']];
++         $templdata["userinfo4"]=htmlentities($userinfo[4]);
++-        $templdata["txt_date_of_creation"]=$txt_date_of_creation[$lang];
+++        $templdata["txt_date_of_creation"]=$txt_date_of_creation[$_SESSION['lang']];
++         $templdata["CreationTime"]=date("d.m.Y H\hi",$CreationTime);
++-        $templdata["txt_status"]=$txt_status[$lang];
+++        $templdata["txt_status"]=$txt_status[$_SESSION['lang']];
++ 
++ 	if ($Enabled == 1) { $templdata["checked_yes"] = "SELECTED"; $templdata["checked_no"] = ""; }
++ 		else { $templdata["checked_no"] = "SELECTED"; $templdata["checked_yes"] = ""; }
++ 
++-        $templdata["txt_activated"]=$txt_activated[$lang];
++-        $templdata["txt_inactived"]=$txt_inactived[$lang];
++-        $templdata["txt_hardquota"]=$txt_hardquota[$lang];
+++        $templdata["txt_activated"]=$txt_activated[$_SESSION['lang']];
+++        $templdata["txt_inactived"]=$txt_inactived[$_SESSION['lang']];
+++        $templdata["txt_hardquota"]=$txt_hardquota[$_SESSION['lang']];
++ 	if ( $HardQuota == '-' ) { $templdata["HardQuota"]=$HardQuota; }
++ 		else { $templdata["HardQuota"]=$HardQuota/1024; }
++-        $templdata["txt_softquota"]=$txt_softquota[$lang];
+++        $templdata["txt_softquota"]=$txt_softquota[$_SESSION['lang']];
++ 	if ( $SoftQuota == '-' ) { $templdata["SoftQuota"]=$SoftQuota; }
++ 		else { $templdata["SoftQuota"]=$SoftQuota/1024; }
++-        $templdata["txt_msgcount"]=$txt_msgcount[$lang];
+++        $templdata["txt_msgcount"]=$txt_msgcount[$_SESSION['lang']];
++         $templdata["CountLimit"]=$CountLimit;
++-        $templdata["txt_msgsize"]=$txt_msgsize[$lang];
+++        $templdata["txt_msgsize"]=$txt_msgsize[$_SESSION['lang']];
++ 	if ($SizeLimit == '-') { $templdata["SizeLimit"]=$SizeLimit; }
++ 		else { $templdata["SizeLimit"]=$SizeLimit/1024; }
++-        $templdata["txt_expiry"]=$txt_expiry[$lang];
+++        $templdata["txt_expiry"]=$txt_expiry[$_SESSION['lang']];
++         $templdata["ExpiryTimeString"]="";
++ 
++ 	$templdata["yearx"]="";
++@@ -373,10 +375,10 @@
++ 	}
++ 
++         $templdata["ExpiryTime"]=$ExpiryTime;
++-        $templdata["txt_submit"]=$txt_submit[$lang];
+++        $templdata["txt_submit"]=$txt_submit[$_SESSION['lang']];
++         $templdata["username"]=$username;
++-        $templdata["txt_submit"]=$txt_submit[$lang];
++-        $templdata["txt_cancel"]=$txt_cancel[$lang];
+++        $templdata["txt_submit"]=$txt_submit[$_SESSION['lang']];
+++        $templdata["txt_cancel"]=$txt_cancel[$_SESSION['lang']];
++ 
++         print parseTemplate($templdata, "templates/quotaform.temp");
++ 
++@@ -390,24 +392,24 @@
++ 	include("strings.php");
++ 
++         $templdata["script"]=$script;
++-        $templdata["SID"]=SID;
++-        $templdata["txt_username"]=$txt_username[$lang];
+++        $templdata["SID"]="PHPSESSID=".session_id();
+++        $templdata["txt_username"]=$txt_username[$_SESSION['lang']];
++         $templdata["userinfo0"]=$userinfo[0];
++-        $templdata["domain"]=$domain;
+++        $templdata["domain"]=$_SESSION['domain'];
++ 
++ 	if ($status == 1) { $templdata["checked_yes"] = "SELECTED"; $templdata["checked_no"] = ""; }
++ 		else { $templdata["checked_no"] = "SELECTED"; $templdata["checked_yes"] = ""; }
++ 
++-        $templdata["txt_submit"]=$txt_submit[$lang];
++-        $templdata["txt_cancel"]=$txt_cancel[$lang];
+++        $templdata["txt_submit"]=$txt_submit[$_SESSION['lang']];
+++        $templdata["txt_cancel"]=$txt_cancel[$_SESSION['lang']];
++ 
++-        $templdata["txt_responder"]=$txt_responder[$lang];
++-        $templdata["txt_activated"]=$txt_activated[$lang];
++-        $templdata["txt_inactived"]=$txt_inactived[$lang];
++-        $templdata["txt_autoanswertext"]=$txt_autoanswertext[$lang];
++-        $templdata["txt_from"]=$txt_from[$lang];
++-        $templdata["txt_subject"]=$txt_subject[$lang];
++-        $templdata["txt_text"]=$txt_text[$lang];
+++        $templdata["txt_responder"]=$txt_responder[$_SESSION['lang']];
+++        $templdata["txt_activated"]=$txt_activated[$_SESSION['lang']];
+++        $templdata["txt_inactived"]=$txt_inactived[$_SESSION['lang']];
+++        $templdata["txt_autoanswertext"]=$txt_autoanswertext[$_SESSION['lang']];
+++        $templdata["txt_from"]=$txt_from[$_SESSION['lang']];
+++        $templdata["txt_subject"]=$txt_subject[$_SESSION['lang']];
+++        $templdata["txt_text"]=$txt_text[$_SESSION['lang']];
++ 
++         $templdata["respinfofrom"]=$respinfo["from"];
++         $templdata["respinfosubject"]=$respinfo["subject"];
++@@ -426,10 +428,10 @@
++ 	include("strings.php");
++ 
++         $templdata["script"]=$script;
++-        $templdata["SID"]=SID;
++-        $templdata["txt_username"]=$txt_username[$lang];
+++        $templdata["SID"]="PHPSESSID=".session_id();
+++        $templdata["txt_username"]=$txt_username[$_SESSION['lang']];
++         $templdata["userinfo0"]=$userinfo[0];
++-        $templdata["domain"]=$domain;
+++        $templdata["domain"]=$_SESSION['domain'];
++ 
++ 	if ($spamsetup["status"] == 1) { $templdata["spam_checked_yes"] = "SELECTED"; $templdata["spam_checked_no"] = ""; }
++ 		else { $templdata["spam_checked_no"] = "SELECTED"; $templdata["spam_checked_yes"] = ""; }
++@@ -437,24 +439,24 @@
++ 	if ($spamsetup["delete"] == 1) { $templdata["spam_delete_checked_yes"] = "SELECTED"; $templdata["spam_delete_checked_no"] = ""; }
++ 		else { $templdata["spam_delete_checked_no"] = "SELECTED"; $templdata["spam_delete_checked_yes"] = ""; }
++ 
++-        $templdata["txt_submit"]=$txt_submit[$lang];
++-        $templdata["txt_cancel"]=$txt_cancel[$lang];
++-        $templdata["txt_fwd"]=$txt_fwd[$lang];
++-
++-        $templdata["txt_spamsettings"]=$txt_spamsettings[$lang];
++-        $templdata["txt_activated"]=$txt_activated[$lang];
++-        $templdata["txt_inactived"]=$txt_inactived[$lang];
++-	$templdata["txt_one_per_line"]=$txt_one_per_line[$lang];
++-	$templdata["txt_white_list"]=$txt_white_list[$lang];
++-	$templdata["txt_black_list"]=$txt_black_list[$lang];
++-
++-        $templdata["txt_scan_for_spam"]=$txt_scan_for_spam[$lang];
++-        $templdata["txt_spam_notes"]=$txt_spam_notes[$lang];
++-        $templdata["txt_auto_delete_spams"]=$txt_auto_delete_spams[$lang];
++-        $templdata["txt_fwd_spams_to"]=$txt_fwd_spams_to[$lang];
++-        $templdata["txt_required_hits"]=$txt_required_hits[$lang];
++-        $templdata["txt_standard_value"]=$txt_standard_value[$lang];
++-        $templdata["txt_master_switch"]=$txt_master_switch[$lang];
+++        $templdata["txt_submit"]=$txt_submit[$_SESSION['lang']];
+++        $templdata["txt_cancel"]=$txt_cancel[$_SESSION['lang']];
+++        $templdata["txt_fwd"]=$txt_fwd[$_SESSION['lang']];
+++
+++        $templdata["txt_spamsettings"]=$txt_spamsettings[$_SESSION['lang']];
+++        $templdata["txt_activated"]=$txt_activated[$_SESSION['lang']];
+++        $templdata["txt_inactived"]=$txt_inactived[$_SESSION['lang']];
+++	$templdata["txt_one_per_line"]=$txt_one_per_line[$_SESSION['lang']];
+++	$templdata["txt_white_list"]=$txt_white_list[$_SESSION['lang']];
+++	$templdata["txt_black_list"]=$txt_black_list[$_SESSION['lang']];
+++
+++        $templdata["txt_scan_for_spam"]=$txt_scan_for_spam[$_SESSION['lang']];
+++        $templdata["txt_spam_notes"]=$txt_spam_notes[$_SESSION['lang']];
+++        $templdata["txt_auto_delete_spams"]=$txt_auto_delete_spams[$_SESSION['lang']];
+++        $templdata["txt_fwd_spams_to"]=$txt_fwd_spams_to[$_SESSION['lang']];
+++        $templdata["txt_required_hits"]=$txt_required_hits[$_SESSION['lang']];
+++        $templdata["txt_standard_value"]=$txt_standard_value[$_SESSION['lang']];
+++        $templdata["txt_master_switch"]=$txt_master_switch[$_SESSION['lang']];
++ 
++         $templdata["spam_target"]=$spamsetup["spam_target"];
++         $templdata["required_hits"]=$spamsetup["required_hits"];
++@@ -465,8 +467,50 @@
++ 
++ }
++ 
+++function html_virusform($userinfo, $virussetup) {
+++
+++	global $session, $script, $lang, $domain;
+++	include("strings.php");
+++
+++        $templdata["script"]=$script;
+++        $templdata["SID"]="PHPSESSID=".session_id();
+++        $templdata["txt_username"]=$txt_username[$_SESSION['lang']];
+++        $templdata["userinfo0"]=$userinfo[0];
+++        $templdata["domain"]=$_SESSION['domain'];
+++
+++	if ($virussetup["virus_status"] == 1) { $templdata["virus_checked_yes"] = "SELECTED"; $templdata["virus_checked_no"] = ""; }
+++		else { $templdata["virus_checked_no"] = "SELECTED"; $templdata["virus_checked_yes"] = ""; }
+++
+++	if ($virussetup["virus_delete"] == 1) { $templdata["virus_delete_checked_yes"] = "SELECTED"; $templdata["virus_delete_checked_no"] = ""; }
+++		else { $templdata["virus_delete_checked_no"] = "SELECTED"; $templdata["virus_delete_checked_yes"] = ""; }
++ 
++ 
+++        $templdata["txt_submit"]=$txt_submit[$_SESSION['lang']];
+++        $templdata["txt_cancel"]=$txt_cancel[$_SESSION['lang']];
+++        $templdata["txt_fwd"]=$txt_fwd[$_SESSION['lang']];
+++
+++        $templdata["txt_virussettings"]=$txt_virussettings[$_SESSION['lang']];
+++        $templdata["txt_activated"]=$txt_activated[$_SESSION['lang']];
+++        $templdata["txt_inactived"]=$txt_inactived[$_SESSION['lang']];
+++	$templdata["txt_one_per_line"]=$txt_one_per_line[$_SESSION['lang']];
+++
+++        $templdata["txt_scan_for_spam"]=$txt_scan_for_spam[$_SESSION['lang']];
+++        $templdata["txt_spam_notes"]=$txt_spam_notes[$_SESSION['lang']];
+++        $templdata["txt_auto_delete_spams"]=$txt_auto_delete_spams[$_SESSION['lang']];
+++        $templdata["txt_fwd_spams_to"]=$txt_fwd_spams_to[$_SESSION['lang']];
+++        $templdata["txt_required_hits"]=$txt_required_hits[$_SESSION['lang']];
+++        $templdata["txt_standard_value"]=$txt_standard_value[$_SESSION['lang']];
+++        $templdata["txt_master_switch"]=$txt_master_switch[$_SESSION['lang']];
+++
+++        $templdata["txt_scan_for_virus"]=$txt_scan_for_virus[$_SESSION['lang']];
+++        $templdata["txt_auto_delete_virus"]=$txt_auto_delete_virus[$_SESSION['lang']];
+++        $templdata["txt_fwd_virus_to"]=$txt_fwd_virus_to[$_SESSION['lang']];
+++        $templdata["virus_target"]=$virussetup["virus_target"];
+++
+++        print parseTemplate($templdata, "templates/virusform.temp");
+++
+++}
+++
++ 
++ function html_delete_confirm($userinfo) {
++ 
++@@ -474,15 +518,15 @@
++ 	include("strings.php");
++ 
++         $templdata["script"]=$script;
++-        $templdata["SID"]=SID;
++-        $templdata["txt_username"]=$txt_username[$lang];
+++        $templdata["SID"]="PHPSESSID=".session_id();
+++        $templdata["txt_username"]=$txt_username[$_SESSION['lang']];
++         $templdata["userinfo0"]=$userinfo[0];
++-        $templdata["domain"]=$domain;
+++        $templdata["domain"]=$_SESSION['domain'];
++ 
++-        $templdata["txt_submit"]=$txt_submit[$lang];
++-        $templdata["txt_cancel"]=$txt_cancel[$lang];
++-        $templdata["txt_action"]=$txt_action[$lang];
++-        $templdata["txt_delete"]=$txt_delete[$lang];
+++        $templdata["txt_submit"]=$txt_submit[$_SESSION['lang']];
+++        $templdata["txt_cancel"]=$txt_cancel[$_SESSION['lang']];
+++        $templdata["txt_action"]=$txt_action[$_SESSION['lang']];
+++        $templdata["txt_delete"]=$txt_delete[$_SESSION['lang']];
++ 
++         print parseTemplate($templdata, "templates/delete_confirm.temp");
++ }
++@@ -495,16 +539,16 @@
++ 	include("strings.php");
++ 
++         $templdata["script"]=$script;
++-        $templdata["SID"]=SID;
++-        $templdata["txt_username"]=$txt_username[$lang];
+++        $templdata["SID"]="PHPSESSID=".session_id();
+++        $templdata["txt_username"]=$txt_username[$_SESSION['lang']];
++         $templdata["userinfo0"]=$userinfo[0];
++-        $templdata["domain"]=$domain;
+++        $templdata["domain"]=$_SESSION['domain'];
++ 
++-        $templdata["txt_submit"]=$txt_submit[$lang];
++-        $templdata["txt_cancel"]=$txt_cancel[$lang];
++-        $templdata["txt_action"]=$txt_action[$lang];
++-        $templdata["txt_catchall"]=$txt_catchall[$lang];
++-        $templdata["txt_setup_catchall"]=$txt_setup_catchall[$lang];
+++        $templdata["txt_submit"]=$txt_submit[$_SESSION['lang']];
+++        $templdata["txt_cancel"]=$txt_cancel[$_SESSION['lang']];
+++        $templdata["txt_action"]=$txt_action[$_SESSION['lang']];
+++        $templdata["txt_catchall"]=$txt_catchall[$_SESSION['lang']];
+++        $templdata["txt_setup_catchall"]=$txt_setup_catchall[$_SESSION['lang']];
++ 
++         $templdata["msg"]=$msg;
++ 
++@@ -525,17 +569,17 @@
++         }
++ 
++         $templdata["script"]=$script;
++-        $templdata["SID"]=SID;
++-        $templdata["txt_username"]=$txt_username[$lang];
+++        $templdata["SID"]="PHPSESSID=".session_id();
+++        $templdata["txt_username"]=$txt_username[$_SESSION['lang']];
++         $templdata["userinfo0"]=$userinfo[0];
++-        $templdata["domain"]=$domain;
+++        $templdata["domain"]=$_SESSION['domain'];
++ 
++-        $templdata["txt_submit"]=$txt_submit[$lang];
++-        $templdata["txt_cancel"]=$txt_cancel[$lang];
++-        $templdata["txt_action"]=$txt_action[$lang];
++-        $templdata["txt_catchall"]=$txt_catchall[$lang];
++-        $templdata["txt_setup_catchall"]=$txt_setup_catchall[$lang];
++-        $templdata["txt_remove_catchall"]=$txt_remove_catchall[$lang];
+++        $templdata["txt_submit"]=$txt_submit[$_SESSION['lang']];
+++        $templdata["txt_cancel"]=$txt_cancel[$_SESSION['lang']];
+++        $templdata["txt_action"]=$txt_action[$_SESSION['lang']];
+++        $templdata["txt_catchall"]=$txt_catchall[$_SESSION['lang']];
+++        $templdata["txt_setup_catchall"]=$txt_setup_catchall[$_SESSION['lang']];
+++        $templdata["txt_remove_catchall"]=$txt_remove_catchall[$_SESSION['lang']];
++ 
++         $templdata["msg"]=$msg;
++ 
++@@ -549,15 +593,15 @@
++ 	include("strings.php");
++ 
++         $templdata["script"]=$script;
++-        $templdata["SID"]=SID;
++-        $templdata["txt_username"]=$txt_username[$lang];
++-        $templdata["domain"]=$domain;
++-
++-        $templdata["txt_domain"]=$txt_domain[$lang];
++-        $templdata["txt_submit"]=$txt_submit[$lang];
++-        $templdata["txt_cancel"]=$txt_cancel[$lang];
++-        $templdata["txt_action"]=$txt_action[$lang];
++-        $templdata["txt_remove_catchall"]=$txt_remove_catchall[$lang];
+++        $templdata["SID"]="PHPSESSID=".session_id();
+++        $templdata["txt_username"]=$txt_username[$_SESSION['lang']];
+++        $templdata["domain"]=$_SESSION['domain'];
+++
+++        $templdata["txt_domain"]=$txt_domain[$_SESSION['lang']];
+++        $templdata["txt_submit"]=$txt_submit[$_SESSION['lang']];
+++        $templdata["txt_cancel"]=$txt_cancel[$_SESSION['lang']];
+++        $templdata["txt_action"]=$txt_action[$_SESSION['lang']];
+++        $templdata["txt_remove_catchall"]=$txt_remove_catchall[$_SESSION['lang']];
++ 
++         $templdata["msg"]=$msg;
++ 
++@@ -573,7 +617,7 @@
++ }
++ 
++ 
++-function html_display_mailboxes($mboxlist, $arg_action, $arg_start=-1, $arg_howmany=-1) {
+++function html_display_mailboxes($mboxlist, $spam_virus_info, $arg_action, $arg_start=-1, $arg_howmany=-1) {
++ 
++ 	// action :  	1 = mailbox
++ 	//		2 = alias
++@@ -590,60 +634,62 @@
++ 	switch ($arg_action) {
++ 		case 1:
++ 			$listtype = "mailboxes";
++-			$templdata["title"]=$txt_mailboxes_title[$lang];
+++			$templdata["title"]=$txt_mailboxes_title[$_SESSION['lang']];
++ 			break;
++ 		case 2:
++ 			$listtype = "aliases";
++-			$templdata["title"]=$txt_aliases_title[$lang];
+++			$templdata["title"]=$txt_aliases_title[$_SESSION['lang']];
++ 			break;
++ 
++ 		case 0:
++ 			$tmp_user = $mboxlist[0];
++ 			$listtype = "account";
++-			$templdata["title"]=$txt_user_title[$lang];
+++			$templdata["title"]=$txt_user_title[$_SESSION['lang']];
++ 			if ($tmp_user[2]) { $mtype = "mbox"; } else { $mtype = "alias"; }
++ 			break;
++ 	}
++ 
++ 
++-	$templdata["txt_email"] = $txt_email[$lang];
++-	$templdata["txt_info"] = $txt_info[$lang];
++-	$templdata["txt_fwd"] = $txt_fwd[$lang];
++-	$templdata["txt_responder"] = $txt_responder[$lang];
++-	$templdata["txt_spamsettings"] = $txt_spamsettings[$lang];
++-	$templdata["txt_more_fwd"] = $txt_more_fwd[$lang];
++-	$templdata["txt_action"] = $txt_action[$lang];
++-	$templdata["txt_any"] = $txt_any[$lang];
++-	$templdata["txt_local_delivery"] = $txt_local_delivery[$lang];
+++	$templdata["txt_email"] = $txt_email[$_SESSION['lang']];
+++	$templdata["txt_info"] = $txt_info[$_SESSION['lang']];
+++	$templdata["txt_fwd"] = $txt_fwd[$_SESSION['lang']];
+++	$templdata["txt_responder"] = $txt_responder[$_SESSION['lang']];
+++	$templdata["txt_spamsettings"] = $txt_spamsettings[$_SESSION['lang']];
+++	$templdata["txt_more_fwd"] = $txt_more_fwd[$_SESSION['lang']];
+++	$templdata["txt_action"] = $txt_action[$_SESSION['lang']];
+++	$templdata["txt_any"] = $txt_any[$_SESSION['lang']];
+++	$templdata["txt_local_delivery"] = $txt_local_delivery[$_SESSION['lang']];
+++	$templdata["txt_spam"] = $txt_spamsettings[$_SESSION['lang']];
+++	$templdata["txt_virus"] = $txt_virussettings[$_SESSION['lang']];
++ 	
++-	if ( $mb_letter ) {
++-	    $templdata["mb_letter"] = $mb_letter;
+++	if ( $_SESSION['mb_letter'] ) {
+++	    $templdata["mb_letter"] = $_SESSION['mb_letter'];
++ 	} else {
++-	    $templdata["mb_letter"] = $txt_any[$lang];
+++	    $templdata["mb_letter"] = $txt_any[$_SESSION['lang']];
++ 	}
++ 
++-	if ( $al_letter ) {
++-	    $templdata["al_letter"] = $al_letter;
+++	if ( $_SESSION['al_letter'] ) {
+++	    $templdata["al_letter"] = $_SESSION['al_letter'];
++ 	} else {
++-	    $templdata["al_letter"] = $txt_any[$lang];
+++	    $templdata["al_letter"] = $txt_any[$_SESSION['lang']];
++ 	}
++ 
++-	$templdata["url_email"] = $script . "?A=menu&form_sort=username&" . SID;
++-	$templdata["url_info"] = $script . "?A=menu&form_sort=info&" . SID;
++-	$templdata["url_show_mb_letter"] = $script . "?A=menu&" . SID . "&new_mb_start=1&show_mb_letter=";
++-	$templdata["url_show_al_letter"] = $script . "?A=menu&" . SID . "&new_al_start=1&show_al_letter=";
+++	$templdata["url_email"] = $script . "?A=menu&form_sort=username&" . "PHPSESSID=".session_id();
+++	$templdata["url_info"] = $script . "?A=menu&form_sort=info&" . "PHPSESSID=".session_id();
+++	$templdata["url_show_mb_letter"] = $script . "?A=menu&" . "PHPSESSID=".session_id() . "&new_mb_start=1&show_mb_letter=";
+++	$templdata["url_show_al_letter"] = $script . "?A=menu&" . "PHPSESSID=".session_id() . "&new_al_start=1&show_al_letter=";
++ 
++-	if ($arg_action != 2 && !(!$arg_action && $mtype == "alias")  && !($quota_on && !$quota_data["autoresp_support"])) {
++-		$templdata["ifdef_txt_responder"] = "<TH>" . $txt_responder[$lang] . "?</TH>"; 
+++	if ($arg_action != 2 && !(!$arg_action && $mtype == "alias")  && !($_SESSION['quota_on'] && !$_SESSION['quota_data']["autoresp_support"])) {
+++		$templdata["ifdef_txt_responder"] = "<TH>" . $txt_responder[$_SESSION['lang']] . "?</TH>"; 
++ 	} else {
++ 		$templdata["ifdef_txt_responder"] = "";
++ 	}
++ 
++-	$yes = "<font color=\"green\">" . $txt_yes[$lang] . "</font>";
++-	$no = "<font color=\"red\">" . $txt_no[$lang] . "</font>";
+++	$yes = "<font color=\"green\">" . $txt_yes[$_SESSION['lang']] . "</font>";
+++	$no = "<font color=\"red\">" . $txt_no[$_SESSION['lang']] . "</font>";
++ 
++-	$activated = "<font color=\"green\">" . $txt_activated[$lang] . "</font>";
++-	$inactived = "<font color=\"red\">" . $txt_inactived[$lang] . "</font>";
+++	$activated = "<font color=\"green\">" . $txt_activated[$_SESSION['lang']] . "</font>";
+++	$inactived = "<font color=\"red\">" . $txt_inactived[$_SESSION['lang']] . "</font>";
++ 
++ 	$total_size = 0;
++ 	$hidden = 0;
++@@ -673,14 +719,14 @@
++ 
++ 		// define <<<  <-   ->  and >>> links
++ 
++-		if ($mb_start == 0) { $mb_start = 1; }
++-		if ($al_start == 0) { $al_start = 1; }
+++		if ($_SESSION['mb_start'] == 0) { $_SESSION['mb_start'] = 1; }
+++		if ($_SESSION['al_start'] == 0) { $_SESSION['al_start'] = 1; }
++ 
++ 		if ($arg_action == 1) {
++-			$cur_start = $mb_start;
+++			$cur_start = $_SESSION['mb_start'];
++ 			$cur_letter = "mb";
++ 		} else {
++-			$cur_start = $al_start;
+++			$cur_start = $_SESSION['al_start'];
++ 			$cur_letter = "al";
++ 		}
++ 
++@@ -691,20 +737,20 @@
++ 		if ($cur_next > $cur_last) { $cur_next = $cur_last; }
++ 		if ($cur_prev <= 0) { $cur_prev = 1; }
++ 
++-                $templdata["txt_first"] = $txt_first[$lang];
++-                $templdata["txt_prev"] = $txt_prev[$lang];
++-                $templdata["txt_next"] = $txt_next[$lang];
++-                $templdata["txt_last"] = $txt_last[$lang];
+++                $templdata["txt_first"] = $txt_first[$_SESSION['lang']];
+++                $templdata["txt_prev"] = $txt_prev[$_SESSION['lang']];
+++                $templdata["txt_next"] = $txt_next[$_SESSION['lang']];
+++                $templdata["txt_last"] = $txt_last[$_SESSION['lang']];
++   
++-                $templdata["txt_first_off"] = $txt_first_off[$lang];
++-                $templdata["txt_prev_off"] = $txt_prev_off[$lang];
++-                $templdata["txt_next_off"] = $txt_next_off[$lang];
++-                $templdata["txt_last_off"] = $txt_last_off[$lang];
+++                $templdata["txt_first_off"] = $txt_first_off[$_SESSION['lang']];
+++                $templdata["txt_prev_off"] = $txt_prev_off[$_SESSION['lang']];
+++                $templdata["txt_next_off"] = $txt_next_off[$_SESSION['lang']];
+++                $templdata["txt_last_off"] = $txt_last_off[$_SESSION['lang']];
++   
++-                $templdata["url_first"] = $script . "?A=menu&new_" . $cur_letter . "_start=1&" . SID; 
++-                $templdata["url_prev"] = $script . "?A=menu&new_" . $cur_letter . "_start=$cur_prev&" . SID;
++-                $templdata["url_next"] = $script . "?A=menu&new_" . $cur_letter . "_start=$cur_next&" . SID;
++-                $templdata["url_last"] = $script . "?A=menu&new_" . $cur_letter . "_start=$cur_last&" . SID;
+++                $templdata["url_first"] = $script . "?A=menu&new_" . $cur_letter . "_start=1&" . "PHPSESSID=".session_id(); 
+++                $templdata["url_prev"] = $script . "?A=menu&new_" . $cur_letter . "_start=$cur_prev&" . "PHPSESSID=".session_id();
+++                $templdata["url_next"] = $script . "?A=menu&new_" . $cur_letter . "_start=$cur_next&" . "PHPSESSID=".session_id();
+++                $templdata["url_last"] = $script . "?A=menu&new_" . $cur_letter . "_start=$cur_last&" . "PHPSESSID=".session_id();
++ 
++ 		// hide buttons if necessary
++ 
++@@ -776,7 +822,7 @@
++ 		$templdata[obj][$ii]["PersonalInfo"] = $PersonalInfo;
++ 
++ 		if (in_array($username, $readonly_accounts_list)) {
++-		     $templdata[obj][$ii]["PersonalInfo"] = "<I>" . $txt_system_account[$lang] . "</I>"; 
+++		     $templdata[obj][$ii]["PersonalInfo"] = "<I>" . $txt_system_account[$_SESSION['lang']] . "</I>"; 
++ 			$templdata[obj][$ii]["colorUsername"] = "black";
++ 		}
++ 
++@@ -785,11 +831,21 @@
++ 		$templdata[obj][$ii]["alias1"] = $alias[1];
++ 		$templdata[obj][$ii]["alias2"] = $alias[2];
++ 
+++		if ($spam_virus_info["$username@".$_SESSION['domain']]["spam_enabled"]) {
+++			$templdata[obj][$ii]["spam_status"] = $yes;
+++		} else {
+++			$templdata[obj][$ii]["spam_status"] = $no;
+++		}
+++		if ($spam_virus_info["$username@".$_SESSION['domain']]["virus_enabled"]) {
+++			$templdata[obj][$ii]["virus_status"] = $yes;
+++		} else {
+++			$templdata[obj][$ii]["virus_status"] = $no;
+++		}
++ 
++ 		if (sizeof($alias) > 0) { $templdata[obj][$ii]["more_alias"] = $yes . "  (" . trim(sizeof($alias)) . ")"; } 
++ 		    else { $templdata[obj][$ii]["more_alias"] = $no; } 
++ 
++-		if ($arg_action != 2 && !(!$arg_action && $mtype == "alias") && !($quota_on && !$quota_data["autoresp_support"])) {
+++		if ($arg_action != 2 && !(!$arg_action && $mtype == "alias") && !($_SESSION['quota_on'] && !$_SESSION['quota_data']["autoresp_support"])) {
++ 			$templdata[obj][$ii]["ifdef_autoresponder_status"] = "<TD>";
++ 			if ($resp) { 
++ 			    $templdata[obj][$ii]["ifdef_autoresponder_status"] .= $activated;
++@@ -811,23 +867,23 @@
++ 	        
++ 		} else {
++ 
++-		$templdata[obj][$ii]["actions"] .= "&nbsp;&nbsp;<A HREF=\"$script?A=edit&U=" . $username . "&" . SID . "\" onClick=\"oW(this,'pop')\">"  .
++-				$txt_edit[$lang]  . "</a>&nbsp;"; // action
+++		$templdata[obj][$ii]["actions"] .= "&nbsp;&nbsp;<A HREF=\"$script?A=edit&U=" . $username . "&" . "PHPSESSID=".session_id() . "\" onClick=\"oW(this,'pop')\">"  .
+++				$txt_edit[$_SESSION['lang']]  . "</a>&nbsp;"; // action
++ 
++-  		if ($arg_action != 2 && !(!$arg_action && $mtype == "alias") && !($quota_on && !$quota_data["autoresp_support"])) {
++- 			$templdata[obj][$ii][actions] .= "&nbsp;&nbsp;<A HREF=\"$script?A=resp&U=" . $username . "&" . SID . "\" onClick=\"oW2(this,'pop')\">"  . 
++-				$txt_responder[$lang] . "</a>&nbsp;"; // action
+++  		if ($arg_action != 2 && !(!$arg_action && $mtype == "alias") && !($_SESSION['quota_on'] && !$_SESSION['quota_data']["autoresp_support"])) {
+++ 			$templdata[obj][$ii][actions] .= "&nbsp;&nbsp;<A HREF=\"$script?A=resp&U=" . $username . "&" . "PHPSESSID=".session_id() . "\" onClick=\"oW2(this,'pop')\">"  . 
+++				$txt_responder[$_SESSION['lang']] . "</a>&nbsp;"; // action
++ 		}	
++ 
++-		if ((($arg_action == 2 && $config_use_settings_with_quota) || $arg_action == 1) && !($quota_on && !$quota_data["user_quota_support"])) {
++-			$templdata[obj][$ii][actions] .=  "&nbsp;&nbsp;<A HREF=\"$script?A=quota&U=" . $username . "&" . SID . "\" onClick=\"oW2(this,'pop')\">"  . 
++-				$txt_settings[$lang] . "</a>&nbsp;"; // action
+++		if ((($arg_action == 2 && $config_use_settings_with_quota) || $arg_action == 1) && !($_SESSION['quota_on'] && !$_SESSION['quota_data']["user_quota_support"])) {
+++			$templdata[obj][$ii][actions] .=  "&nbsp;&nbsp;<A HREF=\"$script?A=quota&U=" . $username . "&" . "PHPSESSID=".session_id() . "\" onClick=\"oW2(this,'pop')\">"  . 
+++				$txt_settings[$_SESSION['lang']] . "</a>&nbsp;"; // action
++ 		}
++ 
++ 		if ($arg_action) {
++ 
++-			$templdata[obj][$ii][actions] .=  "&nbsp;&nbsp;<A HREF=\"$script?A=delete&U=" . $username . "&" . SID . "\" onClick=\"oW(this,'pop')\">"  . 
++-				$txt_delete[$lang]  . "</a>&nbsp;"; // action
+++			$templdata[obj][$ii][actions] .=  "&nbsp;&nbsp;<A HREF=\"$script?A=delete&U=" . $username . "&" . "PHPSESSID=".session_id() . "\" onClick=\"oW(this,'pop')\">"  . 
+++				$txt_delete[$_SESSION['lang']]  . "</a>&nbsp;"; // action
++ 
++ 		} else {
++ 		
++@@ -835,21 +891,23 @@
++ 		    // user mode - display the enable/disable button
++ 		    if ($Enabled) { 
++ 			$tmpaction = "user_disable";
++-			$tmptxt = $txt_turn_off_delivery[$lang];
+++			$tmptxt = $txt_turn_off_delivery[$_SESSION['lang']];
++ 		    } else {
++ 			$tmpaction = "user_enable";
++-			$tmptxt = $txt_turn_on_delivery[$lang];
+++			$tmptxt = $txt_turn_on_delivery[$_SESSION['lang']];
++ 		    }
++ 		    
++-		    $templdata[obj][$ii][actions] .=  "&nbsp;&nbsp;<A HREF=\"$script?A=parse&action=$tmpaction&U=" . $username . "&" . SID . "\" onClick=\"oW(this,'pop')\">"  . 
+++		    $templdata[obj][$ii][actions] .=  "&nbsp;&nbsp;<A HREF=\"$script?A=parse&action=$tmpaction&U=" . $username . "&" . "PHPSESSID=".session_id() . "\" onClick=\"oW(this,'pop')\">"  . 
++ 				$tmptxt  . "</a>&nbsp;"; // action
++ 		
++ 		}
++ 
++ 
++-  		if ($use_spamassassin && !$quota_data["spamassassin_use_forbidden"]) {
++- 			$templdata[obj][$ii][actions] .= "&nbsp;&nbsp;<A HREF=\"$script?A=spam&U=" . $username . "&" . SID . "\" onClick=\"oW2(this,'pop')\">"  . 
++-				$txt_spamsettings[$lang] . "</a>&nbsp;"; // action
+++  		if ($use_spamassassin && !$_SESSION['quota_data']["spamassassin_use_forbidden"] && !preg_match("/virus|spam/", $username) ) {
+++ 			$templdata[obj][$ii][actions] .= "&nbsp;&nbsp;<A HREF=\"$script?A=spam&U=" . $username . "&" . "PHPSESSID=".session_id() . "\" onClick=\"oW2(this,'pop')\">"  . 
+++				$txt_spamsettings[$_SESSION['lang']] . "</a>&nbsp;"; // action
+++ 			$templdata[obj][$ii][actions] .= "&nbsp;&nbsp;<A HREF=\"$script?A=virus&U=" . $username . "&" . "PHPSESSID=".session_id() . "\" onClick=\"oW2(this,'pop')\">"  . 
+++				$txt_virussettings[$_SESSION['lang']] . "</a>&nbsp;"; // action
++ 		}	
++ 
++ 
++@@ -862,11 +920,11 @@
++ 
++ 	switch ($arg_action) {
++ 		case 1:
++-			$tmp_label = $txt_newuser[$lang];
+++			$tmp_label = $txt_newuser[$_SESSION['lang']];
++ 			$tmp_action = "newuser";
++ 			break;
++ 		case 2:
++-			$tmp_label = $txt_newalias[$lang];
+++			$tmp_label = $txt_newalias[$_SESSION['lang']];
++ 			$tmp_action = "newalias";
++ 			break;
++ 	}
++@@ -878,56 +936,56 @@
++ 	
++ 		$quota_string = "";
++ 
++-		if ($quota_on) {
+++		if ($_SESSION['quota_on']) {
++ 
++ 			if ($arg_action == 1) {			
++-				if ($quota_data["max_users"] && $quota_data["max_users"] != 99999999) {
++-					$percent = round((100*$quota_data["nb_users"])/$quota_data["max_users"]);
+++				if ($_SESSION['quota_data']["max_users"] && $_SESSION['quota_data']["max_users"] != 99999999) {
+++					$percent = round((100*$_SESSION['quota_data']["nb_users"])/$_SESSION['quota_data']["max_users"]);
++ 					if ($percent == 100) { 	
++ 						$percent = '<font color="red">' . $percent . '%</font>';
++ 						$tmp_label = $tmp_action = "";	// hide the "new account" button
++ 					} else {
++ 						$percent = '<font color="green">' . $percent . '%</font>';
++ 					}
++-					$quota_string = $txt_quota[$lang] . ": " . $txt_maximum[$lang] . " = " . $quota_data["max_users"] . " " . $txt_smallmailboxes[$lang] . " &nbsp; &nbsp; ($percent " . $txt_used[$lang] . ")" ;
+++					$quota_string = $txt_quota[$_SESSION['lang']] . ": " . $txt_maximum[$_SESSION['lang']] . " = " . $_SESSION['quota_data']["max_users"] . " " . $txt_smallmailboxes[$_SESSION['lang']] . " &nbsp; &nbsp; ($percent " . $txt_used[$_SESSION['lang']] . ")" ;
++ 				}
++ 			}
++ 			if ($arg_action == 2) {			
++-				if ($quota_data["max_alias"] && $quota_data["max_alias"] != 99999999) {
++-					$percent = round((100*$quota_data["nb_alias"])/$quota_data["max_alias"]);
+++				if ($_SESSION['quota_data']["max_alias"] && $_SESSION['quota_data']["max_alias"] != 99999999) {
+++					$percent = round((100*$_SESSION['quota_data']["nb_alias"])/$_SESSION['quota_data']["max_alias"]);
++ 					if ($percent == 100) { 	
++ 						$percent = '<font color="red">' . $percent . '%</font>';
++ 						$tmp_label = $tmp_action = "";	// hide the "new account" button
++ 					} else {
++ 						$percent = '<font color="green">' . $percent . '%</font>';
++ 					}
++-					$quota_string = $txt_quota[$lang] . ": " . $txt_maximum[$lang] . " = " . $quota_data["max_alias"] . " " . $txt_smallaliases[$lang] . " &nbsp; &nbsp; ($percent " . $txt_used[$lang] . ")" ;
+++					$quota_string = $txt_quota[$_SESSION['lang']] . ": " . $txt_maximum[$_SESSION['lang']] . " = " . $_SESSION['quota_data']["max_alias"] . " " . $txt_smallaliases[$_SESSION['lang']] . " &nbsp; &nbsp; ($percent " . $txt_used[$_SESSION['lang']] . ")" ;
++ 				
++ 				}
++ 			}
++ 
++ 		} // if quota_on
++ 	
++-		if ($arg_action != 2 && !($quota_on && !$quota_data["autoresp_support"])) {
++-			$templdata["nbcols"] .= "5";
+++		if ($arg_action != 2 && !($_SESSION['quota_on'] && !$_SESSION['quota_data']["autoresp_support"])) {
+++			$templdata["nbcols"] .= "7";
++ 		} else { 
++-			$templdata["nbcols"] .= "4"; 
+++			$templdata["nbcols"] .= "6"; 
++ 		}
++ 		
++ 		$templdata["quota_string"] .= $quota_string;
++-		$templdata["global_action_and_url"] .= "<A HREF=\"$script?A=$tmp_action&" . SID . "\" onClick=\"oW(this,'pop')\">"  . $tmp_label  . "</a>&nbsp;</TH></TR>";
+++		$templdata["global_action_and_url"] .= "<A HREF=\"$script?A=$tmp_action&" . "PHPSESSID=".session_id() . "\" onClick=\"oW(this,'pop')\">"  . $tmp_label  . "</a>&nbsp;</TH></TR>";
++ 	}
++ 
++ 	
++ 	// new_mailbox/alias_forbidden's support
++ 
++-        if ($arg_action == 1 && $quota_data["new_mailbox_forbidden"]) {
+++        if ($arg_action == 1 && $_SESSION['quota_data']["new_mailbox_forbidden"]) {
++ 		$templdata["quota_string"] = "&nbsp;";
++ 		$templdata["global_action_and_url"] = "&nbsp;";
++ 		
++ 	}
++ 
++-        if ($arg_action == 2 && $quota_data["new_alias_forbidden"]) {
+++        if ($arg_action == 2 && $_SESSION['quota_data']["new_alias_forbidden"]) {
++ 		$templdata["quota_string"] = "&nbsp;";
++ 		$templdata["global_action_and_url"] = "&nbsp;";
++ 		
++@@ -1001,7 +1059,7 @@
++ 	$templdata["REQUEST_URI"]=$REQUEST_URI;
++ 	$templdata["REMOTE_ADDR"]=$REMOTE_ADDR;
++ 	$templdata["HTTP_ACCEPT_LANGUAGE"]=$HTTP_ACCEPT_LANGUAGE;
++-	$templdata["domain"]=$domain;
+++	$templdata["domain"]=$_SESSION['domain'];
++ 
++ 	print parseTemplate($templdata, "templates/about.temp");
++ }
++@@ -1011,7 +1069,7 @@
++ 	global $A, $domain, $cvs_version, $version, $lang;
++ 	include("strings.php");
++ 
++-	$templdata["domain"]=$domain;
+++	$templdata["domain"]=$_SESSION['domain'];
++ 
++ 	print parseTemplate($templdata, "templates/help.temp");
++ }
++@@ -1037,8 +1095,8 @@
++ 	$templdata["HTTP_HOST"]=$HTTP_HOST;
++ 	$templdata["REQUEST_URI"]=$REQUEST_URI;
++ 	$templdata["REMOTE_ADDR"]=$REMOTE_ADDR;
++-	$templdata["HTTP_ACCEPT_LANGUAGE"]=$HTTP_ACCEPT_LANGUAGE . " [ $lang ]";
++-	$templdata["domain"]=$domain;
+++	$templdata["HTTP_ACCEPT_LANGUAGE"]=$HTTP_ACCEPT_LANGUAGE . " [ ".$_SESSION['lang']." ]";
+++	$templdata["domain"]=$_SESSION['domain'];
++ 
++ 	if ($splash_ok) {
++ 		print parseTemplate($templdata, "templates/welcome_screen_thanks.temp");
++diff -ru omail-admin/index.php omail-admin-new/index.php
++--- omail-admin/index.php	1970-01-01 01:00:01.000000000 +0100
+++++ omail-admin-new/index.php	2014-07-01 22:34:08.000000000 +0200
++@@ -1,4 +1,4 @@
++-<?
+++<?php
++ 
++ #$globar[debug] = 1;
++ #$debug = 1;
++@@ -42,31 +42,101 @@
++ /*****************************************************************************/ 
++ 
++ session_start();
+++/*
++ session_register("username","domain","passwd","type","ip","expire","lang","active");
++ session_register("quota_on","quota_data","catchall_active", "sort_order");
++ session_register("mb_start","al_start");
++ session_register("mb_letter","al_letter");
++ session_register("vm_tcphost","vm_tcphost_port");   // for vmailmgrd-tcp
+++*/
++ 
++ // clean input values (because of magic quotes...)
++ 
++-if (count($HTTP_GET_VARS)) {
++-        foreach ($HTTP_GET_VARS as $key => $value) {
+++if (count($_GET)) {
+++        foreach ($_GET as $key => $value) {
++                 if (!is_array($$key)) {
++                         $$key = stripslashes($value);
++                 }
++         }
++ }
++-if (count($HTTP_POST_VARS)) {
++-        foreach ($HTTP_POST_VARS as $key => $value) {
+++if (count($_POST)) {
+++        foreach ($_POST as $key => $value) {
++                 if (!is_array($$key)) {
++                         $$key = stripslashes($value);
++                 }
++         }
++ }
++ 
+++// manually map $_REQUESTs to our vars
+++$A = $_REQUEST['A'];
+++$login_domain = $_REQUEST['login_domain'];
+++$form_login = $_REQUEST['form_login'];
+++$form_tcphost = $_REQUEST['form_tcphost'];
+++$form_passwd = $_REQUEST['form_passwd'];
+++$form_sort = $_REQUEST['form_sort'];
+++$U = $_REQUEST['U'];
+++$show_mb_letter = $_REQUEST['show_mb_letter'];
+++$show_al_letter = $_REQUEST['show_al_letter'];
+++$new_mb_start = $_REQUEST['new_mb_start'];
+++$new_al_start = $_REQUEST['new_al_start'];
+++$show_how_many_accounts = $_REQUEST['show_how_many_accounts'];
+++$newfwd = $_REQUEST['newfwd'];
+++$action = $_REQUEST['action'];
+++$passwd1 = $_REQUEST['passwd1'];
+++$passwd2 = $_REQUEST['passwd2'];
+++$userdetail = $_REQUEST['userdetail'];
+++$firstname = $_REQUEST['firstname'];
+++$lastname = $_REQUEST['lastname'];
+++$from = $_REQUEST['from'];
+++$body = $_REQUEST['body'];
+++$subject = $_REQUEST['subject'];
+++$spam_status = $_REQUEST['spam_status'];
+++$spam_delete = $_REQUEST['spam_delete'];
+++$required_hits = $_REQUEST['required_hits'];
+++$whitelist = $_REQUEST['whitelist'];
+++$blacklist = $_REQUEST['blacklist'];
+++$virus_from = $_REQUEST['virus_from'];
+++$virus_status = $_REQUEST['virus_status'];
+++$virus_delete = $_REQUEST['virus_delete'];
+++$form_year = $_REQUEST['form_year'];
+++$form_month = $_REQUEST['form_month'];
+++$form_day = $_REQUEST['form_day'];
+++$form_softquota = $_REQUEST['form_softquota'];
+++$form_hardquota = $_REQUEST['form_hardquota'];
+++$form_msgcount = $_REQUEST['form_msgcount'];
+++$form_msgsize = $_REQUEST['form_msgsize'];
+++$form_enabled = $_REQUEST['form_enabled'];
+++$fwd = array();
+++for($i = 0; $i < 16; $i++) {
+++	$s = $_REQUEST['fwd_'.$i];
+++	if(isset($s)) {
+++		$fwd[] = $s;
+++	}
+++}
+++$spamsettings = $_REQUEST['spamsettings'];
+++
+++/*
+++$username = $_SESSION['username'];
+++$domain = $_SESSION['domain'];
+++$passwd = $_SESSION['passwd'];
+++$type = $_SESSION['type'];
+++$ip = $_SESSION['ip'];
+++$expire = $_SESSION['expire'];
+++$lang = $_SESSION['lang'];
+++$active = $_SESSION['active'];
+++$quota_on = $_SESSION['quota_on'];
+++$quota_data = $_SESSION['quota_data'];
+++$catchall_active = $_SESSION['catchall_active'];
+++$sort_order = $_SESSION['sort_order'];
+++$mb_start = $_SESSION['mb_start'];
+++$al_start = $_SESSION['al_start'];
+++$mb_letter = $_SESSION['mb_letter'];
+++$vm_tcphost = $_SESSION['vm_tcphost'];
+++$vm_tcphost_port = $_SESSION['vm_tcphost_port'];
+++*/
+++
++ 
++-if (!$lang) { 
+++if (!isset($_SESSION['lang'])) { 
++ 
++ 	// if no language defined yet (cookie or session):
++ 	// try to findout users language by checking it's HTTP_ACCEPT_LANGUAGE variable
++@@ -75,26 +145,26 @@
++ 	$langaccept = explode(",", $HTTP_ACCEPT_LANGUAGE);
++ 	for ($i = 0; $i < count($langaccept); $i++) { 
++ 	    $tmplang = trim($langaccept[$i]);  $tmplang2 = substr($tmplang,0,2);
++-	    if ($txt_langname[$tmplang] && !$lang) {   // if the whole string matchs ("de-CH", or "en", etc)
+++	    if ($txt_langname[$tmplang] && !$_SESSION['lang']) {   // if the whole string matchs ("de-CH", or "en", etc)
++ 		$lang = $tmplang;
++-	    } elseif ($txt_langname[$tmplang2] && !$lang) { // then try only the 2 first chars ("de", "fr"...)
+++	    } elseif ($txt_langname[$tmplang2] && !$_SESSION['lang']) { // then try only the 2 first chars ("de", "fr"...)
++ 		$lang = $tmplang2; 
++ 	    }
++ 	}
++     }
++ 
++-    if (!$lang) {
+++    if (!$_SESSION['lang']) {
++         // didn't catch any valid lang : we use the default settings
++-	$lang = $default_lang; 
+++	$_SESSION['lang'] = $default_lang; 
++     }
++ }
++ 
++-if (!$active) {
+++if (!isset($_SESSION['active'])) {
++ 
++ 	if ((($sysadmin_mail == "sysadmin@notdefined.yet") && $A != "about") || $A == "splash") {
++ 	
++ 		html_head("$program_name Administration - Welcome!");
++-		html_titlebar($txt_welcome[$lang], "", "");
+++		html_titlebar($txt_welcome[$_SESSION['lang']], "", "");
++ 		html_splash();
++ 		html_end();
++ 		exit();
++@@ -102,7 +172,7 @@
++ 	} elseif ($A == "about") {
++ 	
++ 		html_head("$program_name Administration - about");
++-		html_titlebar($txt_about[$lang], "", "");
+++		html_titlebar($txt_about[$_SESSION['lang']], "", "");
++ 		html_about();
++ 		html_end();
++ 		exit();
++@@ -110,17 +180,17 @@
++ 	} elseif ($A == "help") {
++ 	
++ 		html_head("$program_name Administration - Help");
++-		html_titlebar($txt_help[$lang], "", "");
+++		html_titlebar($txt_help[$_SESSION['lang']], "", "");
++ 		html_help();
++ 		html_end();
++ 		exit();
++ 
++ 	} elseif ($A != "checkin") {
++ 
++-		if ($setlang) { $lang = $setlang; }	
+++		if ($_REQUEST['setlang']) { $_SESSION['lang'] = $_REQUEST['setlang']; }	
++ 	
++ 		html_head("$program_name Administration - Login");
++-		html_titlebar($txt_login[$lang], $txt_please_login[$lang], "");
+++		html_titlebar($txt_login[$_SESSION['lang']], $txt_please_login[$_SESSION['lang']], "");
++ 		html_login();
++ 		html_end();
++ 		exit();
++@@ -142,44 +212,44 @@
++ 
++ 		if ($use_vmailmgrd_tcp) {
++ 			
++-			$vm_tcphost = "";
++-			$vm_tcphost_port = "";
+++			$_SESSION['vm_tcphost'] = "";
+++			$_SESSION['vm_tcphost_port'] = "";
++ 
++ 			switch ($vmailmgrd_tcp_host_method) {
++ 
++ 				case "0":  // one host
++-					$vm_tcphost = $vmailmgrd_tcp_host;
+++					$_SESSION['vm_tcphost'] = $vmailmgrd_tcp_host;
++ 					break;
++ 
++ 				case "1":  // multi host via select
++ 					
++-					$vm_tcphost = $vmailmgrd_tcp_hosts_list[$form_tcphost];
+++					$_SESSION['vm_tcphost'] = $vmailmgrd_tcp_hosts_list[$form_tcphost];
++ 					break;
++ 
++ 				case "2":  // multi host with transparent host selection
++-					$vm_tcphost = tcp_host_findout($form_login); 	
+++					$_SESSION['vm_tcphost'] = tcp_host_findout($form_login); 	
++ 					break;
++ 
++ 			}
++ 		}
++ 
++ 
++-		if ($form_passwd && $form_login && authenticate($form_login, $form_passwd, $REMOTE_ADDR, $form_tcphost)) {
+++		if ($form_passwd && $form_login && authenticate($form_login, $form_passwd, $_SERVER['REMOTE_ADDR'], $form_tcphost)) {
++ 
++ 			// login and password can't be left empty!
++ 
++-			$active = 1;
+++			$_SESSION['active'] = 1;
++ 			$A = "menu";
++ 	
++ 		} else {
++ 				
++-			$active = 0;
++-	                $msg = $txt_login_failed[$lang];
++-	                $msg .= "<ul><li><a href=\"$script_url?A=login&" . SID . "\">" . $txt_login_again[$lang]  .  "</a>\n";
++-	                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";
+++			$_SESSION['active'] = 0;
+++	                $msg = $txt_login_failed[$_SESSION['lang']];
+++	                $msg .= "<ul><li><a href=\"$script_url?A=login&" . "PHPSESSID=".session_id() . "\">" . $txt_login_again[$_SESSION['lang']]  .  "</a>\n";
+++	                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";
++ 	
++ 			html_head("$program_name Administration");	
++-        	        html_titlebar($txt_error[$lang], $msg ,0);
+++        	        html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++ 	                html_end();
++ 			exit();
++ 		}
++@@ -188,21 +258,21 @@
++ }
++ 
++ 
++-if ($active == 1) {    // active=1 -> user logged in
+++if ($_SESSION['active'] == 1) {    // active=1 -> user logged in
++ 
++-	if (!check_session($REMOTE_ADDR)) {
+++	if (!check_session($_SERVER['REMOTE_ADDR'])) {
++ 
++ 		// session expired or bad ip -> exit
++ 
++-		$active = 0;
+++		$_SESSION['active'] = 0;
++ 		session_destroy();
++ 	
++-	        $msg = $txt_session_expired[$lang] . "<br><br>";
++-                $msg .= "<ul><li><a href=\"$script_url?A=login&" . SID . "\">" . $txt_login_again[$lang]  .  "</a>\n";
++-                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";
+++	        $msg = $txt_session_expired[$_SESSION['lang']] . "<br><br>";
+++                $msg .= "<ul><li><a href=\"$script_url?A=login&" . "PHPSESSID=".session_id() . "\">" . $txt_login_again[$_SESSION['lang']]  .  "</a>\n";
+++                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";
++ 	
++ 		html_head("$program_name Administration");	
++-	        html_titlebar($txt_error[$lang], "$msg",0);
+++	        html_titlebar($txt_error[$_SESSION['lang']], "$msg",0);
++ 	        html_end();
++ 	        exit();
++ 	}
++@@ -211,14 +281,14 @@
++ 
++ 	// spamassassin stuff, in case of multiple hosts ($use_vmailmgrd_tcp = 1)
++ 
++-	if ($use_vmailmgrd_tcp && $vm_tcphost) {
+++	if ($use_vmailmgrd_tcp && $_SESSION['vm_tcphost']) {
++ 		
++-		$use_spamassassin = $spamassassin_remote_conf[$vm_tcphost]["use_spamassassin"];
++-		$db_login = $spamassassin_remote_conf[$vm_tcphost]["db_login"];
++-		$db_passwd = $spamassassin_remote_conf[$vm_tcphost]["db_passwd"];
++-		$db_database = $spamassassin_remote_conf[$vm_tcphost]["db_database"];
++-		$db_server = $spamassassin_remote_conf[$vm_tcphost]["db_server"];
++-		$tb_userpref = $spamassassin_remote_conf[$vm_tcphost]["tb_userpref"];
+++		$use_spamassassin = $spamassassin_remote_conf[$_SESSION['vm_tcphost']]["use_spamassassin"];
+++		$db_login = $spamassassin_remote_conf[$_SESSION['vm_tcphost']]["db_login"];
+++		$db_passwd = $spamassassin_remote_conf[$_SESSION['vm_tcphost']]["db_passwd"];
+++		$db_database = $spamassassin_remote_conf[$_SESSION['vm_tcphost']]["db_database"];
+++		$db_server = $spamassassin_remote_conf[$_SESSION['vm_tcphost']]["db_server"];
+++		$tb_userpref = $spamassassin_remote_conf[$_SESSION['vm_tcphost']]["tb_userpref"];
++ 
++ 	}
++ 
++@@ -234,7 +304,7 @@
++ 	if ($A == "about") {
++ 	
++ 		html_head("$program_name Administration - About");
++-		html_titlebar($txt_about[$lang], "", "");
+++		html_titlebar($txt_about[$_SESSION['lang']], "", "");
++ 		html_about();
++ 		html_end();
++ 		exit();
++@@ -249,7 +319,7 @@
++ 	if ($A == "help") {
++ 	
++ 		html_head("$program_name Administration - Help");
++-		html_titlebar($txt_help[$lang], "", "");
+++		html_titlebar($txt_help[$_SESSION['lang']], "", "");
++ 		html_help();
++ 		html_end();
++ 		exit();
++@@ -264,7 +334,7 @@
++ 	if ($A == "splash") {
++ 	
++ 		html_head("$program_name Administration - Welcome!");
++-		html_titlebar($txt_welcome[$lang], "", "");
+++		html_titlebar($txt_welcome[$_SESSION['lang']], "", "");
++ 		html_splash();
++ 		html_end();
++ 		exit();
++@@ -280,70 +350,102 @@
++ 
++ 		html_head("$program_name Administration - Menu");	
++ 
++-		if ($type == "domain") {
+++		if ($_SESSION['type'] == "domain") {
++ 
++-			if ($form_sort == "info") { $sort_order = "info"; } 
++-			if ($form_sort == "username") { $sort_order = "username"; }
+++			if ($form_sort == "info") { $_SESSION['sort_order'] = "info"; } 
+++			if ($form_sort == "username") { $_SESSION['sort_order'] = "username"; }
++ 
++-			if ($catchall_active) {
++-			    $txt_menu_add = "<br>" . $txt_current_catchall_account_is[$lang] . ": <b>$catchall_active@$domain</b>";
++-			    $txt_menu_add .= ' [ <a href="' . $script_url . '?A=create_catchall&" onClick="oW(this,\'pop\')">' . $txt_edit[$lang] . '</a> ]';
++-			    // $txt_menu_add .= ' [ <a href="' . $script_url . '?A=create_catchall&U='.$catchall_active.'" onClick="oW(this,\'pop\')">' . $txt_edit[$lang] . '</a> ]';
++-			    // $txt_menu_add .= ' [ <a href="' . $script_url . '?A=remove_catchall&U='.$catchall_active.'" onClick="oW(this,\'pop\')">' . $txt_delete[$lang] . '</a> ]';
+++			if ($_SESSION['catchall_active']) {
+++			    $txt_menu_add = "<br>" . $txt_current_catchall_account_is[$_SESSION['lang']] . ": <b>".$_SESSION['catchall_active']."@".$_SESSION['domain']."</b>";
+++			    $txt_menu_add .= ' [ <a href="' . $script_url . '?A=create_catchall&'."PHPSESSID=".session_id().'" onClick="oW(this,\'pop\')">' . $txt_edit[$_SESSION['lang']] . '</a> ]';
+++			    // $txt_menu_add .= ' [ <a href="' . $script_url . '?A=create_catchall&U='.$catchall_active.'&'."PHPSESSID=".session_id().'" onClick="oW(this,\'pop\')">' . $txt_edit[$lang] . '</a> ]';
+++			    // $txt_menu_add .= ' [ <a href="' . $script_url . '?A=remove_catchall&U='.$catchall_active.'&'."PHPSESSID=".session_id().'" onClick="oW(this,\'pop\')">' . $txt_delete[$lang] . '</a> ]';
++ 			} else {
++-			    $txt_menu_add = "<br>" . $txt_current_catchall_not_defined[$lang] ;
++-			    $txt_menu_add .= ' [ <a href="'. $script_url . '?A=create_catchall&U=" onClick="oW(this,\'pop\')">' . $txt_edit[$lang] . '</a> ]';
+++			    $txt_menu_add = "<br>" . $txt_current_catchall_not_defined[$_SESSION['lang']] ;
+++			    $txt_menu_add .= ' [ <a href="'. $script_url . '?A=create_catchall&U=&'."PHPSESSID=".session_id().'" onClick="oW(this,\'pop\')">' . $txt_edit[$_SESSION['lang']] . '</a> ]';
++ 			}	
++ 
+++			$data = new table($db_database, $tb_userpref, $db_server, $db_login, $db_passwd);
+++			$data->query("preference,value,username", "username LIKE '%@".$_SESSION['domain']."' and preference like '%enabled'");
+++			$spam_virus_info = Array();
+++			if ($data->countQueryRows()) {
+++				for ($i=0; $i<$data->countQueryRows(); $i++) {
+++					$tmprow = $data->getQueryRow();
+++					if ( ($tmprow["preference"] == "spam_enabled") || ($tmprow["preference"] == "virus_enabled") ) {
+++						$spam_virus_info[$tmprow["username"]][$tmprow["preference"]] = $tmprow["value"];
+++					}
+++					$data->moveNext();
+++				}
+++			}
+++
++ 
++-			html_titlebar($txt_menu[$lang] . " - $domain", $txt_menu_domain_descr[$lang] . $txt_menu_add, 0);
+++			html_titlebar($txt_menu[$_SESSION['lang']] . " - ".$_SESSION['domain'], $txt_menu_domain_descr[$_SESSION['lang']] . $txt_menu_add, 0);
++ 
++-			if (!$quota_on || ($quota_on && $quota_data["users_support"])) {
++-                                if (isset($show_mb_letter)) { $mb_letter = $show_mb_letter; }
+++			if (!$_SESSION['quota_on'] || ($_SESSION['quota_on'] && $_SESSION['quota_data']["users_support"])) {
+++                                if (isset($show_mb_letter)) { $_SESSION['mb_letter'] = $show_mb_letter; }
++ 				$mboxes = get_accounts(1);	
++ 
++-				if (isset($new_mb_start)) { $mb_start = $new_mb_start; }				
+++				/*
+++				for($i = 0; $i < count($mboxes); $i++) {
+++					echo $mboxes[$i][0]."@$domain<br>";
+++				}
+++				*/
++ 
++-				if (isset($mb_start) && $show_how_many_accounts) {
++-				    html_display_mailboxes($mboxes,1,$mb_start,$show_how_many_accounts);
+++				if (isset($new_mb_start)) { $_SESSION['mb_start'] = $new_mb_start; }				
+++
+++				if (isset($_SESSION['mb_start']) && $show_how_many_accounts) {
+++				    html_display_mailboxes($mboxes,$spam_virus_info,1,$_SESSION['mb_start'],$show_how_many_accounts);
++ 				} else {
++-				    html_display_mailboxes($mboxes,1);
+++				    html_display_mailboxes($mboxes,$spam_virus_info,1);
++ 				}
++ 			}
++ 
++ 
++-			if (!$quota_on || ($quota_on && $quota_data["alias_support"])) {
++-                                if (isset($show_al_letter)) { $al_letter = $show_al_letter; }
+++			if (!$_SESSION['quota_on'] || ($_SESSION['quota_on'] && $_SESSION['quota_data']["alias_support"])) {
+++                                if (isset($show_al_letter)) { $_SESSION['al_letter'] = $show_al_letter; }
++ 				$aliases = get_accounts(2);
++ 
++-				if (isset($new_al_start)) { $al_start = $new_al_start; }
+++				if (isset($new_al_start)) { $_SESSION['al_start'] = $new_al_start; }
++ 
++-				if (isset($al_start) && $show_how_many_accounts) {
++-				    html_display_mailboxes($aliases,2,$al_start,$show_how_many_accounts);
+++				if (isset($_SESSION['al_start']) && $show_how_many_accounts) {
+++				    html_display_mailboxes($aliases,$spam_virus_info,2,$_SESSION['al_start'],$show_how_many_accounts);
++ 				} else {
++-				    html_display_mailboxes($aliases,2);
+++				    html_display_mailboxes($aliases,$spam_virus_info,2);
++ 				}
++ 			}
++ 
++ 		} else {
++ 
++-			if (!$quota_on || ($quota_on && $quota_data["user_login_allowed"])) {
+++			if (!$_SESSION['quota_on'] || ($_SESSION['quota_on'] && $_SESSION['quota_data']["user_login_allowed"])) {
+++				html_titlebar($txt_menu[$_SESSION['lang']] . " - ".$_SESSION['domain'], $txt_menu_account_descr[$_SESSION['lang']] . $txt_menu_add, 0);
+++				$testuser = get_accounts(0,$_SESSION['username']);
+++
+++				$data = new table($db_database, $tb_userpref, $db_server, $db_login, $db_passwd);
+++				$data->query("preference,value,username", "username LIKE '".$testuser[0][0]."@".$_SESSION['domain']."' and preference like '%enabled'");
+++				$spam_virus_info = Array();
+++				if ($data->countQueryRows()) {
+++					for ($i=0; $i<$data->countQueryRows(); $i++) {
+++						$tmprow = $data->getQueryRow();
+++						if ( ($tmprow["preference"] == "spam_enabled") || ($tmprow["preference"] == "virus_enabled") ) {
+++							$spam_virus_info[$tmprow["username"]][$tmprow["preference"]] = $tmprow["value"];
+++						}
+++						$data->moveNext();
+++					}
+++				}
++ 
++-				html_titlebar($txt_menu[$lang] . " - $domain", $txt_menu_account_descr[$lang] . $txt_menu_add, 0);
++-				$testuser = get_accounts(0,$username);
++-				html_display_mailboxes($testuser,0);
+++				html_display_mailboxes($testuser,$spam_virus_info,0);
++ 
++ 			} else {
++ 		
++ 				// user logged in correctely, but quota/domain info don't allow user login.			
++ 
++-	                	$msg = $txt_error_not_allowed[$lang];
++-		                $msg .= "<ul><li><a href=\"$script_url?A=login&" . SID . "\">" . $txt_login_again[$lang]  .  "</a>\n";
++-		                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
+++	                	$msg = $txt_error_not_allowed[$_SESSION['lang']];
+++		                $msg .= "<ul><li><a href=\"$script_url?A=login&" . "PHPSESSID=".session_id() . "\">" . $txt_login_again[$_SESSION['lang']]  .  "</a>\n";
+++		                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
++ 				html_head("$program_name Administration");	
++-	        	        html_titlebar($txt_error[$lang], $msg ,0);
+++	        	        html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++ 		                html_end();
++-				$active = 0;
+++				$_SESSION['active'] = 0;
++ 				session_destroy();
++ 				exit();
++ 			}				
++@@ -359,7 +461,7 @@
++ 	// Check arguments
++ 	// 
++ 
++-	if ($A == "spam" || $A == "resp" || $A == "edit" || $A == "read" || $A == "delete" || $A == "parse" || $A == "quota" || $A == "catchall" || $A == "catchall_remove" || $A == "remove_catchall" || $A == "user_enable" || $A == "user_disable") {
+++	if ($A == "virus" || $A == "spam" || $A == "resp" || $A == "edit" || $A == "read" || $A == "delete" || $A == "parse" || $A == "quota" || $A == "catchall" || $A == "catchall_remove" || $A == "remove_catchall" || $A == "user_enable" || $A == "user_disable") {
++ 
++ 	        // check if $U ok
++ 
++@@ -368,10 +470,10 @@
++ 	        if (!(ereg("^[a-zA-Z0-9\_+\.\-]{0,}$", $U))) {
++ 
++                         html_head("$program_name Administration - Error");
++-                        $msg = "<b>" . $txt_error_invalid_chars_in_username[$lang] . "</b><br><br>";
++-                        $msg .= "<ul><li><a href=\"$script?A=menu&" . SID. "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-			$msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";
++-                        html_titlebar($txt_error[$lang], "$msg",0);
+++                        $msg = "<b>" . $txt_error_invalid_chars_in_username[$_SESSION['lang']] . "</b><br><br>";
+++                        $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id(). "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++			$msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";
+++                        html_titlebar($txt_error[$_SESSION['lang']], "$msg",0);
++                         html_end();
++                         exit();
++ 	        }
++@@ -385,27 +487,27 @@
++ 	if ($A == "newalias") {
++ 
++ 
++-		if ($type == "domain" && (!$quota_on || ($quota_on && ($quota_data["alias_support"]  && $quota_data["nb_alias"] < $quota_data["max_alias"]))) && !$quota_data["new_alias_forbidden"]) {
+++		if ($_SESSION['type'] == "domain" && (!$_SESSION['quota_on'] || ($_SESSION['quota_on'] && ($_SESSION['quota_data']["alias_support"]  && $_SESSION['quota_data']["nb_alias"] < $_SESSION['quota_data']["max_alias"]))) && !$_SESSION['quota_data']["new_alias_forbidden"]) {
++ 			html_head("$program_name Administration - New Alias");	
++-		        html_titlebar($txt_newalias[$lang], $txt,1);
+++		        html_titlebar($txt_newalias[$_SESSION['lang']], $txt,1);
++ 		        $userinfo[2] = "-";
++-			$quota_data["nb_alias"] = 0;
++-                        if (isset($show_mb_letter)) { $mb_letter = $show_mb_letter; }
+++			$_SESSION['quota_data']["nb_alias"] = 0;
+++                        if (isset($show_mb_letter)) { $_SESSION['mb_letter'] = $show_mb_letter; }
++ 			$mboxlist = get_accounts(3);
++ 		        html_userform($userinfo, "newalias", $mboxlist);
++ 		        html_end();
++ 		        exit();
++ 
++ 		} else {
++-			if ($type != "domain") { 
++-				$msg = $txt_error_not_allowed[$lang];
+++			if ($_SESSION['type'] != "domain") { 
+++				$msg = $txt_error_not_allowed[$_SESSION['lang']];
++ 			} else {
++-	                	$msg = $txt_error_quota_expired[$lang];
+++	                	$msg = $txt_error_quota_expired[$_SESSION['lang']];
++ 			}
++-	                $msg .= "<ul><li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-	                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
+++	                $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++	                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
++ 			html_head("$program_name Administration - Error");	
++-        	        html_titlebar($txt_error[$lang], $msg ,0);
+++        	        html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++ 	                html_end();
++ 			exit();
++ 		}				
++@@ -423,13 +525,13 @@
++ 
++ 	if ($A == "newuser") {
++ 	
++-		if ($type == "domain" && (!$quota_on || ($quota_on && ($quota_data["users_support"]  && $quota_data["nb_users"] < $quota_data["max_users"]))) && !$quota_data["new_mailbox_forbidden"]) {
+++		if ($_SESSION['type'] == "domain" && (!$_SESSION['quota_on'] || ($_SESSION['quota_on'] && ($_SESSION['quota_data']["users_support"]  && $_SESSION['quota_data']["nb_users"] < $_SESSION['quota_data']["max_users"]))) && !$_SESSION['quota_data']["new_mailbox_forbidden"]) {
++ 
++ 			html_head("$program_name Administration - New User");	
++-	        	html_titlebar($txt_newuser[$lang], $txt,1);
+++	        	html_titlebar($txt_newuser[$_SESSION['lang']], $txt,1);
++ 	        	$userinfo[2] = "-";
++-			$quota_data["nb_users"] = 0;
++-                        if (isset($show_mb_letter)) { $mb_letter = $show_mb_letter; }
+++			$_SESSION['quota_data']["nb_users"] = 0;
+++                        if (isset($show_mb_letter)) { $_SESSION['mb_letter'] = $show_mb_letter; }
++ 			$mboxlist = get_accounts(3);
++ 	        	html_userform($userinfo, "newuser", $mboxlist);
++ 	        	html_end();
++@@ -437,15 +539,15 @@
++ 
++ 		} else {
++ 
++-			if ($type != "domain") { 
++-				$msg = $txt_error_not_allowed[$lang];
+++			if ($_SESSION['type'] != "domain") { 
+++				$msg = $txt_error_not_allowed[$_SESSION['lang']];
++ 			} else {
++-	                	$msg = $txt_error_quota_expired[$lang];
+++	                	$msg = $txt_error_quota_expired[$_SESSION['lang']];
++ 			}
++-	                $msg .= "<ul><li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-	                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
+++	                $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++	                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
++ 			html_head("$program_name Administration - Error");	
++-        	        html_titlebar($txt_error[$lang], $msg ,0);
+++        	        html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++ 	                html_end();
++ 			exit();
++ 		}				
++@@ -463,10 +565,10 @@
++ 	    if (in_array($U, $readonly_accounts_list) || in_array($U, $system_accounts_list)) {
++ 
++ 		html_head("$program_name Administration - Error");	
++-		$msg = $txt_error_not_allowed[$lang];
++-                $msg .= "<ul><li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
++-    	        html_titlebar($txt_error[$lang], $msg ,0);
+++		$msg = $txt_error_not_allowed[$_SESSION['lang']];
+++                $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
+++    	        html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++                 html_end();
++ 		exit();
++ 
++@@ -477,17 +579,17 @@
++ 		    html_head("$program_name Administration - Error");
++ 		    $msg = "<b>" . $results . "</b><br><br>";
++ 		    $msg .= "<ul>";	
++-		    $msg .= "<li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-		    html_titlebar($txt_edit[$lang], "$msg",0);
+++		    $msg .= "<li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++		    html_titlebar($txt_edit[$_SESSION['lang']], "$msg",0);
++ 		    html_end();
++ 		    exit();
++ 		}
++ 	    }
++ 
++             html_head("$program_name Administration - Edit");	
++-    	    html_titlebar($txt_edit_account[$lang], $txt,1);
+++    	    html_titlebar($txt_edit_account[$_SESSION['lang']], $txt,1);
++ 	    $userinfo = get_accounts(0,$U);
++-	     if (isset($show_mb_letter)) { $mb_letter = $show_mb_letter; }
+++	     if (isset($show_mb_letter)) { $_SESSION['mb_letter'] = $show_mb_letter; }
++ 	    $mboxlist = get_accounts(3);
++ 	    html_userform($userinfo[0], "edit", $mboxlist);
++ 	    html_end();
++@@ -504,18 +606,18 @@
++ 
++ 	    if (in_array($U, $readonly_accounts_list) || in_array($U, $system_accounts_list)) {
++ 
++-		$msg = $txt_error_not_allowed[$lang];
++-                $msg .= "<ul><li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
+++		$msg = $txt_error_not_allowed[$_SESSION['lang']];
+++                $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
++ 		html_head("$program_name Administration - Error");	
++-    	        html_titlebar($txt_error[$lang], $msg ,0);
+++    	        html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++                 html_end();
++ 		exit();
++ 
++ 	    } 
++ 
++ 	    html_head("$program_name Administration - Delete Account");	
++-	    html_titlebar($txt_delete_account[$lang], $txt_delete_account_confirm[$lang],1);
+++	    html_titlebar($txt_delete_account[$_SESSION['lang']], $txt_delete_account_confirm[$_SESSION['lang']],1);
++ 	    $userinfo = get_accounts(0,$U);
++ 	    html_delete_confirm($userinfo[0]);
++ 	    html_end();
++@@ -534,11 +636,11 @@
++ 
++ 	    if ((in_array($U, $readonly_accounts_list) || in_array($U, $system_accounts_list)) && $U != "") {
++ 
++-		$msg = $txt_error_not_allowed[$lang];
++-                $msg .= "<ul><li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
+++		$msg = $txt_error_not_allowed[$_SESSION['lang']];
+++                $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
++ 		html_head("$program_name Administration - Error");	
++-    	        html_titlebar($txt_error[$lang], $msg ,0);
+++    	        html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++                 html_end();
++ 		exit();
++ 
++@@ -547,9 +649,9 @@
++  	    html_head("$program_name Administration - Catchall");	
++ 
++ 	    if ($A == "catchall") {
++-	        html_titlebar($txt_catchall[$lang], $txt_catchall_confirm[$lang],1);
+++	        html_titlebar($txt_catchall[$_SESSION['lang']], $txt_catchall_confirm[$_SESSION['lang']],1);
++ 	    } else {
++-	        html_titlebar($txt_catchall[$lang],"",1);	
+++	        html_titlebar($txt_catchall[$_SESSION['lang']],"",1);	
++ 	    }
++     
++ 	    $tmpinfo = get_accounts(3);
++@@ -577,7 +679,7 @@
++ 		    if ($aliases[0])  { 
++ 		        $msg .= "<br>It's currently pointing to : " . $aliases[0]; 
++ 	    	    	if (!(preg_match("/@/i", $aliases[0]))) {
++-    			    $msg .= "@" . $domain;
+++    			    $msg .= "@" . $_SESSION['domain'];
++ 			}	
++ 		        if ($nb_fwd > 1) { 
++ 			    $msg .= " (and " . ($nb_fwd-1) . " other addresses)";
++@@ -613,11 +715,11 @@
++ 
++ 	if ($A == "resp") {
++                 
++-		if (!$quota_on || ($quota_on && $quota_data["autoresp_support"]) && !in_array($U, $readonly_accounts_list) && !in_array($U, $system_accounts_list)) {
+++		if (!$_SESSION['quota_on'] || ($_SESSION['quota_on'] && $_SESSION['quota_data']["autoresp_support"]) && !in_array($U, $readonly_accounts_list) && !in_array($U, $system_accounts_list)) {
++ 
++ 			html_head("$program_name Administration - Autoresponder");	
++ 	
++-		        html_titlebar($txt_edit_account[$lang], $txt,1);
+++		        html_titlebar($txt_edit_account[$_SESSION['lang']], $txt,1);
++ 		        $user = get_accounts(0, $U);
++ 			$userinfo = $user[0];
++ 	
++@@ -628,9 +730,9 @@
++ 				list($respinfo["from"],$respinfo["subject"],$respinfo["body"]) = parse_resp_file($respinfo[1]);
++ 	
++ 			} else {
++-				$respinfo["from"] = $U . "@" . $domain;
++-				$respinfo["subject"] = $txt_autoresp_subj[$lang];
++-				$respinfo["body"] = $txt_autoresp_body[$lang];
+++				$respinfo["from"] = $U . "@" . $_SESSION['domain'];
+++				$respinfo["subject"] = $txt_autoresp_subj[$_SESSION['lang']];
+++				$respinfo["body"] = $txt_autoresp_body[$_SESSION['lang']];
++ 			}	
++ 	
++ 		        html_respform($userinfo, $respinfo, $userinfo[11]);
++@@ -640,11 +742,11 @@
++ 
++ 
++ 		} else {
++-			$msg = $txt_error_not_allowed[$lang];
++-	                $msg .= "<ul><li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-	                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
+++			$msg = $txt_error_not_allowed[$_SESSION['lang']];
+++	                $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++	                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
++ 			html_head("$program_name Administration - Error");	
++-        	        html_titlebar($txt_error[$lang], $msg ,0);
+++        	        html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++ 	                html_end();
++ 			exit();
++ 		}				
++@@ -660,11 +762,11 @@
++ 
++ 	if ($A == "spam") {
++                 
++-		if ($use_spamassassin && !$quota_data["spamassassin_use_forbidden"]) {
+++		if ($use_spamassassin && !$_SESSION['quota_data']["spamassassin_use_forbidden"]) {
++ 
++ 			html_head("$program_name Administration - SpamAssassin");	
++ 	
++-		        html_titlebar($txt_edit_account[$lang], $txt,1);
+++		        html_titlebar($txt_edit_account[$_SESSION['lang']], $txt,1);
++ 		        $user = get_accounts(0, $U);
++ 			$userinfo = $user[0];
++ 
++@@ -681,7 +783,7 @@
++ 			// get spaminfo from the sql database, if any
++ 
++ 			$data = new table($db_database, $tb_userpref, $db_server, $db_login, $db_passwd);
++-			$data->query("preference,value", "username LIKE '$userinfo[0]@$domain'");
+++			$data->query("preference,value", "username LIKE '$userinfo[0]@".$_SESSION['domain']."'");
++ 			if ($data->countQueryRows()) {
++ 				for ($i=0; $i<$data->countQueryRows(); $i++) {
++ 					$tmprow = $data->getQueryRow();
++@@ -719,11 +821,11 @@
++ 		        exit();
++ 
++ 		} else {
++-			$msg = $txt_error_not_allowed[$lang];
++-	                $msg .= "<ul><li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-	                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
+++			$msg = $txt_error_not_allowed[$_SESSION['lang']];
+++	                $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++	                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
++ 			html_head("$program_name Administration - Error");	
++-        	        html_titlebar($txt_error[$lang], $msg ,0);
+++        	        html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++ 	                html_end();
++ 			exit();
++ 		}				
++@@ -733,15 +835,77 @@
++ 
++ 
++ 	//
+++	// VIRUS SETTINGS EDIT
+++	//
+++
+++	if ($A == "virus") {
+++                
+++		if ($use_spamassassin && !$_SESSION['quota_data']["spamassassin_use_forbidden"]) {
+++
+++			html_head("$program_name Administration - AntiVirus");	
+++	
+++		        html_titlebar($txt_edit_account[$_SESSION['lang']], $txt,1);
+++		        $user = get_accounts(0, $U);
+++			$userinfo = $user[0];
+++
+++
+++			// default values
+++
+++			$virussetup["virus_status"] = "0";
+++			$virussetup["virus_delete"] = "0";
+++			$virussetup["virus_target"] = "";
+++
+++			// get virusinfo from the sql database, if any
+++
+++			$data = new table($db_database, $tb_userpref, $db_server, $db_login, $db_passwd);
+++			$data->query("preference,value", "username LIKE '$userinfo[0]@".$_SESSION['domain']."'");
+++			if ($data->countQueryRows()) {
+++				for ($i=0; $i<$data->countQueryRows(); $i++) {
+++					$tmprow = $data->getQueryRow();
+++
+++					if ($tmprow["preference"] == "virus_enabled") { 
+++						$virussetup["virus_status"] = $tmprow["value"];
+++					}
+++
+++					if ($tmprow["preference"] == "virus_trash") { 
+++						$virussetup["virus_delete"] = $tmprow["value"];
+++					}
+++
+++					if ($tmprow["preference"] == "virus_fwd") { 
+++						$virussetup["virus_target"] = $tmprow["value"];
+++					}
+++
+++
+++					$data->moveNext();
+++				}
+++			}
+++
+++		        html_virusform($userinfo, $virussetup);
+++		        html_end();
+++		        exit();
+++
+++		} else {
+++			$msg = $txt_error_not_allowed[$_SESSION['lang']];
+++	                $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++	                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
+++			html_head("$program_name Administration - Error");	
+++        	        html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
+++	                html_end();
+++			exit();
+++		}				
+++
+++	}
+++
+++	//
++ 	// QUOTAS EDIT
++ 	//
++ 
++ 	if ($A == "quota") {
++                 
++-		if ((!$quota_on || ($quota_on && $quota_data["user_quota_support"]) || ($type != "domain")) && !in_array($U, $readonly_accounts_list) && !in_array($U, $system_accounts_list)) {
+++		if ((!$_SESSION['quota_on'] || ($_SESSION['quota_on'] && $_SESSION['quota_data']["user_quota_support"]) || ($_SESSION['type'] != "domain")) && !in_array($U, $readonly_accounts_list) && !in_array($U, $system_accounts_list)) {
++ 	
++ 			html_head("$program_name Administration - Quotas");	
++-		        html_titlebar($txt_quota_account[$lang], $txt,1);
+++		        html_titlebar($txt_quota_account[$_SESSION['lang']], $txt,1);
++ 		        $userinfo = get_accounts(0,$U);
++ 		        html_quotaform($userinfo[0], "edit");
++ 		        html_end();
++@@ -750,11 +914,11 @@
++ 
++ 		} else {
++ 
++-			$msg = $txt_error_not_allowed[$lang];
++-	                $msg .= "<ul><li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-	                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
+++			$msg = $txt_error_not_allowed[$_SESSION['lang']];
+++	                $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++	                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
++ 			html_head("$program_name Administration - Error");	
++-        	        html_titlebar($txt_error[$lang], $msg ,0);
+++        	        html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++ 	                html_end();
++ 			exit();
++ 		}				
++@@ -773,11 +937,11 @@
++ 	
++ 	        if (!$U) {
++ 	                html_head("$program_name Administration - Error");
++-	                $msg = "<b>" . $txt_error_no_username[$lang] . "</b><br><br>";
+++	                $msg = "<b>" . $txt_error_no_username[$_SESSION['lang']] . "</b><br><br>";
++ 	                $msg .= "<ul>";
++-	                $msg .= "<li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-			$msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";
++-	                html_titlebar($txt_error[$lang], "$msg",0);
+++	                $msg .= "<li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++			$msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";
+++	                html_titlebar($txt_error[$_SESSION['lang']], "$msg",0);
++ 	                html_end();
++ 	                exit();
++ 	        }
++@@ -806,10 +970,10 @@
++ 			if (in_array($U, $readonly_accounts_list) || in_array($U, $system_accounts_list)) {
++     
++ 		            html_head("$program_name Administration - Error");
++-    			    $msg = $txt_error_not_allowed[$lang];
++-            		    $msg .= "<ul><li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-            		    $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
++-    	    		    html_titlebar($txt_error[$lang], $msg ,0);
+++    			    $msg = $txt_error_not_allowed[$_SESSION['lang']];
+++            		    $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++            		    $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
+++    	    		    html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++             		    html_end();
++ 			    exit();
++ 
++@@ -820,11 +984,11 @@
++ 	
++ 	                if (!($passwd1 == $passwd2)) {
++ 	                        html_head("$program_name Administration - Error");
++-	                        $msg = "<b>" . $txt_error_pw_not_same[$lang] . "</b><br><br>";
+++	                        $msg = "<b>" . $txt_error_pw_not_same[$_SESSION['lang']] . "</b><br><br>";
++ 	                        $msg .= "<ul>";
++-	                        $msg .= "<li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-				$msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";
++-	                        html_titlebar($txt_error[$lang], "$msg",0);
+++	                        $msg .= "<li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++				$msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";
+++	                        html_titlebar($txt_error[$_SESSION['lang']], "$msg",0);
++ 	                        html_end();
++ 	                        exit();
++ 	                }
++@@ -834,8 +998,8 @@
++ 				html_head("$program_name Administration - Error");
++ 				$msg = "<b>" . $results . "</b><br><br>";
++ 				$msg .= "<ul>";	
++-				$msg .= "<li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-				html_titlebar($txt_edit[$lang], "$msg",0);
+++				$msg .= "<li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++				html_titlebar($txt_edit[$_SESSION['lang']], "$msg",0);
++ 				html_end();
++ 				exit();
++ 			    }
++@@ -854,14 +1018,14 @@
++ 			if (!$fwd[0] && !$fwd[1] && !$fwd[2] && !$fwd[3] && !$fwd[4] && !$fwd[5]) {
++ 				$userinfo = get_accounts(0,$U);
++ 				if (!$userinfo[0][12]) {
++-					$results .= "<br><br><b><font color=red>" . $txt_forwarding_off_warning[$lang] . "</font></b><br>";
+++					$results .= "<br><br><b><font color=red>" . $txt_forwarding_off_warning[$_SESSION['lang']] . "</font></b><br>";
++ 				}	
++ 			} else {
++ 		
++ 				// yes, we have forwarders!  
++ 				if ($turn_off_delivery_on_fwd_setup) {
++ 					$enabled_status = "0"; 
++-					$enabled_msg = $txt_turn_off_delivery_expl[$lang];
+++					$enabled_msg = $txt_turn_off_delivery_expl[$_SESSION['lang']];
++ 					$results .= "<br>" . update_userstatus($U, $enabled_status); 
++ 				}
++ 			}
++@@ -872,7 +1036,7 @@
++ 			    $userdetail = trim($lastname.", ".$firstname);
++ 			}
++ 
++-			if ($type == "domain") {
+++			if ($_SESSION['type'] == "domain") {
++                         	$results .= "<br>" . update_userdetail($U, $userdetail);
++ 			}
++ 		
++@@ -883,8 +1047,8 @@
++ 	                $msg = "<b>" . $results . "</b><br><br>";
++ 			$msg .= "$enabled_msg<br>";
++ 	                $msg .= "<ul>";
++-	                $msg .= "<li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-	                html_titlebar($txt_edit[$lang], "$msg",0);
+++	                $msg .= "<li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++	                html_titlebar($txt_edit[$_SESSION['lang']], "$msg",0);
++ 	                html_end();
++ 	                exit();
++ 	        }
++@@ -901,10 +1065,10 @@
++ 			if (in_array($U, $readonly_accounts_list) || in_array($U, $system_accounts_list)) {
++ 
++ 	                    html_head("$program_name Administration - Error");
++-    			    $msg = $txt_error_not_allowed[$lang];
++-            		    $msg .= "<ul><li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-            		    $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
++-    	    		    html_titlebar($txt_error[$lang], $msg ,0);
+++    			    $msg = $txt_error_not_allowed[$_SESSION['lang']];
+++            		    $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++            		    $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
+++    	    		    html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++             		    html_end();
++ 			    exit();
++ 
++@@ -912,21 +1076,21 @@
++ 
++ 			// check if domain admin is logged in and if quota are ok		
++ 	
++-			if (($action == "newalias" && $quota_data["new_alias_forbidden"]) || 
++-			($action == "newuser" && $quota_data["new_mailbox_forbidden"]) || 
++-			($type != "domain") ||
++-			($quota_on && $action == "newuser" && (!$quota_data["users_support"] || ($quota_data["nb_users"] >= $quota_data["max_users"]))) ||
++-			($quota_on && $action == "newalias" && (!$quota_data["alias_support"] || ($quota_data["nb_alias"] >= $quota_data["max_alias"])))) { //xx?
+++			if (($action == "newalias" && $_SESSION['quota_data']["new_alias_forbidden"]) || 
+++			($action == "newuser" && $_SESSION['quota_data']["new_mailbox_forbidden"]) || 
+++			($_SESSION['type'] != "domain") ||
+++			($_SESSION['quota_on'] && $action == "newuser" && (!$_SESSION['quota_data']["users_support"] || ($_SESSION['quota_data']["nb_users"] >= $_SESSION['quota_data']["max_users"]))) ||
+++			($_SESSION['quota_on'] && $action == "newalias" && (!$_SESSION['quota_data']["alias_support"] || ($_SESSION['quota_data']["nb_alias"] >= $_SESSION['quota_data']["max_alias"])))) { //xx?
++ 
++-				if ($type != "domain") { 
++-					$msg = $txt_error_not_allowed[$lang];
+++				if ($_SESSION['type'] != "domain") { 
+++					$msg = $txt_error_not_allowed[$_SESSION['lang']];
++ 				} else {
++-		                	$msg = $txt_error_quota_expired[$lang];
+++		                	$msg = $txt_error_quota_expired[$_SESSION['lang']];
++ 				}
++-		                $msg .= "<ul><li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-		                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
+++		                $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++		                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
++ 				html_head("$program_name Administration");	
++-	        	        html_titlebar($txt_error[$lang], $msg ,0);
+++	        	        html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++ 		                html_end();
++ 				exit();
++ 			}				
++@@ -936,11 +1100,11 @@
++ 
++ 	                if (!($passwd1 == $passwd2)) {
++ 	                        html_head("$program_name Administration - Error");
++-	                        $msg = "<b>" . $txt_error_pw_not_same[$lang] . "</b><br><br>";
+++	                        $msg = "<b>" . $txt_error_pw_not_same[$_SESSION['lang']] . "</b><br><br>";
++ 	                        $msg .= "<ul>";
++-	                        $msg .= "<li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-				$msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";
++-	                        html_titlebar($txt_error[$lang], "$msg",0);
+++	                        $msg .= "<li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++				$msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";
+++	                        html_titlebar($txt_error[$_SESSION['lang']], "$msg",0);
++ 	                        html_end();
++ 	                        exit();
++ 	                }
++@@ -950,11 +1114,11 @@
++ 	                                                            // alias don't. 
++ 
++ 	                        html_head("$program_name Administration - Error");
++-	                        $msg = "<b>" . $txt_error_pw_needed[$lang] . "</b><br><br>";
+++	                        $msg = "<b>" . $txt_error_pw_needed[$_SESSION['lang']] . "</b><br><br>";
++ 	                        $msg .= "<ul>";
++-	                        $msg .= "<li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-				$msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";
++-	                        html_titlebar($txt_error[$lang], "$msg",0);
+++	                        $msg .= "<li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++				$msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";
+++	                        html_titlebar($txt_error[$_SESSION['lang']], "$msg",0);
++ 	                        html_end();
++ 	                        exit();
++ 	                } 
++@@ -965,12 +1129,12 @@
++ 	                if (!$fwd[0] && !$fwd[1] && $action == "newalias") {  // alias needs at least one fwd
++ 			                                
++                                 html_head("$program_name Administration - Error");
++-                                $msg = "<b>" . $txt_error_fwd_needed[$lang] . "</b><br><br>";
+++                                $msg = "<b>" . $txt_error_fwd_needed[$_SESSION['lang']] . "</b><br><br>";
++                                 $msg .= "<ul>";
++-                                $msg .= "<li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" .
++-                                        $txt_menu[$lang]  .  "</a>\n";
++-				$msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";
++-                                html_titlebar($txt_error[$lang], "$msg",0);  
+++                                $msg .= "<li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" .
+++                                        $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++				$msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";
+++                                html_titlebar($txt_error[$_SESSION['lang']], "$msg",0);  
++                                 html_end();
++                                 exit();
++ 	                }
++@@ -1019,8 +1183,8 @@
++ 	                html_head("$program_name Administration");
++ 	                $msg = "<b>" . $results . "</b><br><br>";
++ 	                $msg .= "<ul>";	
++-	                $msg .= "<li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-	                html_titlebar($txt_edit[$lang], "$msg",0);
+++	                $msg .= "<li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++	                html_titlebar($txt_edit[$_SESSION['lang']], "$msg",0);
++ 	                html_end();
++ 	                exit();
++ 		}
++@@ -1033,10 +1197,10 @@
++ 			if (in_array($U, $readonly_accounts_list) || in_array($U, $system_accounts_list)) {
++     
++   	                    html_head("$program_name Administration - Error");
++-    			    $msg = $txt_error_not_allowed[$lang];
++-            		    $msg .= "<ul><li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-            		    $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
++-    	    		    html_titlebar($txt_error[$lang], $msg ,0);
+++    			    $msg = $txt_error_not_allowed[$_SESSION['lang']];
+++            		    $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++            		    $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
+++    	    		    html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++             		    html_end();
++ 			    exit();
++ 			} 
++@@ -1046,8 +1210,8 @@
++ 				html_head("$program_name Administration - Error");
++ 				$msg = "<b>" . $results . "</b><br><br>";
++ 				$msg .= "<ul>";	
++-				$msg .= "<li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-				html_titlebar($txt_edit[$lang], "$msg",0);
+++				$msg .= "<li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++				html_titlebar($txt_edit[$_SESSION['lang']], "$msg",0);
++ 				html_end();
++ 				exit();
++ 			    }
++@@ -1056,10 +1220,10 @@
++ 	                // check args format... addslashed everywhere, etc...
++ 	                // update forwarders
++                 
++-			if ($use_spamassassin && !$quota_data["spamassassin_use_forbidden"]) {
+++			if ($use_spamassassin && !$_SESSION['quota_data']["spamassassin_use_forbidden"]) {
++ 				$userinfotmp = get_accounts(0,$U);
++ 				$userinfo = $userinfotmp[0];
++-				$mailadr = $userinfo[0] . "@" . $domain;
+++				$mailadr = $userinfo[0] . "@" . $_SESSION['domain'];
++ 
++ 				$data = new table($db_database, $tb_userpref, $db_server, $db_login, $db_passwd);
++ 				$data->query("*", "username LIKE '$mailadr' AND (preference LIKE 'spam_enabled' OR preference LIKE 'spam_trash' OR preference LIKE 'required_hits' OR preference LIKE 'spam_fwd' OR preference LIKE 'blacklist_from' OR preference LIKE 'whitelist_from')");
++@@ -1074,7 +1238,7 @@
++ 			// check if we deleted the account on which the checkall (+) account was pointing on.
++ 			// if yes, also remove the "+" 
++ 			
++-			if ($U == $catchall_active) {
+++			if ($U == $_SESSION['catchall_active']) {
++ 			    $results1 .= "<br>" . delete_account("+");
++ 			}
++ 
++@@ -1084,8 +1248,8 @@
++         	        html_head("$program_name Administration");
++         	        $msg = "<b>" . $results1 . "</b><br>";
++         	        $msg .= "<ul>";
++-        	        $msg .= "<li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-        	        html_titlebar($txt_delete[$lang], "$msg",0);
+++        	        $msg .= "<li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++        	        html_titlebar($txt_delete[$_SESSION['lang']], "$msg",0);
++         	        html_end();
++         	        exit();
++ 	       	}
++@@ -1097,13 +1261,13 @@
++ 
++ 			// if autoresp support is off, show error
++ 
++-			if ($quota_on && !$quota_data["autoresp_support"]) {
+++			if ($_SESSION['quota_on'] && !$_SESSION['quota_data']["autoresp_support"]) {
++ 
++ 	                	html_head("$program_name Administration - Error");
++-				$msg = $txt_error_not_allowed[$lang];
++-		                $msg .= "<ul><li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-		                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
++-	        	        html_titlebar($txt_error[$lang], $msg ,0);
+++				$msg = $txt_error_not_allowed[$_SESSION['lang']];
+++		                $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++		                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
+++	        	        html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++ 		                html_end();
++ 				exit();
++ 			}				
++@@ -1140,8 +1304,8 @@
++ 	                html_head("$program_name Administration");
++ 	                $msg = "<b>" . $results . "</b><br><br>";
++ 	                $msg .= "<ul>";
++-	                $msg .= "<li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-	                html_titlebar($txt_delete[$lang], "$msg",0);
+++	                $msg .= "<li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++	                html_titlebar($txt_delete[$_SESSION['lang']], "$msg",0);
++ 	                html_end();
++ 	                exit();
++ 	        }
++@@ -1154,13 +1318,13 @@
++ 
++ 			// if spam support is off, show error
++ 
++-			if (!$use_spamassassin && !$quota_data["spamassassin_use_forbidden"]) {
+++			if (!$use_spamassassin && !$_SESSION['quota_data']["spamassassin_use_forbidden"]) {
++ 
++ 	                	html_head("$program_name Administration - Error");
++-				$msg = $txt_error_not_allowed[$lang];
++-		                $msg .= "<ul><li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-		                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
++-	        	        html_titlebar($txt_error[$lang], $msg ,0);
+++				$msg = $txt_error_not_allowed[$_SESSION['lang']];
+++		                $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++		                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
+++	        	        html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++ 		                html_end();
++ 				exit();
++ 			}				
++@@ -1180,7 +1344,7 @@
++ 
++ 			$userinfotmp = get_accounts(0,$U);
++ 			$userinfo = $userinfotmp[0];
++-			$mailadr = $userinfo[0] . "@" . $domain;
+++			$mailadr = $userinfo[0] . "@" . $_SESSION['domain'];
++ 
++ 			$data = new table($db_database, $tb_userpref, $db_server, $db_login, $db_passwd);
++ 			$data->query("*", "username LIKE '$mailadr' AND (preference LIKE 'spam_enabled' OR preference LIKE 'spam_trash' OR preference LIKE 'required_hits' OR preference LIKE 'spam_fwd' OR preference LIKE 'blacklist_from' OR preference LIKE 'whitelist_from')");
++@@ -1235,21 +1399,83 @@
++ 				}		
++ 			}
++ 
++-
++-
++ 	
++ 			// ......
++ 
++ 	                html_head("$program_name Administration");
++ 	                $msg = "<b>Anti-Spam setup saved!</b><br><br>";
++ 	                $msg .= "<ul>";
++-	                $msg .= "<li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-	                html_titlebar($txt_spamsettings[$lang], "$msg",0);
+++	                $msg .= "<li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++	                html_titlebar($txt_spamsettings[$_SESSION['lang']], "$msg",0);
++ 	                html_end();
++ 	                exit();
++ 	        }
++ 
+++	       // "virus"
+++
+++	        if ($action == "virus") {
+++
+++			// if virus support is off, show error
+++
+++			if (!$use_spamassassin && !$_SESSION['quota_data']["spamassassin_use_forbidden"]) {
+++
+++	                	html_head("$program_name Administration - Error");
+++				$msg = $txt_error_not_allowed[$_SESSION['lang']];
+++		                $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++		                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
+++	        	        html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
+++		                html_end();
+++				exit();
+++			}				
+++
+++        
+++	                // check args format....
++ 
+++		        if (get_magic_quotes_gpc() == 1) {
+++                           $from = stripslashes($from); 
+++	                }
+++
+++			// remove blanks
+++
+++			$from = trim($from);
+++			
+++			// remove any spam infos from userdetail, keep actual infos...
+++
+++			$userinfotmp = get_accounts(0,$U);
+++			$userinfo = $userinfotmp[0];
+++			$mailadr = $userinfo[0] . "@" . $_SESSION['domain'];
+++
+++			$data = new table($db_database, $tb_userpref, $db_server, $db_login, $db_passwd);
+++			$data->query("*", "username LIKE '$mailadr' AND (preference like 'virus_enabled' OR preference like 'virus_trash' OR preference like 'virus_fwd')");
+++			$data->deleteRows();
+++			
+++			$data->newRow();
+++			$data->setQueryField("username", $mailadr);
+++			$data->setQueryField("preference", "virus_fwd");
+++			$data->setQueryField("value", $virus_from);
+++
+++			$data->newRow();
+++			$data->setQueryField("username", $mailadr);
+++			$data->setQueryField("preference", "virus_enabled");
+++			$data->setQueryField("value", $virus_status);
+++
+++			$data->newRow();
+++			$data->setQueryField("username", $mailadr);
+++			$data->setQueryField("preference", "virus_trash");
+++			$data->setQueryField("value", $virus_delete);
+++
+++
+++	
+++			// ......
+++
+++	                html_head("$program_name Administration");
+++	                $msg = "<b>Anti-Virus setup saved!</b><br><br>";
+++	                $msg .= "<ul>";
+++	                $msg .= "<li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++	                html_titlebar($txt_spamsettings[$_SESSION['lang']], "$msg",0);
+++	                html_end();
+++	                exit();
+++	        }
++ 
++ 	       // "quota"
++ 
++@@ -1257,13 +1483,13 @@
++ 
++ 			// if quota support is off, show error
++ 
++-			if (($quota_on && !$quota_data["user_quota_support"]) || in_array($U, $readonly_accounts_list) || in_array($U, $system_accounts_list)) {
+++			if (($_SESSION['quota_on'] && !$_SESSION['quota_data']["user_quota_support"]) || in_array($U, $readonly_accounts_list) || in_array($U, $system_accounts_list)) {
++ 
++-				$msg = $txt_error_not_allowed[$lang];
++-		                $msg .= "<ul><li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-		                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
+++				$msg = $txt_error_not_allowed[$_SESSION['lang']];
+++		                $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++		                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
++ 				html_head("$program_name Administration - Error");	
++-	        	        html_titlebar($txt_error[$lang], $msg ,0);
+++	        	        html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++ 		                html_end();
++ 				exit();
++ 			}				
++@@ -1287,8 +1513,8 @@
++ 	                html_head("$program_name Administration");
++ 	                $msg = "<b>" . $results . "</b><br><br>";
++ 	                $msg .= "<ul>";
++-	                $msg .= "<li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-	                html_titlebar($txt_delete[$lang], "$msg",0);
+++	                $msg .= "<li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++	                html_titlebar($txt_delete[$_SESSION['lang']], "$msg",0);
++ 	                html_end();
++ 	                exit();
++ 	        }
++@@ -1300,13 +1526,13 @@
++ 
++ 			// if quota & settings support is off, show error
++ 
++-			if (($quota_on && !$quota_data["user_quota_support"]) || in_array($U, $readonly_accounts_list) || in_array($U, $system_accounts_list)) {
+++			if (($_SESSION['quota_on'] && !$_SESSION['quota_data']["user_quota_support"]) || in_array($U, $readonly_accounts_list) || in_array($U, $system_accounts_list)) {
++ 
++-				$msg = $txt_error_not_allowed[$lang];
++-		                $msg .= "<ul><li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-		                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
+++				$msg = $txt_error_not_allowed[$_SESSION['lang']];
+++		                $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++		                $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
++ 				html_head("$program_name Administration - Error");	
++-	        	        html_titlebar($txt_error[$lang], $msg ,0);
+++	        	        html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++ 		                html_end();
++ 				exit();
++ 			}				
++@@ -1316,10 +1542,10 @@
++ 
++ 			if ($action == "user_disable") { 
++ 			    $enabled_status = "0"; 
++-			    $enabled_msg = $txt_turn_off_delivery_expl[$lang];
+++			    $enabled_msg = $txt_turn_off_delivery_expl[$_SESSION['lang']];
++ 			} else { 
++ 			    $enabled_status = "1"; 
++-			    $enabled_msg = $txt_turn_on_delivery_expl[$lang];
+++			    $enabled_msg = $txt_turn_on_delivery_expl[$_SESSION['lang']];
++ 			}
++ 
++ 	                $results = update_userstatus($U, $enabled_status); 
++@@ -1328,8 +1554,8 @@
++ 	                $msg = "<b>" . $results . "</b><br><br>";
++ 			$msg .= "$enabled_msg<br>";
++ 	                $msg .= "<ul>";
++-	                $msg .= "<li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-	                html_titlebar($txt_delete[$lang], "$msg",0);
+++	                $msg .= "<li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++	                html_titlebar($txt_delete[$_SESSION['lang']], "$msg",0);
++ 	                html_end();
++ 	                exit();
++ 	        }
++@@ -1341,11 +1567,11 @@
++ 
++ 			if (in_array($U, $readonly_accounts_list) || in_array($U, $system_accounts_list)) {
++     
++-    			    $msg = $txt_error_not_allowed[$lang];
++-            		    $msg .= "<ul><li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-            		    $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
+++    			    $msg = $txt_error_not_allowed[$_SESSION['lang']];
+++            		    $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++            		    $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
++ 			    html_head("$program_name Administration - Error");	
++-    	    		    html_titlebar($txt_error[$lang], $msg ,0);
+++    	    		    html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++             		    html_end();
++ 			    exit();
++ 
++@@ -1366,8 +1592,8 @@
++         	        $msg .= "<b>" . $results2 . "</b><br>";
++         	        $msg .= "<b>" . $results3 . "</b><br><br>";
++         	        $msg .= "<ul>";
++-        	        $msg .= "<li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-        	        html_titlebar($txt_catchall[$lang], "$msg",0);
+++        	        $msg .= "<li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++        	        html_titlebar($txt_catchall[$_SESSION['lang']], "$msg",0);
++         	        html_end();
++         	        exit();
++ 	       	}
++@@ -1381,11 +1607,11 @@
++ 
++ 			if (in_array($U, $readonly_accounts_list) || in_array($U, $system_accounts_list)) {
++     
++-    			    $msg = $txt_error_not_allowed[$lang];
++-            		    $msg .= "<ul><li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-            		    $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";	
+++    			    $msg = $txt_error_not_allowed[$_SESSION['lang']];
+++            		    $msg .= "<ul><li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++            		    $msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";	
++ 			    html_head("$program_name Administration - Error");	
++-    	    		    html_titlebar($txt_error[$lang], $msg ,0);
+++    	    		    html_titlebar($txt_error[$_SESSION['lang']], $msg ,0);
++             		    html_end();
++ 			    exit();
++ 
++@@ -1402,8 +1628,8 @@
++         	        html_head("$program_name Administration");
++         	        $msg = "<b>" . $results1 . "</b><br>";
++         	        $msg .= "<ul>";
++-        	        $msg .= "<li><a href=\"$script?A=menu&" . SID . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$lang]  .  "</a>\n";
++-        	        html_titlebar($txt_remove_catchall[$lang], "$msg",0);
+++        	        $msg .= "<li><a href=\"$script?A=menu&" . "PHPSESSID=".session_id() . "\" onClick=\"return gO(this,true)\">" . $txt_menu[$_SESSION['lang']]  .  "</a>\n";
+++        	        html_titlebar($txt_remove_catchall[$_SESSION['lang']], "$msg",0);
++         	        html_end();
++         	        exit();
++ 	       	}
++@@ -1419,15 +1645,15 @@
++ 	if ($A == "logout") {
++ 
++ 
++-	        $msg = $txt_goodbye[$lang];
++-	        $msg .= "<ul><li><a href=\"$script_url?A=login&setlang=$lang&" . SID . "\">" . $txt_login_again[$lang]  .  "</a>\n";
++-		$msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$lang] . "</a>\n</ul>";
+++	        $msg = $txt_goodbye[$_SESSION['lang']];
+++	        $msg .= "<ul><li><a href=\"$script_url?A=login&setlang=".$_SESSION['lang']."&" . "PHPSESSID=".session_id() . "\">" . $txt_login_again[$_SESSION['lang']]  .  "</a>\n";
+++		$msg .= "<li><a href=\"mailto:" . $sysadmin_mail. "\">" . $txt_mail_sysadmin[$_SESSION['lang']] . "</a>\n</ul>";
++ 
++-		$active = 0;
+++		$_SESSION['active'] = 0;
++ 		session_destroy();
++ 
++ 		html_head("$program_name Administration - Logout");	
++-	        html_titlebar($txt_logout[$lang], $msg ,0);
+++	        html_titlebar($txt_logout[$_SESSION['lang']], $msg ,0);
++ 	        html_end();
++ 	        exit();
++ 	}	
++diff -ru omail-admin/strings.php omail-admin-new/strings.php
++--- omail-admin/strings.php	1970-01-01 01:00:01.000000000 +0100
+++++ omail-admin-new/strings.php	2008-01-12 17:28:42.000000000 +0100
++@@ -3521,7 +3521,7 @@
++  $txt_turn_on_delivery = array(
++   "ru" => "fixme_and_update_cvs",
++   "en" => "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Turn On Email Save",
++-  "cz" => "fixme_and_update_cvs",
+++  "cz" => "Zapnout ukladani emailu",
++   "ja" => "fixme_and_update_cvs",
++   "tc" => "fixme_and_update_cvs",
++   "fr" => "Activer_l'enregistrement",
++@@ -3539,7 +3539,7 @@
++  $txt_turn_on_delivery_expl = array(
++   "ru" => "fixme_and_update_cvs",
++   "en" => "You have turned email \"save on\". Email sent to this account will now be delivered and saved on the server.",
++-  "cz" => "fixme_and_update_cvs",
+++  "cz" => "Emaily budou nyni dorucovany a ukladany.",
++   "ja" => "fixme_and_update_cvs",
++   "tc" => "fixme_and_update_cvs",
++   "fr" => "A partir de maintenant les messages seront à nouveau enregistrés sur le serveur mail",
++@@ -3558,7 +3558,7 @@
++  $txt_turn_off_delivery = array(
++   "ru" => "fixme_and_update_cvs",
++   "en" => "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Turn Off Email Save",
++-  "cz" => "fixme_and_update_cvs",
+++  "cz" => "Vypnout dorucovani",
++   "ja" => "fixme_and_update_cvs",
++   "tc" => "fixme_and_update_cvs",
++   "fr" => "Désactiver_l'enregistrement",
++@@ -3576,7 +3576,7 @@
++  $txt_turn_off_delivery_expl = array(
++   "ru" => "fixme_and_update_cvs",
++   "en" => "You have turned email \"save off\". Email will not be saved or delivered, unless you set email to forward to another account.",
++-  "cz" => "fixme_and_update_cvs",
+++  "cz" => "Emaily nebudou ukladany a dorucovany, pokud nenastavite presmerovani na jinou adresu.",
++   "ja" => "fixme_and_update_cvs",
++   "tc" => "fixme_and_update_cvs",
++   "fr" => "A partir de maintenant les messages ne seront plus enregistrés sur le serveur. <br><b>Attention:</b> ils seront perdu si vous n'avez pas défini d'adresse de redirection!",
++@@ -3594,7 +3594,7 @@
++  $txt_forwarding_off_warning = array(
++   "ru" => "fixme_and_update_cvs",
++   "en" => "Warning: Email delivery is turned OFF and there are no Forwarders : mails to this account will be ignored.",
++-  "cz" => "fixme_and_update_cvs",
+++  "cz" => "Varovani: Dorucovani emalu je vypnuto a nejsou definovany zadne adresy pro presmerovani. Emaily na tento ucet budou ignorovany.",
++   "ja" => "fixme_and_update_cvs",
++   "tc" => "fixme_and_update_cvs",
++   "fr" => "Attention: la réception d'emails sur ce compte est désactivée : comme il n'y a pas d'adresse de redirection, les mails seront ignorés!",
++@@ -3612,7 +3612,7 @@
++  $txt_local_delivery = array(
++   "ru" => "fixme_and_update_cvs",
++   "en" => "Email Saved",
++-  "cz" => "fixme_and_update_cvs",
+++  "cz" => "Email ulozen.",
++   "ja" => "fixme_and_update_cvs",
++   "tc" => "fixme_and_update_cvs",
++   "fr" => "Enregistrement local",
++@@ -3631,7 +3631,7 @@
++  $txt_one_per_line = array(
++   "ru" => "fixme_and_update_cvs",
++   "en" => "(one address per line)",
++-  "cz" => "fixme_and_update_cvs",
+++  "cz" => "(jedna adresa na radek)",
++   "ja" => "fixme_and_update_cvs",
++   "tc" => "fixme_and_update_cvs",
++   "fr" => "(une adresse par ligne)",
++@@ -3649,8 +3649,8 @@
++ 
++  $txt_spamsettings = array(
++   "ru" => "fixme_and_update_cvs",
++-  "en" => "SpamAssassin",
++-  "cz" => "fixme_and_update_cvs",
+++  "en" => "Spam",
+++  "cz" => "Antispam",
++   "ja" => "fixme_and_update_cvs",
++   "tc" => "fixme_and_update_cvs",
++   "fr" => "AntiSpam",
++@@ -3665,11 +3665,30 @@
++   "lt" => "fixme_and_update_cvs",
++   "id" => "fixme_and_update_cvs");
++ 
+++ $txt_virussettings = array(
+++  "ru" => "fixme_and_update_cvs",
+++  "en" => "AntiVirus",
+++  "cz" => "AntiVirus",
+++  "ja" => "fixme_and_update_cvs",
+++  "tc" => "fixme_and_update_cvs",
+++  "fr" => "Virus",
+++  "de" => "Virus",
+++  "da" => "fixme_and_update_cvs",
+++  "es" => "fixme_and_update_cvs",
+++  "pt-br" => "fixme_and_update_cvs",
+++  "nl" => "fixme_and_update_cvs",
+++  "it" => "fixme_and_update_cvs",
+++  "ro" => "fixme_and_update_cvs",
+++  "sv" => "fixme_and_update_cvs",
+++  "lt" => "fixme_and_update_cvs",
+++  "id" => "fixme_and_update_cvs");
+++
+++
++ 
++  $txt_scan_for_spam = array(
++   "ru" => "fixme_and_update_cvs",
++   "en" => "(1) Scan email for spam with Spamassassin",
++-  "cz" => "fixme_and_update_cvs",
+++  "cz" => "(1) Kontrolovat emaily pomocí Antispamu ",
++   "ja" => "fixme_and_update_cvs",
++   "tc" => "fixme_and_update_cvs",
++   "fr" => "Détecter les Spams",
++@@ -3688,7 +3707,7 @@
++  $txt_auto_delete_spams = array(
++   "ru" => "fixme_and_update_cvs",
++   "en" => "(2) Delete spam",
++-  "cz" => "fixme_and_update_cvs",
+++  "cz" => "(2) Smazat spam",
++   "ja" => "fixme_and_update_cvs",
++   "tc" => "fixme_and_update_cvs",
++   "fr" => "Efface automatiquement les mails considérés comme Spams",
++@@ -3707,7 +3726,7 @@
++  $txt_fwd_spams_to = array(
++   "ru" => "fixme_and_update_cvs",
++   "en" => "(3) Forward identified spam to separate address",
++-  "cz" => "fixme_and_update_cvs",
+++  "cz" => "(3) Pøeposlat spam na jinou adresu",
++   "ja" => "fixme_and_update_cvs",
++   "tc" => "fixme_and_update_cvs",
++   "fr" => "Faire suivre les Spams à l'adresse suivante",
++@@ -3725,7 +3744,7 @@
++  $txt_spam_notes = array(
++   "ru" => "fixme_and_update_cvs",
++   "en" => "Notes:<br>1. Spamassassin will review incoming email, and prefix the subject line of suspected messages with the word: \"spam:\" Email will not be deleted.<br>2.  Warning: There is a 1% chance non-spam may be deleted if you choose \"Delete spam\" Deleted email cannot be recovered. Use this option with caution.<br>3. Email will be redirected to this internal or external email address.",
++-  "cz" => "fixme_and_update_cvs",
+++  "cz" => "Poznámky:<br>1. Pøíchozí emaily budou kontrolovány Antispam filtrem a spam bude oznaèen v pøedmìtu zprávy: \"spam\". Email nebude smazán. <br>2. Varování: Cca 1% ne-spam mailù bude smazáno, pokud vyberete \"Smazat spam\". Smazané maily nemohou být obnoveny. Tuto volbu použijte opatrnì. <br>3. Email bude pøesmìrován na tuto interní nebo externí adresu.",
++   "ja" => "fixme_and_update_cvs",
++   "tc" => "fixme_and_update_cvs",
++   "fr" => "fixme_and_update_cvs",
++@@ -3743,7 +3762,7 @@
++  $txt_white_list = array(
++   "ru" => "fixme_and_update_cvs",
++   "en" => "White List",
++-  "cz" => "fixme_and_update_cvs",
+++  "cz" => "White list",
++   "ja" => "fixme_and_update_cvs",
++   "tc" => "fixme_and_update_cvs",
++   "fr" => "Liste Blanche",
++@@ -3761,7 +3780,7 @@
++  $txt_black_list = array(
++   "ru" => "fixme_and_update_cvs",
++   "en" => "Black List",
++-  "cz" => "fixme_and_update_cvs",
+++  "cz" => "Black list",
++   "ja" => "fixme_and_update_cvs",
++   "tc" => "fixme_and_update_cvs",
++   "fr" => "Liste Noire",
++@@ -3780,7 +3799,7 @@
++  $txt_required_hits = array(
++   "ru" => "fixme_and_update_cvs",
++   "en" => "Required 'Spam' Hits",
++-  "cz" => "fixme_and_update_cvs",
+++  "cz" => "Potøebné body pro oznaèení 'Spam'",
++   "ja" => "fixme_and_update_cvs",
++   "tc" => "fixme_and_update_cvs",
++   "fr" => "Nombre de points 'spam' nécessaires",
++@@ -3798,7 +3817,7 @@
++  $txt_standard_value = array(
++   "ru" => "fixme_and_update_cvs",
++   "en" => "Default Setting",
++-  "cz" => "fixme_and_update_cvs",
+++  "cz" => "Standardní nastavení",
++   "ja" => "fixme_and_update_cvs",
++   "tc" => "fixme_and_update_cvs",
++   "fr" => "Valeur par défaut",
++@@ -3816,7 +3835,7 @@
++  $txt_master_switch = array(
++   "ru" => "fixme_and_update_cvs",
++   "en" => "Master Switch",
++-  "cz" => "fixme_and_update_cvs",
+++  "cz" => "Hlavní pøepínaè",
++   "ja" => "fixme_and_update_cvs",
++   "tc" => "fixme_and_update_cvs",
++   "fr" => "Interrupteur principal",
++@@ -3824,6 +3843,62 @@
++   "da" => "fixme_and_update_cvs",
++   "es" => "fixme_and_update_cvs",
++   "pt-br" => "fixme_and_update_cvs",
+++  "nl" => "fixme_and_update_cvs",
+++  "it" => "fixme_and_update_cvs",
+++  "ro" => "fixme_and_update_cvs",
+++  "sv" => "fixme_and_update_cvs",
+++  "lt" => "fixme_and_update_cvs",
+++  "id" => "fixme_and_update_cvs");
+++
+++ $txt_scan_for_virus = array(
+++  "ru" => "fixme_and_update_cvs",
+++  "en" => "Scan email for viruses",
+++  "cz" => "Kontrolovat emaily antivirem ",
+++  "ja" => "fixme_and_update_cvs",
+++  "tc" => "fixme_and_update_cvs",
+++  "fr" => "Détecter les Spams",
+++  "de" => "Spams-Erkennung",
+++  "da" => "fixme_and_update_cvs",
+++  "es" => "fixme_and_update_cvs",
+++  "pt-br" => "fixme_and_update_cvs",
+++  "nl" => "fixme_and_update_cvs",
+++  "it" => "fixme_and_update_cvs",
+++  "ro" => "fixme_and_update_cvs",
+++  "sv" => "fixme_and_update_cvs",
+++  "lt" => "fixme_and_update_cvs",
+++  "id" => "fixme_and_update_cvs");
+++
+++
+++ $txt_auto_delete_virus = array(
+++  "ru" => "fixme_and_update_cvs",
+++  "en" => "Delete infected mail",
+++  "cz" => "Smazat infikovany mail",
+++  "ja" => "fixme_and_update_cvs",
+++  "tc" => "fixme_and_update_cvs",
+++  "fr" => "Efface automatiquement les mails considérés comme Spams",
+++  "de" => "Löscht direkt alle Mails die als Spam eingestufft wurden",
+++  "da" => "fixme_and_update_cvs",
+++  "es" => "fixme_and_update_cvs",
+++  "pt-br" => "fixme_and_update_cvs",
+++  "nl" => "fixme_and_update_cvs",
+++  "it" => "fixme_and_update_cvs",
+++  "ro" => "fixme_and_update_cvs",
+++  "sv" => "fixme_and_update_cvs",
+++  "lt" => "fixme_and_update_cvs",
+++  "id" => "fixme_and_update_cvs");
+++
+++
+++ $txt_fwd_virus_to = array(
+++  "ru" => "fixme_and_update_cvs",
+++  "en" => "Forward infected mails to separate address",
+++  "cz" => "Pøeposlat infikovane maily na jinou adresu",
+++  "ja" => "fixme_and_update_cvs",
+++  "tc" => "fixme_and_update_cvs",
+++  "fr" => "Faire suivre les Spams à l'adresse suivante",
+++  "de" => "Spams an folgende Adresse weiterleiten",
+++  "da" => "fixme_and_update_cvs",
+++  "es" => "fixme_and_update_cvs",
+++  "pt-br" => "fixme_and_update_cvs",
++   "nl" => "fixme_and_update_cvs",
++   "it" => "fixme_and_update_cvs",
++   "ro" => "fixme_and_update_cvs",
++diff -ru omail-admin/templates/display_account.temp omail-admin-new/templates/display_account.temp
++--- omail-admin/templates/display_account.temp	1970-01-01 01:00:01.000000000 +0100
+++++ omail-admin-new/templates/display_account.temp	2005-04-07 13:38:09.000000000 +0200
++@@ -5,6 +5,8 @@
++ <TH>%txt_fwd% ?</TH>
++ 
++ %ifdef_txt_responder%
+++<TH>%txt_spam% ?</TH>
+++<TH>%txt_virus% ?</TH>
++ <TH>%txt_local_delivery% ?</TH>
++ <TH><nobr>%txt_action%</TH></TR>
++ 
++@@ -20,8 +22,11 @@
++ 
++ %ifdef_autoresponder_status%
++ 
+++<TD>%spam_status%</TD>
+++<TD>%virus_status%</TD>
+++
++ <TD>%local_delivery%&nbsp;</TD>
++-<TD align=center><nobr>
+++<TD align=left><nobr>
++ %actions%
++ </nobr></TD></TR>
++ 
++diff -ru omail-admin/templates/display_aliases_nolimit.temp omail-admin-new/templates/display_aliases_nolimit.temp
++--- omail-admin/templates/display_aliases_nolimit.temp	1970-01-01 01:00:01.000000000 +0100
+++++ omail-admin-new/templates/display_aliases_nolimit.temp	2005-04-07 13:38:09.000000000 +0200
++@@ -34,7 +34,14 @@
++ 
++ %ifdef_txt_responder%
++ 
++-<TH ALIGN="justify">
+++<TH ALIGN="center">
+++%txt_spam%?
+++</TH>
+++<TH ALIGN="center">
+++%txt_virus%?
+++</TH>
+++
+++<TH ALIGN="center">
++ %txt_action%
++ </TH></TR>
++ 
++@@ -49,7 +56,10 @@
++ 
++ %ifdef_autoresponder_status%
++ 
++-<TD ALIGN="center"><nobr>%actions%</nobr></TD></TR>
+++<TD>%spam_status%</TD>
+++<TD>%virus_status%</TD>
+++
+++<TD ALIGN="left"><nobr>%actions%</nobr></TD></TR>
++ 
++ </obj>
++ 
++diff -ru omail-admin/templates/display_aliases.temp omail-admin-new/templates/display_aliases.temp
++--- omail-admin/templates/display_aliases.temp	1970-01-01 01:00:01.000000000 +0100
+++++ omail-admin-new/templates/display_aliases.temp	2005-04-07 13:38:09.000000000 +0200
++@@ -54,7 +54,15 @@
++ 
++ %ifdef_autoresponder_status%
++ 
++-<TD ALIGN="center"><nobr>%actions%</nobr></TD></TR>
+++<TH ALIGN="center">
+++%txt_spam%?
+++</TH>
+++<TH ALIGN="center">
+++%txt_virus%?
+++</TH>
+++
+++
+++<TD ALIGN="left"><nobr>%actions%</nobr></TD></TR>
++ 
++ </obj>
++ 
++diff -ru omail-admin/templates/display_mailboxes_nolimit.temp omail-admin-new/templates/display_mailboxes_nolimit.temp
++--- omail-admin/templates/display_mailboxes_nolimit.temp	1970-01-01 01:00:01.000000000 +0100
+++++ omail-admin-new/templates/display_mailboxes_nolimit.temp	2005-04-07 13:38:09.000000000 +0200
++@@ -33,8 +33,14 @@
++ <TH>%txt_fwd%?</TH>
++ 
++ %ifdef_txt_responder%
+++<TH ALIGN="center">
+++%txt_spam%?
+++</TH>
+++<TH ALIGN="center">
+++%txt_virus%?
+++</TH>
++ 
++-<TH ALIGN="justify">
+++<TH ALIGN="center">
++ %txt_action%
++ </TH></TR>
++ 
++@@ -49,7 +55,10 @@
++ 
++ %ifdef_autoresponder_status%
++ 
++-<TD ALIGN="center"><nobr>%actions%</nobr></TD></TR>
+++<TD>%spam_status%</TD>
+++<TD>%virus_status%</TD>
+++
+++<TD ALIGN="left"><nobr>%actions%</nobr></TD></TR>
++ 
++ </obj>
++ 
++diff -ru omail-admin/templates/display_mailboxes.temp omail-admin-new/templates/display_mailboxes.temp
++--- omail-admin/templates/display_mailboxes.temp	1970-01-01 01:00:01.000000000 +0100
+++++ omail-admin-new/templates/display_mailboxes.temp	2005-04-07 13:38:09.000000000 +0200
++@@ -34,6 +34,18 @@
++ 
++ %ifdef_txt_responder%
++ 
+++<TH ALIGN="center">
+++%txt_spam%?
+++</TH>
+++<TH ALIGN="center">
+++%txt_virus%?
+++</TH>
+++
+++<TH ALIGN="center">
+++%txt_action%
+++</TH></TR>
+++
+++
++ <TH ALIGN="justify">
++ [ <a href="%url_first%">%txt_first%</a><font color="888888">%txt_first_off%</font> ]&nbsp;
++ [ <a href="%url_prev%">%txt_prev%</a><font color="888888">%txt_prev_off%</font> ]&nbsp;
++@@ -53,7 +65,10 @@
++ 
++ %ifdef_autoresponder_status%
++ 
++-<TD ALIGN="center"><nobr>%actions%</nobr></TD></TR>
+++<TD>%spam_status%</TD>
+++<TD>%virus_status%</TD>
+++
+++<TD ALIGN="left"><nobr>%actions%</nobr></TD></TR>
++ 
++ </obj>
++ 
++diff -ru omail-admin/templates/spamform.temp omail-admin-new/templates/spamform.temp
++--- omail-admin/templates/spamform.temp	1970-01-01 01:00:01.000000000 +0100
+++++ omail-admin-new/templates/spamform.temp	2005-04-07 13:38:09.000000000 +0200
++@@ -3,7 +3,7 @@
++  <tr><th align=right>  %txt_username%:&nbsp;</th> 
++  <td bgcolor="#DDDDDD" align=left>%userinfo0%@%domain%&nbsp;</td></tr> 
++  <input type="hidden" name="U" value="%userinfo0%"> 
++-        
+++
++  <tr><th align=right><font color="red">%txt_scan_for_spam%:&nbsp;</font></th> 
++  <td bgcolor="#CCCCCC" align=left> 
++ 
++diff -ru omail-admin/templates/userform_fwd_part.temp omail-admin-new/templates/userform_fwd_part.temp
++--- omail-admin/templates/userform_fwd_part.temp	1970-01-01 01:00:01.000000000 +0100
+++++ omail-admin-new/templates/userform_fwd_part.temp	2007-12-31 17:31:09.000000000 +0100
++@@ -1,5 +1,5 @@
++ <alias1>
++ <tr><th align=right>%txt_fwd%&nbsp;</th>
++-<td bgcolor="%fwdcolor%" align=left><input type="text" name="fwd[]" value="%aliases%" size="35">&nbsp;
+++<td bgcolor="%fwdcolor%" align=left><input type="text" name="%fwd%" value="%aliases%" size="35">&nbsp;
++ </td></tr>
++ </alias1>
++diff -ru omail-admin/templates/userform_ldap.temp omail-admin-new/templates/userform_ldap.temp
++--- omail-admin/templates/userform_ldap.temp	1970-01-01 01:00:01.000000000 +0100
+++++ omail-admin-new/templates/userform_ldap.temp	2007-12-31 17:25:04.000000000 +0100
++@@ -23,7 +23,7 @@
++ 
++ <tr><th align=right>%txt_fwd1%&nbsp;</th>
++ <td bgcolor="#CCCCCC" align=left>
++-<select name="fwd[]">%select_account_contents%</select>@%domain% &nbsp;
+++<select name="fwd_1">%select_account_contents%</select>@%domain% &nbsp;
++ </td></tr>
++ 
++ %fwd_part%
++diff -ru omail-admin/templates/userform.temp omail-admin-new/templates/userform.temp
++--- omail-admin/templates/userform.temp	1970-01-01 01:00:01.000000000 +0100
+++++ omail-admin-new/templates/userform.temp	2007-12-31 17:23:17.000000000 +0100
++@@ -17,7 +17,7 @@
++ 
++ <tr><th align=right>%txt_fwd1%&nbsp;</th>
++ <td bgcolor="#CCCCCC" align=left>
++-<select name="fwd[]">%select_account_contents%</select>@%domain% &nbsp;
+++<select name="fwd_1">%select_account_contents%</select>@%domain% &nbsp;
++ </td></tr>
++ 
++ %fwd_part%
++diff -ru omail-admin/vmail.inc omail-admin-new/vmail.inc
++--- omail-admin/vmail.inc	1970-01-01 01:00:01.000000000 +0100
+++++ omail-admin-new/vmail.inc	2014-07-01 22:41:42.000000000 +0200
++@@ -1,4 +1,4 @@
++-<?
+++<?php
++ // Copyright (C) 2000 Mike Bell <mike@mikebell.org>
++ // 
++ //      $Id: vmail.inc,v 1.8 2001/02/24 20:30:11 swix Exp $
++@@ -27,18 +27,16 @@
++ 
++ function vm_daemon_raw($arg)
++ {
++-	global $vm_tcphost, $vm_tcphost_port;
++-
++ 	// om/23feb01 - dual vmailmgrd support : unix & tcp socket
++ 
++-	if ($vm_tcphost) { 
+++	if ($_SESSION['vm_tcphost']) { 
++ 		
++ 		// TCP SOCKET - default port = 322.
++  	
++-		if (!$vm_tcphost_port) { $vm_tcphost_port = "322"; }
+++		if (!$_SESSION['vm_tcphost_port']) { $_SESSION['vm_tcphost_port'] = "322"; }
++ 
++-        	$vmailsock = fsockopen ($vm_tcphost, $vm_tcphost_port, $errno, $errstr, 10);
++-        	if (!$vmailsock) die("Failed to open tcp socket, is daemon running on host '$vm_tcphost:$vm_tcphost_port'? <br>\nError: $errno - $errstr");
+++        	$vmailsock = fsockopen ($_SESSION['vm_tcphost'], $_SESSION['vm_tcphost_port'], $errno, $errstr, 10);
+++        	if (!$vmailsock) die("Failed to open tcp socket, is daemon running on host '".$_SESSION['vm_tcphost'].":".$_SESSION['vm_tcphost_port']."'? <br>\nError: $errno - $errstr");
++ 	
++ 	} else {
++ 
+diff --git a/pkgs/applications/misc/omail-admin/virusform.temp.patch b/pkgs/applications/misc/omail-admin/virusform.temp.patch
+new file mode 100644
+index 0000000..cb37277
+--- /dev/null
++++ b/pkgs/applications/misc/omail-admin/virusform.temp.patch
+@@ -0,0 +1,55 @@
++--- omail-admin/templates/virusform.temp	2018-03-12 12:31:40.621161774 +0100
+++++ omail-admin-new/templates/virusform.temp	2005-04-07 13:38:09.000000000 +0200
++@@ -0,0 +1,52 @@
+++ <form action="%script%?%SID%" method="post"> 
+++ <table border=0> 
+++ <tr><th align=right>  %txt_username%:&nbsp;</th> 
+++ <td bgcolor="#DDDDDD" align=left>%userinfo0%@%domain%&nbsp;</td></tr> 
+++ <input type="hidden" name="U" value="%userinfo0%"> 
+++
+++ <tr><th align=right><font color="red">%txt_scan_for_virus%:&nbsp;</font></th> 
+++ <td bgcolor="#CCCCCC" align=left> 
+++
+++ <select name="virus_status"> 
+++ <option value="1" %virus_checked_yes%>%txt_activated%</option> 
+++ <option value="0" %virus_checked_no%>%txt_inactived%</option> 
+++ </select>
+++&nbsp;&nbsp;
+++<font color="red"><b>(%txt_master_switch%)</b></font></td></tr> 
+++
+++
+++ <tr><th align=right>
+++<b><font color="blue">Massnahmen / Action:</font></b>
+++&nbsp;
+++</th>  <td bgcolor="#CCCCCC" align=left> 
+++&nbsp;
+++</td></tr> 
+++
+++
+++ <tr><th align=right>%txt_auto_delete_virus%:&nbsp;</th> 
+++ <td bgcolor="#DDDDDD" align=left> 
+++
+++ <select name="virus_delete"> 
+++ <option value="1" %virus_delete_checked_yes%>%txt_activated%</option> 
+++ <option value="0" %virus_delete_checked_no%>%txt_inactived%</option> 
+++ </select></td></tr> 
+++
+++
+++ <tr><th align=right>%txt_fwd_virus_to%:&nbsp;</th> 
+++ <td bgcolor="#CCCCCC" align=left> 
+++<input type="text" name="virus_from" value="%virus_target%" size="35">&nbsp;</td></tr> 
+++
+++        
+++
+++ <tr><th align=right>%txt_submit%&nbsp;</th> 
+++
+++ <td bgcolor="#DDDDDD" align=left> 
+++ <input type="hidden" name="A" value="parse"> 
+++       <input type="hidden" name="action" value="virus"> 
+++ <input type="submit" value="%txt_submit%">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+++ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+++ <input type="reset" value="%txt_cancel%" onClick="return gO(this,true,true)">&nbsp;</td></tr> 
+++               
+++ </table> 
+++ </form> 
+++
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 07a5521..3038e16 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -5503,6 +5503,8 @@ in
+ 
+   ocaml-top = callPackage ../development/tools/ocaml/ocaml-top { };
+ 
++  omail-admin = callPackage ../applications/misc/omail-admin { };
++
+   opa = callPackage ../development/compilers/opa {
+     nodejs = nodejs-4_x;
+   };
