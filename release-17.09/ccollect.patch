@@ -1,4 +1,4 @@
-ccollect-0.8: (pseudo) incremental backup with different exclude lists using hardlinks and rsync
+ccollect: (pseudo) incremental backup with different exclude lists using hardlinks and rsync
 
 diff --git a/pkgs/tools/backup/ccollect/default.nix b/pkgs/tools/backup/ccollect/default.nix
 new file mode 100644
@@ -15,7 +15,7 @@ index 0000000..946581a
 +
 +  pkg = "ccollect";
 +  ver = "2.2";
-+  web = http://www.nico.schottelius.org/software/ccollect;
++  web = https://nico.schottelius.org/software/ccollect;
 +
 +in stdenv.mkDerivation rec {
 +  name = "${pkg}-${ver}";
