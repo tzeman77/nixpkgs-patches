@@ -13,7 +13,7 @@ index 0000000..beaf261
 +let
 +  pkg = "ucspi-ssl";
 +  ver = "0.99d";
-+  web = "http://www.fehcom.de/ipnet/ucspi-ssl";
++  web = "https://www.fehcom.de/ipnet/ucspi-ssl";
 +in stdenv.mkDerivation rec {
 +  name = "${pkg}-${ver}";
 +
