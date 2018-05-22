@@ -1,0 +1,159 @@
+From: Tomas Zeman <tzeman@volny.cz>
+Subject: [PATCH] tg/bincimap
+
+bincimap-1.2.13
+
+---
+ .../mail/bincimap/bincimap-1.2.13-gcc43.patch      | 64 ++++++++++++++++++++++
+ pkgs/servers/mail/bincimap/const-char-fix.patch    | 15 +++++
+ pkgs/servers/mail/bincimap/default.nix             | 35 ++++++++++++
+ pkgs/top-level/all-packages.nix                    |  2 +
+ 4 files changed, 116 insertions(+)
+
+diff --git a/pkgs/servers/mail/bincimap/bincimap-1.2.13-gcc43.patch b/pkgs/servers/mail/bincimap/bincimap-1.2.13-gcc43.patch
+new file mode 100644
+index 0000000..76cb3a9
+--- /dev/null
++++ b/pkgs/servers/mail/bincimap/bincimap-1.2.13-gcc43.patch
+@@ -0,0 +1,64 @@
++diff -NrU5 bincimap-1.2.13final.orig/src/convert.cc bincimap-1.2.13final/src/convert.cc
++--- bincimap-1.2.13final.orig/src/convert.cc	2005-01-08 11:20:48.000000000 +0100
+++++ bincimap-1.2.13final/src/convert.cc	2008-05-07 12:32:33.000000000 +0200
++@@ -37,10 +37,12 @@
++ 
++ #include "convert.h"
++ #include "io.h"
++ #include <string>
++ 
+++#include <cstring>
+++
++ using namespace ::std;
++ using namespace Binc;
++ 
++ //------------------------------------------------------------------------
++ BincStream::BincStream(void)
++diff -NrU5 bincimap-1.2.13final.orig/src/convert.h bincimap-1.2.13final/src/convert.h
++--- bincimap-1.2.13final.orig/src/convert.h	2005-02-08 21:30:22.000000000 +0100
+++++ bincimap-1.2.13final/src/convert.h	2008-05-07 12:32:33.000000000 +0200
++@@ -35,10 +35,11 @@
++ #include <config.h>
++ #endif
++ 
++ #ifndef convert_h_included
++ #define convert_h_included
+++#include <cstdlib>
++ #include <string>
++ #include <vector>
++ #include <iomanip>
++ #include <iostream>
++ 
++@@ -46,10 +47,12 @@
++ #include <sys/stat.h>
++ 
++ #include "address.h"
++ #include "depot.h"
++ 
+++#include <cstring>
+++
++ namespace Binc {
++ 
++   //----------------------------------------------------------------------
++   inline std::string toString(int i_in)
++   {
++diff -NrU5 bincimap-1.2.13final.orig/src/tools.cc bincimap-1.2.13final/src/tools.cc
++--- bincimap-1.2.13final.orig/src/tools.cc	2005-01-08 11:20:48.000000000 +0100
+++++ bincimap-1.2.13final/src/tools.cc	2008-05-07 12:32:33.000000000 +0200
++@@ -33,13 +33,16 @@
++  */
++ #ifdef HAVE_CONFIG_H
++ #include <config.h>
++ #endif
++ #include <errno.h>
+++#include <cstdlib>
++ 
++ #include "tools.h"
++ 
+++#include <cstring>
+++
++ using namespace ::std;
++ using namespace Binc;
++ 
++ //------------------------------------------------------------------------
++ Tools::Tools(void)
+diff --git a/pkgs/servers/mail/bincimap/const-char-fix.patch b/pkgs/servers/mail/bincimap/const-char-fix.patch
+new file mode 100644
+index 0000000..8dba16f
+--- /dev/null
++++ b/pkgs/servers/mail/bincimap/const-char-fix.patch
+@@ -0,0 +1,15 @@
++--- bincimap-1.2.13final.orig/src/convert.h	2013-09-10 20:29:33.285535139 +0000
+++++ bincimap-1.2.13final/src/convert.h		2013-09-10 20:35:13.772395995 +0000
++@@ -112,11 +112,11 @@
++ 	 i != s.end() && i + 1 != s.end(); i += 2) {
++       int n;
++       unsigned char c = *i;
++       unsigned char d = *(i + 1);
++       
++-      char *t;
+++      const char *t;
++       if ((t = strchr(hexchars, c)) == 0)
++ 	return "out of range";
++       n = (t - hexchars) << 4;
++       
++       
+diff --git a/pkgs/servers/mail/bincimap/default.nix b/pkgs/servers/mail/bincimap/default.nix
+new file mode 100644
+index 0000000..867c845
+--- /dev/null
++++ b/pkgs/servers/mail/bincimap/default.nix
+@@ -0,0 +1,35 @@
++{ stdenv, fetchurl, openssl }:
++
++let
++  pkg = "bincimap";
++  ver = "1.2.13";
++  homepage = http://www.bincimap.org;
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  src = fetchurl {
++    url = "ftp://ftp.linux.org.tr/gentoo/distfiles/bincimap-1.2.13final.tar.bz2";
++    sha256 = "0a25ms7nj0ns18danrpp1jxvicaddkrpz8mq0qh1lljacyhnh8qm";
++  };
++
++  buildInputs = [openssl];
++
++  patches = [ 
++    ./bincimap-1.2.13-gcc43.patch
++    ./const-char-fix.patch
++  ];
++
++  configureFlags = "--with-ssl";
++
++  meta = {
++    description = "A well designed, modular IMAP server for Maildir";
++    homepage = homepage;
++    license = stdenv.lib.licenses.gpl2;
++    platforms = stdenv.lib.platforms.all;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++
++}
++
++# vim: et ts=2 sw=2 
++
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index cc942c3..fc4763d 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -5955,6 +5955,8 @@ let
+ 
+   sabnzbd = callPackage ../servers/sabnzbd { };
+ 
++  bincimap = callPackage ../servers/mail/bincimap { };
++
+   bind = callPackage ../servers/dns/bind { };
+ 
+   couchdb = callPackage ../servers/http/couchdb {
+-- 
+tg: (28739e5..) tg/bincimap (depends on: tg/maintainer-tzeman)

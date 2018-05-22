@@ -1,0 +1,12 @@
+diff --git a/nixos/doc/manual/default.nix b/nixos/doc/manual/default.nix
+index e144e729e79..ef4fc3bec09 100644
+--- a/nixos/doc/manual/default.nix
++++ b/nixos/doc/manual/default.nix
+@@ -318,6 +318,7 @@ in rec {
+       # Generate manpages.
+       mkdir -p $out/share/man
+       xsltproc --nonet \
++        --maxdepth 6000 \
+         --param man.output.in.separate.dir 1 \
+         --param man.output.base.dir "'$out/share/man/'" \
+         --param man.endnotes.are.numbered 0 \

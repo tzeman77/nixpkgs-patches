@@ -1,0 +1,49 @@
+php-apc package (php 5.3)
+
+diff --git a/pkgs/development/libraries/php-apc/default.nix b/pkgs/development/libraries/php-apc/default.nix
+new file mode 100644
+index 00000000000..1fd5bbef3da
+--- /dev/null
++++ b/pkgs/development/libraries/php-apc/default.nix
+@@ -0,0 +1,26 @@
++{stdenv, fetchurl, php, autoconf, automake, libtool, pcre }:
++
++stdenv.mkDerivation rec {
++  name = "php-apc-3.1.13";
++  
++  src = fetchurl {
++    url = http://pecl.php.net/get/APC-3.1.13.tgz;
++    sha256 = "1gcsh9iar5qa1yzpjki9bb5rivcb6yjp45lmjmp98wlyf83vmy2y";
++  };
++
++  preConfigure = ''
++    phpize
++
++    sed -i 's,^EXTENSION_DIR.*,'EXTENSION_DIR=$out/lib/php/extensions, configure
++  '';
++
++  configureFlags = [ "--enable-apc" "--enable-apc-mmap" ];
++
++  buildInputs = [ php autoconf automake libtool pcre ];
++
++  meta = {
++    description = "Alternative PHP Cache";
++    homepage = "http://pecl.php.net/package/APC";
++    license = "PHP+";
++  };
++}
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 9a76440b46d..128ed34ef3c 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -7132,6 +7132,10 @@ with pkgs;
+     };
+   };
+ 
++  php_fpm53_apc = callPackage ../development/libraries/php-apc {
++    php = php_fpm53;
++  };
++
+   inherit (callPackages ../development/interpreters/php { })
+     php56
+     php70
