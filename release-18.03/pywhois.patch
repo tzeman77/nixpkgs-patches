@@ -1,2 +1,43 @@
 pywhois: Python whois library
 
+diff --git a/pkgs/development/python-modules/pywhois/default.nix b/pkgs/development/python-modules/pywhois/default.nix
+new file mode 100644
+index 00000000000..a4bdefb02e1
+--- /dev/null
++++ b/pkgs/development/python-modules/pywhois/default.nix
+@@ -0,0 +1,22 @@
++{ stdenv, fetchurl, buildPythonPackage, future }:
++
++buildPythonPackage rec {
++  pname = "pywhois"; # -${version}";
++  version = "2018-06-15";
++
++  doCheck = false; # fails to pass because it tries to run in home directory
++
++  src = fetchurl {
++    url = "https://bitbucket.org/richardpenman/pywhois/get/ee41ee047aba.zip";
++    sha256 = "13c9vzh7dhl5bmp4xbhai4rc86jcrzns44x8a6ygil4jq3v1rasx";
++  };
++
++  propagatedBuildInputs = [ future ];
++
++  meta = with stdenv.lib; {
++    description = "Python WHOIS library";
++    homepage = https://bitbucket.org/richardpenman/pywhois;
++  };
++}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/top-level/python-packages.nix b/pkgs/top-level/python-packages.nix
+index 271fe6d63c5..572c8d7a1d3 100644
+--- a/pkgs/top-level/python-packages.nix
++++ b/pkgs/top-level/python-packages.nix
+@@ -20474,6 +20474,8 @@ EOF
+   simpy = callPackage ../development/python-modules/simpy { };
+ 
+   rfc7464 = callPackage ../development/python-modules/rfc7464 { };
++
++  pywhois = callPackage ../development/python-modules/pywhois { };
+ });
+ 
+ in fix' (extends overrides packages)
