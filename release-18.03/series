@@ -40,3 +40,4 @@ mailfront-auth-to-env.patch
 zabbix-scripts.patch
 manual-xslt-recursion-fix.patch
 stunnel-5.46.patch
+pywhois.patch
