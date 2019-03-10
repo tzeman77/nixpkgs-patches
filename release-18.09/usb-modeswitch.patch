@@ -1,0 +1,76 @@
+usb-modeswitch-2.2.0
+
+diff --git a/pkgs/development/tools/misc/usb-modeswitch/2.2.nix b/pkgs/development/tools/misc/usb-modeswitch/2.2.nix
+new file mode 100644
+index 0000000..2a696ba
+--- /dev/null
++++ b/pkgs/development/tools/misc/usb-modeswitch/2.2.nix
+@@ -0,0 +1,55 @@
++{ stdenv, fetchurl, libusb1, pkgconfig }:
++
++let
++  pkg = "usb-modeswitch";
++  ver = "2.2.0";
++  data_ver = "20140529";
++  web = http://www.draisberghof.de/usb_modeswitch;
++in stdenv.mkDerivation {
++  name = "${pkg}-${ver}";
++
++  # http://www.draisberghof.de/usb_modeswitch/usb-modeswitch-2.2.0.tar.bz2
++  # http://www.draisberghof.de/usb_modeswitch/usb-modeswitch-data-20140529.tar.bz2
++
++  srcs = [
++    (fetchurl {
++      url = "${web}/${pkg}-${ver}.tar.bz2";
++      sha256 = "0flaj3mq0xhzk72kkpclwglf77kcw5rkwvkaimn5zvbiw4yi0li7";
++    })
++    (fetchurl {
++      url = "${web}/${pkg}-data-${data_ver}.tar.bz2";
++      sha256 = "0dp5hyjsjyj1r1pgr0qcki7z9wwlxjcc15z8mx6y02bijdbr322k";
++    })
++  ];
++
++  sourceRoot = "${pkg}-${ver}";
++
++  # make clean: we always build from source. It should be necessary on x86_64 only
++  preConfigure = ''
++    find -type f | xargs sed 's@/bin/rm@rm@g' -i
++    make clean
++    mkdir -p $out/{etc,lib/udev,share/man/man1}
++    makeFlags="DESTDIR=$out PREFIX=$out"
++  '';
++
++  postInstall = ''
++    cd $NIX_BUILD_TOP/${pkg}-data-*
++    sed -i -e "s|RUN+=\"usb_modeswitch|RUN+=\"$out/lib/udev/usb_modeswitch|" 40-usb_modeswitch.rules
++    sed -i -e "s|PROGRAM=\"usb_modeswitch|PROGRAM=\"$out/lib/udev/usb_modeswitch|" 40-usb_modeswitch.rules
++    make install DESTDIR=$out
++  '';
++
++  buildInputs = [ libusb1 pkgconfig ];
++  buildFlags = "static";
++  installTargets = "install-static";
++
++  meta = {
++    description = "Mode switching tool for controlling 'multi-mode' USB devices";
++    homepage = http://www.draisberghof.de/usb_modeswitch;
++    license = "GPLv2";
++    maintainers = [ stdenv.lib.maintainers.marcweber ];
++    platforms = stdenv.lib.platforms.linux;
++  };
++}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index f062b81..9353d9a 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -762,6 +762,8 @@ let
+ 
+   usb_modeswitch = callPackage ../development/tools/misc/usb-modeswitch { };
+ 
++  usb_modeswitch22 = callPackage ../development/tools/misc/usb-modeswitch/2.2.nix { };
++
+   biosdevname = callPackage ../tools/networking/biosdevname { };
+ 
+   clamav = callPackage ../tools/security/clamav { };

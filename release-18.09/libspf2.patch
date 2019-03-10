@@ -1,0 +1,130 @@
+libspf2: Sender Policy Framework record checking library
+
+diff --git a/pkgs/development/libraries/libspf2/compile.patch b/pkgs/development/libraries/libspf2/compile.patch
+new file mode 100644
+index 00000000000..8ddf8bfc4a0
+--- /dev/null
++++ b/pkgs/development/libraries/libspf2/compile.patch
+@@ -0,0 +1,48 @@
++diff -ru libspf2-1.2.10.orig/src/spf_example/Makefile.in libspf2-1.2.10/src/spf_example/Makefile.in
++--- libspf2-1.2.10.orig/src/spf_example/Makefile.in	2018-04-10 12:39:12.663955618 +0200
+++++ libspf2-1.2.10/src/spf_example/Makefile.in	2018-04-10 12:52:43.214355582 +0200
++@@ -36,7 +36,7 @@
++ POST_UNINSTALL = :
++ build_triplet = @build@
++ host_triplet = @host@
++-bin_PROGRAMS = spf_example$(EXEEXT) spf_example_static$(EXEEXT)
+++bin_PROGRAMS = spf_example$(EXEEXT)
++ subdir = src/spf_example
++ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
++ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
++diff -ru libspf2-1.2.10.orig/src/spfd/Makefile.in libspf2-1.2.10/src/spfd/Makefile.in
++--- libspf2-1.2.10.orig/src/spfd/Makefile.in	2018-04-10 12:39:12.658955591 +0200
+++++ libspf2-1.2.10/src/spfd/Makefile.in	2018-04-10 12:50:35.874651993 +0200
++@@ -36,7 +36,7 @@
++ POST_UNINSTALL = :
++ build_triplet = @build@
++ host_triplet = @host@
++-bin_PROGRAMS = spfd$(EXEEXT) spfd_static$(EXEEXT)
+++bin_PROGRAMS = spfd$(EXEEXT)
++ subdir = src/spfd
++ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
++ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
++diff -ru libspf2-1.2.10.orig/src/spfquery/Makefile.in libspf2-1.2.10/src/spfquery/Makefile.in
++--- libspf2-1.2.10.orig/src/spfquery/Makefile.in	2018-04-10 12:39:12.661955607 +0200
+++++ libspf2-1.2.10/src/spfquery/Makefile.in	2018-04-10 12:40:53.799503682 +0200
++@@ -36,7 +36,7 @@
++ POST_UNINSTALL = :
++ build_triplet = @build@
++ host_triplet = @host@
++-bin_PROGRAMS = spfquery$(EXEEXT) spfquery_static$(EXEEXT)
+++bin_PROGRAMS = spfquery$(EXEEXT)
++ subdir = src/spfquery
++ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
++ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
++diff -ru libspf2-1.2.10.orig/src/spftest/Makefile.in libspf2-1.2.10/src/spftest/Makefile.in
++--- libspf2-1.2.10.orig/src/spftest/Makefile.in	2018-04-10 12:39:12.659955596 +0200
+++++ libspf2-1.2.10/src/spftest/Makefile.in	2018-04-10 12:48:48.850073645 +0200
++@@ -36,7 +36,7 @@
++ POST_UNINSTALL = :
++ build_triplet = @build@
++ host_triplet = @host@
++-bin_PROGRAMS = spftest$(EXEEXT) spftest_static$(EXEEXT)
+++bin_PROGRAMS = spftest$(EXEEXT)
++ subdir = src/spftest
++ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
++ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
+diff --git a/pkgs/development/libraries/libspf2/default.nix b/pkgs/development/libraries/libspf2/default.nix
+new file mode 100644
+index 00000000000..e9fccd1169c
+--- /dev/null
++++ b/pkgs/development/libraries/libspf2/default.nix
+@@ -0,0 +1,20 @@
++{ stdenv, fetchurl }:
++
++stdenv.mkDerivation rec {
++  name = "libspf2-${version}";
++  version = "1.2.10";
++
++  src = fetchurl {
++    url = "https://www.libspf2.org/spf/${name}.tar.gz";
++    sha256 = "1j91p0qiipzf89qxq4m1wqhdf01hpn1h5xj4djbs51z23bl3s7nr";
++  };
++
++  patches = [ ./fix-variadic-macros.patch ./compile.patch ];
++
++  meta = with stdenv.lib; {
++    description = "Sender Policy Framework record checking library";
++    homepage = http://www.libspf2.org/;
++    license = licenses.bsd2;
++    platforms = platforms.unix;
++  };
++}
+diff --git a/pkgs/development/libraries/libspf2/fix-variadic-macros.patch b/pkgs/development/libraries/libspf2/fix-variadic-macros.patch
+new file mode 100644
+index 00000000000..02308562fb3
+--- /dev/null
++++ b/pkgs/development/libraries/libspf2/fix-variadic-macros.patch
+@@ -0,0 +1,29 @@
++From 5852828582f556e73751076ad092f72acf7fc8b6 Mon Sep 17 00:00:00 2001
++From: Shevek <shevek@anarres.org>
++Date: Tue, 23 Sep 2014 01:03:00 -0700
++Subject: [PATCH] Fix #4: Use gcc trick for variadic macros. Does this break
++ anyone else?
++
++---
++ src/include/spf_log.h | 8 ++++----
++ 1 file changed, 4 insertions(+), 4 deletions(-)
++
++diff --git a/src/include/spf_log.h b/src/include/spf_log.h
++index 0d2adeb..9b09714 100644
++--- a/src/include/spf_log.h
+++++ b/src/include/spf_log.h
++@@ -60,10 +60,10 @@ void SPF_debugv( const char *file, int line, const char *format, va_list ap ) __
++ 
++ #if defined( __STDC_VERSION__ ) && __STDC_VERSION__ >= 199901L
++ 
++-#define SPF_errorf(format, ... ) SPF_errorx( __FILE__, __LINE__, format, __VA_ARGS__ )
++-#define SPF_warningf(format, ... ) SPF_warningx( __FILE__, __LINE__, format, __VA_ARGS__ )
++-#define SPF_infof(format, ... ) SPF_infox( __FILE__, __LINE__, format, __VA_ARGS__ )
++-#define SPF_debugf(format, ... ) SPF_debugx( __FILE__, __LINE__, format, __VA_ARGS__ )
+++#define SPF_errorf(format, ... ) SPF_errorx( __FILE__, __LINE__, format, ##__VA_ARGS__ )
+++#define SPF_warningf(format, ... ) SPF_warningx( __FILE__, __LINE__, format, ##__VA_ARGS__ )
+++#define SPF_infof(format, ... ) SPF_infox( __FILE__, __LINE__, format, ##__VA_ARGS__ )
+++#define SPF_debugf(format, ... ) SPF_debugx( __FILE__, __LINE__, format, ##__VA_ARGS__ )
++ 
++ #elif defined( __GNUC__ )
++ 
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 2cd0f2d24de..db2425e9446 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -9544,6 +9544,8 @@ with pkgs;
+ 
+   libspiro = callPackage ../development/libraries/libspiro {};
+ 
++  libspf2 = callPackage ../development/libraries/libspf2 {};
++
+   libssh = callPackage ../development/libraries/libssh { };
+ 
+   libssh2 = callPackage ../development/libraries/libssh2 { };

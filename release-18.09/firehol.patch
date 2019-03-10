@@ -1,0 +1,17 @@
+firehol-1.296: iptables stateful packet filtering firewall builder
+
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 44d8701..82d38db 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -2010,7 +2010,9 @@ with pkgs;
+ 
+   iprange = callPackage ../applications/networking/firehol/iprange.nix {};
+ 
+-  firehol = callPackage ../applications/networking/firehol {};
++  firehol = callPackage ../applications/networking/firehol {
++    onlyQOS = false;
++  };
+ 
+   fio = callPackage ../tools/system/fio { };
+ 
