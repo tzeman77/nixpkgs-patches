@@ -20,6 +20,7 @@ firehol.patch
 firehol-systemd.patch
 php53-restore.patch
 php53-apc.patch
+php56-restore.patch
 nginx-wrapper.patch
 qmail-autoresponder.patch
 zabbix20-mysql.patch
@@ -41,4 +42,3 @@ mailfront-auth-to-env.patch
 zabbix-scripts.patch
 manual-xslt-recursion-fix.patch
 pywhois.patch
-php56-restore.patch
