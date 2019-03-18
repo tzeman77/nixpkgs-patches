@@ -41,3 +41,4 @@ zabbix-scripts.patch
 manual-xslt-recursion-fix.patch
 stunnel-5.46.patch
 pywhois.patch
+php73.patch
