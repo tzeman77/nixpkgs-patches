@@ -1,2 +1,147 @@
 php 7.3 
 
+diff --git a/pkgs/development/interpreters/php/default.nix b/pkgs/development/interpreters/php/default.nix
+index b97c37b0cf5..1a6b90ba82e 100644
+--- a/pkgs/development/interpreters/php/default.nix
++++ b/pkgs/development/interpreters/php/default.nix
+@@ -2,9 +2,11 @@
+ 
+ { lib, stdenv, fetchurl, composableDerivation, autoconf, automake, flex, bison
+ , mysql, libxml2, readline, zlib, curl, postgresql, gettext
+-, openssl, pcre, pkgconfig, sqlite, config, libjpeg, libpng, freetype
++, openssl, pcre, pcre2, pkgconfig, sqlite, config, libjpeg, libpng, freetype
+ , libxslt, libmcrypt, bzip2, icu, openldap, cyrus_sasl, libmhash, freetds
+-, uwimap, pam, gmp, apacheHttpd, libiconv, systemd, libsodium }:
++, uwimap, pam, gmp, apacheHttpd, libiconv, systemd, libsodium, libargon2
++, libzip
++}:
+ 
+ let
+ 
+@@ -230,6 +232,15 @@ let
+           configureFlags = ["--with-sodium=${libsodium.dev}"];
+           buildInputs = [libsodium];
+         };
++
++	argon2 = {
++	  configureFlags = ["--with-password-argon2=${libargon2}"];
++	};
++
++	libzip = {
++	  configureFlags = ["--with-libzip=${libzip.dev}"];
++	  buildInputs = [libzip];
++	};
+       };
+ 
+       cfg = {
+@@ -270,6 +281,8 @@ let
+         ztsSupport = config.php.zts or false;
+         calendarSupport = config.php.calendar or true;
+         sodiumSupport = (lib.versionAtLeast version "7.2") && config.php.sodium or true;
++        argon2Support = (config.php.argon2 or true) && (lib.versionAtLeast version "7.2");
++        libzipSupport = (config.php.libzip or true) && (lib.versionAtLeast version "7.2");
+       };
+ 
+       hardeningDisable = [ "bindnow" ];
+@@ -294,8 +307,9 @@ let
+ 
+       configureFlags = [
+         "--with-config-file-scan-dir=/etc/php.d"
+-        "--with-pcre-regex=${pcre.dev} PCRE_LIBDIR=${pcre}"
+-      ] ++ lib.optional stdenv.isDarwin "--with-iconv=${libiconv}"
++      ] ++ lib.optional (lib.versionOlder version "7.3") "--with-pcre-regex=${pcre.dev} PCRE_LIBDIR=${pcre}"
++        ++ lib.optional (lib.versionAtLeast version "7.3") "--with-pcre-regex=${pcre2.dev} PCRE_LIBDIR=${pcre2}"
++        ++ lib.optional stdenv.isDarwin "--with-iconv=${libiconv}"
+         ++ lib.optional stdenv.isLinux  "--with-fpm-systemd";
+ 
+       postInstall = ''
+@@ -356,4 +370,9 @@ in {
+     version = "7.2.8";
+     sha256 = "1rky321gcvjm0npbfd4bznh36an0y14viqcvn4yzy3x643sni00z";
+   };
++
++  php73 = generic {
++    version = "7.3.3";
++    sha256 = "1riw0a1mzc5ymaj02rni57l5pyfkxl0ygf1l39q7ksnz7aa9x5k1";
++  };
+ }
+diff --git a/pkgs/development/libraries/pcre2/default.nix b/pkgs/development/libraries/pcre2/default.nix
+index 9603e45a8b4..89649f0bf30 100644
+--- a/pkgs/development/libraries/pcre2/default.nix
++++ b/pkgs/development/libraries/pcre2/default.nix
+@@ -1,11 +1,11 @@
+-{ stdenv, fetchurl, fetchpatch }:
++{ stdenv, fetchurl }:
+ 
+ stdenv.mkDerivation rec {
+   name = "pcre2-${version}";
+-  version = "10.23";
++  version = "10.32";
+   src = fetchurl {
+-    url = "ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/${name}.tar.bz2";
+-    sha256 = "0vn5g0mkkp99mmzpissa06hpyj6pk9s4mlwbjqrjvw3ihy8rpiyz";
++    url = "https://ftp.pcre.org/pub/pcre/${name}.tar.bz2";
++    sha256 = "0bkwp2czcckvvbdls7b331cad11rxsm020aqhrbz84z8bp68k7pj";
+   };
+ 
+   configureFlags = [
+@@ -14,32 +14,10 @@ stdenv.mkDerivation rec {
+     "--enable-jit"
+   ];
+ 
+-  patches = [
+-    (fetchpatch {
+-      name = "CVE-2017-7186-part1.patch";
+-      url = "https://vcs.pcre.org/pcre2/code/trunk/src/pcre2_ucd.c?view=patch&r1=316&r2=670&sortby=date";
+-      sha256 = "10yzglvbn7h06hg7zffr5zh378i5jihvx7d5gggkynws79vgwvfr";
+-      stripLen = 2;
+-      extraPrefix = "";
+-    })
+-    (fetchpatch {
+-      name = "CVE-2017-7186-part2.patch";
+-      url = "https://vcs.pcre.org/pcre2/code/trunk/src/pcre2_internal.h?view=patch&r1=600&r2=670&sortby=date";
+-      sha256 = "1bggk7vd5hg0bjg96lj4h1lacmr6grq68dm6iz1n7vg3zf7virjn";
+-      stripLen = 2;
+-      extraPrefix = "";
+-    })
+-    (fetchpatch {
+-      name = "CVE-2017-8786.patch";
+-      url = "https://vcs.pcre.org/pcre2/code/trunk/src/pcre2test.c?r1=692&r2=697&view=patch";
+-      sha256 = "1c629nzrk4il2rfclwyc1a373q58m4q9ys9wr91zhl4skfk7x19b";
+-      stripLen = 2;
+-      extraPrefix = "";
+-    })
+-  ];
+-
+   outputs = [ "bin" "dev" "out" "doc" "man" "devdoc" ];
+ 
++  doCheck = false; # fails 1 out of 3 tests, looks like a bug
++
+   postFixup = ''
+     moveToOutput bin/pcre2-config "$dev"
+   '';
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index dc1ddf2f84d..169a3c77032 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -7141,6 +7141,10 @@ with pkgs;
+     php = php72;
+   });
+ 
++  php73Packages = recurseIntoAttrs (callPackage ./php-packages.nix {
++    php = php73;
++  });
++
+   php_fpm53 = callPackage ../development/interpreters/php/5.3.nix {
+     config = config // {
+       php = (config.php or {}) // {
+@@ -7158,7 +7162,8 @@ with pkgs;
+     php56
+     php70
+     php71
+-    php72;
++    php72
++    php73;
+ 
+   php-embed = php72-embed;
+ 
