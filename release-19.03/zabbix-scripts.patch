@@ -1,0 +1,53 @@
+Zabbix scripts
+
+diff --git a/pkgs/servers/monitoring/zabbix/scripts.nix b/pkgs/servers/monitoring/zabbix/scripts.nix
+new file mode 100644
+index 00000000000..f842737bd81
+--- /dev/null
++++ b/pkgs/servers/monitoring/zabbix/scripts.nix
+@@ -0,0 +1,33 @@
++{ stdenv, fetchurl, unzip }:
++
++let
++
++  version = "2018-08-16";
++
++
++in stdenv.mkDerivation {
++
++  name = "zabbix-scripts-${version}";
++
++# src = fetchhg {
++#   url = "https://bitbucket.org/tzeman/zabbix-scripts";
++#   rev = "338ee0353bf1";
++#   sha256 = "0423nscm868i6jz2hk0xf7hkfv3x14prmr8f7icp6yx86fp6g1qv";
++# };
++
++  src = fetchurl {
++    url = "https://bitbucket.org/tzeman/zabbix-scripts/get/b685225d4966.zip";
++    sha256 = "0579x1m7bmbbyq0yj58yfpm6zzmxbp6xfshhg09d54mhccl1508v";
++  };
++
++  buildInputs = [ unzip ];
++
++  phases = "unpackPhase installPhase";
++
++  installPhase = ''
++    mkdir -p $out
++    cp -prvd . $out
++    patchShebangs $out
++  '';
++}
++
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 32c6f22d2c4..60c7c2a3e9d 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -12958,6 +12958,7 @@ with pkgs;
+     mysqlPackage = mysql57.client;
+   });
+ 
++  zabbix-scripts = callPackage ../servers/monitoring/zabbix/scripts.nix { };
+ 
+   ### OS-SPECIFIC
+ 

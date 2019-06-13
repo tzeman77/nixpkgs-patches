@@ -1,0 +1,173 @@
+bglibs: One stop library package
+
+diff --git a/pkgs/development/libraries/bglibs/bglibs2.patch b/pkgs/development/libraries/bglibs/bglibs2.patch
+new file mode 100644
+index 0000000..b0694f3
+--- /dev/null
++++ b/pkgs/development/libraries/bglibs/bglibs2.patch
+@@ -0,0 +1,108 @@
++diff -ru bglibs-2.03.orig/INSTHIER bglibs-2.03/INSTHIER
++--- bglibs-2.03.orig/INSTHIER	2015-02-07 00:57:34.000000000 +0100
+++++ bglibs-2.03/INSTHIER	2016-07-25 20:09:00.379849512 +0200
++@@ -24,11 +24,10 @@
++ 
++ >lib
++ l:::755::libbg.la
++-c:::644::libbg-cli.a:.libs/libbg-cli.a
++-
++-c:::644::libpwcmp.a:.libs/libpwcmp.a
++-c:::644::libpwcmp-module.a:.libs/libpwcmp-module.a
++-c:::644::libvmailmgr.a:.libs/libvmailmgr.a
+++l:::755::libvmailmgr.la
+++l:::755::libbg-cli.la
+++l:::755::libpwcmp.la
+++l:::755::libpwcmp-module.la
++ 
++ >man
++ d:::755:man1
++diff -ru bglibs-2.03.orig/Makefile bglibs-2.03/Makefile
++--- bglibs-2.03.orig/Makefile	2015-02-06 23:57:34.000000000 +0000
+++++ bglibs-2.03/Makefile	2016-07-25 17:57:19.606584705 +0000
++@@ -69,7 +69,7 @@
++ adt/hashs.lo adt/hashs.o: ltcompile adt/hashs.c include/bglibs/adt_common.h
++ 	./ltcompile adt/hashs.c
++ 
++-all: sysdeps.h libraries programs man selftests
+++all: sysdeps.h libraries programs man
++ 
++ base64/asc2bin.lo base64/asc2bin.o: ltcompile base64/asc2bin.c include/bglibs/base64.h include/bglibs/str.h sysdeps.h
++ 	./ltcompile base64/asc2bin.c
++@@ -90,10 +90,12 @@
++ 	./ltcompile base64/encode_part.c
++ 
++ bg-installer: bg-installer.o ltload libbg-cli.la libbg.la bg-installer-cli.o
++-	./ltload bg-installer libbg-cli.la libbg.la bg-installer-cli.o -lbg-cli -static 
+++	./ltload bg-installer bg-installer-cli.o fmt/.libs/*.o str/.libs/*.o iobuf/.libs/*.o path/.libs/*.o msg/.libs/w*.o msg/.libs/die*.o msg/.libs/common*.o msg/.libs/error*.o msg/.libs/oom.o sys/.libs/iopoll.o cli/.libs/main.o -s -static
++ 
++ bg-installer-cli.c: bg-installer.cli cli-generate sysdeps.h
++ 	./cli-generate -c $< >$@
+++	echo 'const char cli_help_prefix[] = "";' >> $@
+++	echo 'const char cli_help_suffix[] = "";' >> $@
++ 
++ bg-installer-cli.h: bg-installer.cli cli-generate
++ 	./cli-generate -h $< >$@
++@@ -157,7 +159,7 @@
++ 	chmod 755 compile
++ 
++ crc-gentab: crc-gentab.o load fmt/lcase.o fmt/ucase.o fmt/unum.o iobuf/iobuf_timeout.o iobuf/obuf_flush.o iobuf/obuf_pad.o iobuf/obuf_put3s.o iobuf/obuf_put5s.o iobuf/obuf_putc.o iobuf/obuf_putunumw.o iobuf/obuf_stderr.o iobuf/obuf_stdout.o iobuf/obuf_write.o msg/common.o msg/die.o sys/iopoll.o
++-	./load crc-gentab fmt/lcase.o fmt/ucase.o fmt/unum.o iobuf/iobuf_timeout.o iobuf/obuf_flush.o iobuf/obuf_pad.o iobuf/obuf_put3s.o iobuf/obuf_put5s.o iobuf/obuf_putc.o iobuf/obuf_putunumw.o iobuf/obuf_stderr.o iobuf/obuf_stdout.o iobuf/obuf_write.o msg/common.o msg/die.o sys/iopoll.o -static 
+++	./load crc-gentab fmt/lcase.o fmt/ucase.o fmt/unum.o iobuf/iobuf_timeout.o iobuf/obuf_flush.o iobuf/obuf_pad.o iobuf/obuf_put3s.o iobuf/obuf_put5s.o iobuf/obuf_putc.o iobuf/obuf_putunumw.o iobuf/obuf_stderr.o iobuf/obuf_stdout.o iobuf/obuf_write.o msg/common.o msg/die.o sys/iopoll.o
++ 
++ crc-gentab.o: compile crc-gentab.c sysdeps.h include/bglibs/iobuf.h include/bglibs/iobuf_common.h include/bglibs/ibuf.h include/iobuf_common.h include/bglibs/obuf.h sysdeps.h include/bglibs/msg.h sysdeps.h include/bglibs/debug.h
++ 	./compile crc-gentab.c
++@@ -530,7 +532,8 @@
++ load: conf-ld
++ 	( echo '#!/bin/sh';\
++ 	  echo 'main="$$1"; shift';\
++-	  echo exec `head -n 1 conf-ld` -L. '-o "$$main" "$$main.o" $${1+"$$@"}'; \
+++	  echo 'args=`echo "$$@" | sed -e "s|\.libs||g" -e "s|/|/.libs/|g" -e "s|^/||"`';\
+++	  echo exec `head -n 1 conf-ld` -L. '-o "$$main" "$$main.o" $${1+$$args}'; \
++ 	) >load
++ 	chmod 755 load
++ 
++diff -ru bglibs-2.03.orig/net/dns_ip6.c bglibs-2.03/net/dns_ip6.c
++--- bglibs-2.03.orig/net/dns_ip6.c	2015-02-07 00:57:35.000000000 +0100
+++++ bglibs-2.03/net/dns_ip6.c	2016-07-21 19:43:20.297968858 +0200
++@@ -82,5 +82,5 @@
++ result=0
++ 1.2.3.4 1: ::ffff:1.2.3.4
++ result=0
++-google.ca 1: 2607:f8b0:400a:*
+++google.ca 1: 2a00:1450:400d:*::2003
++ #endif
++diff -ru bglibs-2.03.orig/net/dns_mx.c bglibs-2.03/net/dns_mx.c
++--- bglibs-2.03.orig/net/dns_mx.c	2015-02-07 00:57:35.000000000 +0100
+++++ bglibs-2.03/net/dns_mx.c	2016-07-21 19:43:20.297968858 +0200
++@@ -76,7 +76,7 @@
++ #ifdef SELFTEST_EXP
++ result=0
++ untroubled.org => 1
++-0 12801: "mx.futurequest.net"
+++0 1: "mx.futurequest.net"
++ result=0
++ google.com => 5
++ 0 10: "aspmx.l.google.com"
++diff -ru bglibs-2.03.orig/net/dns_txt.c bglibs-2.03/net/dns_txt.c
++--- bglibs-2.03.orig/net/dns_txt.c	2015-02-07 00:57:35.000000000 +0100
+++++ bglibs-2.03/net/dns_txt.c	2016-07-21 19:43:20.297968858 +0200
++@@ -76,16 +76,9 @@
++ }
++ MAIN
++ {
++-  doit("gmail.com");
++-  doit("2.0.0.127.sbl-xbl.spamhaus.org");
+++//  doit("gmail.com");
+++//  doit("2.0.0.127.sbl-xbl.spamhaus.org");
++ }
++ #endif
++ #ifdef SELFTEST_EXP
++-result=0
++-1 record
++-v=spf1 redirect=_spf.google.com
++-result=0
++-2 record
++-http://www.spamhaus.org/sbl/query/SBL233
++-http://www.spamhaus.org/query/bl?ip=127.0.0.2
++ #endif
+diff --git a/pkgs/development/libraries/bglibs/default.nix b/pkgs/development/libraries/bglibs/default.nix
+new file mode 100644
+index 0000000..c97877b
+--- /dev/null
++++ b/pkgs/development/libraries/bglibs/default.nix
+@@ -0,0 +1,38 @@
++{ fetchurl, lib, libtool, perl, stdenv, which }:
++
++let
++  pkg = "bglibs";
++  homepage = http://untroubled.org/bglibs;
++  version = "2.03";
++
++in stdenv.mkDerivation rec {
++
++  name = "${pkg}-${version}";
++
++  src = fetchurl {
++    url = "${homepage}/archive/${name}.tar.gz";
++    sha256 = "0f97n7r1ac5yig3w2f8181rixiag7wwlyp0mkjy9m0gpxqnhpj7w";
++  };
++
++  buildInputs = [libtool which perl];
++
++  patches = [ ./bglibs2.patch ];
++
++  configurePhase = ''
++    echo $out/include > conf-include
++    echo $out/lib > conf-lib
++    echo $out/bin > conf-bin
++    echo $out/man > conf-man
++  '';
++
++  meta = {
++    description = "One stop library package";
++    homepage = homepage;
++    license = stdenv.lib.licenses.lgpl21Plus.fullName;
++    platforms = stdenv.lib.platforms.gnu;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++
++}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index e96cc46..a7cc88d 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -614,6 +614,8 @@ in
+ 
+   bluez-tools = callPackage ../tools/bluetooth/bluez-tools { };
+ 
++  bglibs = callPackage ../development/libraries/bglibs { };
++
+   bmon = callPackage ../tools/misc/bmon { };
+ 
+   bochs = callPackage ../applications/virtualization/bochs { };

@@ -1,0 +1,86 @@
+qmail-autoresponder-0.97: simple program to automatically respond to emails
+
+diff --git a/pkgs/servers/mail/qmail-autoresponder/default.nix b/pkgs/servers/mail/qmail-autoresponder/default.nix
+new file mode 100644
+index 0000000..7441c7c
+--- /dev/null
++++ b/pkgs/servers/mail/qmail-autoresponder/default.nix
+@@ -0,0 +1,51 @@
++{ stdenv, fetchurl, bglibs }:
++
++let
++  pkg = "qmail-autoresponder";
++  ver = "0.98";
++  web = http://untroubled.org/qmail-autoresponder;
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  src = fetchurl {
++    url = "${web}/archive/${pkg}-${ver}.tar.gz";
++    sha256 = "1ckwanysk8dvh3zh9kni9dbss0zjzrfnhvs3lz1sxzglkkck2ha0";
++  };
++
++  buildFlags = "qmail-autoresponder";
++
++  buildInputs = [bglibs];
++
++  inherit bglibs;
++
++  patches = [
++    # don't use mysql.h
++    ./options.patch
++  ];
++
++  configurePhase = ''
++    echo $out/lib > conf-lib
++    echo "gcc -g -L$bglibs/lib" > conf-ld
++    echo $out/bin > conf-bin
++    echo $out/man > conf-man
++  '';
++
++  installPhase = ''
++    mkdir -p $out/bin
++    install -m755 qmail-autoresponder $out/bin
++
++    mkdir -p $out/man/man1
++    install -m644 qmail-autoresponder.1 $out/man/man1
++  '';
++
++  meta = {
++    description = "A secure, reliable, efficient, SMTP/POP3 server.";
++    homepage = "${web}/${pkg}.html";
++    license = stdenv.lib.licenses.publicDomain.shortName;
++    platforms = stdenv.lib.platforms.gnu;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++}
++
++# vim: et ts=2 sw=2 
++
+diff --git a/pkgs/servers/mail/qmail-autoresponder/options.patch b/pkgs/servers/mail/qmail-autoresponder/options.patch
+new file mode 100644
+index 0000000..5739458
+--- /dev/null
++++ b/pkgs/servers/mail/qmail-autoresponder/options.patch
+@@ -0,0 +1,8 @@
++diff -ru qmail-autoresponder-0.98.orig/options.c qmail-autoresponder-0.98/options.c
++--- qmail-autoresponder-0.98.orig/options.c	2008-04-29 00:34:57.000000000 +0200
+++++ qmail-autoresponder-0.98/options.c	2014-04-24 13:59:09.836871285 +0200
++@@ -1,4 +1,3 @@
++-#include <mysql/mysql.h>
++ #include <stdlib.h>
++ #include <string.h>
++ #include <bglibs/str.h>
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index ae15951..9565232 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -11780,6 +11780,8 @@ with pkgs;
+ 
+   qmail = callPackage ../servers/mail/qmail { };
+ 
++  qmail-autoresponder = callPackage ../servers/mail/qmail-autoresponder { };
++
+   qpid-cpp = callPackage ../servers/amqp/qpid-cpp {
+     boost = boost155;
+   };

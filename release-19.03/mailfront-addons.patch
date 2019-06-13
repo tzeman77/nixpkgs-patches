@@ -1,0 +1,368 @@
+mailfront-addons: Plugins for mailfront SMTP daemon
+
+diff --git a/pkgs/tools/networking/mailfront/addons.nix b/pkgs/tools/networking/mailfront/addons.nix
+new file mode 100644
+index 00000000000..833dd7437a7
+--- /dev/null
++++ b/pkgs/tools/networking/mailfront/addons.nix
+@@ -0,0 +1,47 @@
++{ stdenv, fetchFromGitHub, bglibs, mailfront, openssl, opendkim, libspf2
++, opendmarc }:
++
++let
++  pkg = "mailfront-addons";
++  ver = "2013-05-31";
++  web = https://github.com/spamvictim/mailfront-addons;
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  src = fetchFromGitHub {
++    owner = "spamvictim";
++    repo = "mailfront-addons";
++    rev = "2467b672b84aaf13b61905885c7ffa185cd86ae8";
++    sha256 = "1bm1f8dlxiz9h56i30zc4h6qhdk7527p70msrx5rf668jxjl3dcy";
++  };
++
++  patches = [
++    ./addons.patch
++    ./authres.patch
++  ];
++
++  buildInputs = [bglibs mailfront openssl opendkim libspf2 opendmarc];
++  inherit bglibs mailfront;
++
++  configurePhase = ''
++    ln -sf Makefile.local Makefile
++    ln -sf $mailfront/include/mailfront/*.h .
++    echo "/var/qmail" > conf-qmail
++    echo "gcc -W -Wall -Wshadow -O -g -DHAVE_NS_TYPE" > conf-cc
++    echo "gcc -s " > conf-ld
++    echo "gcc -W -Wall -Wshadow -O -g -fPIC -shared -DHAVE_NS_TYPE" > conf-ccso
++    echo $out/bin > conf-bin
++    echo $out/include > conf-include
++    echo $out/lib/mailfront-addons > conf-modules
++  '';
++
++  meta = {
++    description = "Plugins for mailfront SMTP daemon";
++    homepage = web;
++    platforms = stdenv.lib.platforms.gnu;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++
++}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/tools/networking/mailfront/addons.patch b/pkgs/tools/networking/mailfront/addons.patch
+new file mode 100644
+index 00000000000..227ece660c2
+--- /dev/null
++++ b/pkgs/tools/networking/mailfront/addons.patch
+@@ -0,0 +1,233 @@
++diff -u mailfront-addons-src/INSTHIER.local mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/INSTHIER.local
++--- mailfront-addons-src/INSTHIER.local	2013-05-31 17:14:21.000000000 +0200
+++++ mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/INSTHIER.local	2018-04-10 14:08:41.100502902 +0200
++@@ -3,9 +3,6 @@
++ c:::755::plugin-batv.so
++ c:::755::plugin-dcc.so
++ c:::755::plugin-greylist.so
++-c:::755::plugin-spamassassin.so
++-c:::755::plugin-sqlog.so
+++c:::755::plugin-sauser.so
++ c:::755::plugin-chkdns.so
++ c:::755::plugin-authres.so
++-c:::755::plugin-arlog.so
++-c:::755::sqllib.so
++diff -u mailfront-addons-src/Makefile.local mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/Makefile.local
++--- mailfront-addons-src/Makefile.local	2013-05-31 17:14:21.000000000 +0200
+++++ mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/Makefile.local	2018-04-10 09:09:04.285305523 +0200
++@@ -9,31 +9,32 @@
++ 
++ all:  backend-qmailsump.so \
++ 	plugin-greylist.so plugin-dcc.so plugin-sauser.so plugin-batv.so \
++-	plugin-sqlog.so plugin-arlog.so plugin-chkdns.so sqllib.so plugin-authres.so
+++	plugin-chkdns.so plugin-authres.so
+++#	plugin-sqlog.so plugin-arlog.so plugin-chkdns.so sqllib.so plugin-authres.so
++ 
++ backend-qmailsump.so: makeso backend-qmailsump.c mailfront.h responses.h constants.h conf_qmail.c
++-	./makeso backend-qmailsump.c  -lbg -lbg-sysdeps 
+++	./makeso backend-qmailsump.c  -lbg
++ 
++ plugin-batv.so: makeso plugin-batv.c mailfront.h responses.h constants.h
++-	./makeso plugin-batv.c  -lbg -lbg-sysdeps -lcrypto
+++	./makeso plugin-batv.c  -lbg -lcrypto
++ 
++ plugin-dcc.so: makeso plugin-dcc.c mailfront.h responses.h constants.h
++-	./makeso plugin-dcc.c  -lbg -lbg-sysdeps 
+++	./makeso plugin-dcc.c  -lbg
++ 
++ plugin-greylist.so: makeso plugin-greylist.c mailfront.h responses.h constants.h
++-	./makeso plugin-greylist.c  -lbg -lbg-sysdeps 
+++	./makeso plugin-greylist.c  -lbg
++ 
++ plugin-sauser.so: makeso plugin-sauser.c mailfront.h responses.h constants.h
++-	./makeso plugin-sauser.c  -lbg -lbg-sysdeps 
+++	./makeso plugin-sauser.c  -lbg
++ 
++ plugin-chkdns.so: makeso plugin-chkdns.c mailfront.h responses.h constants.h
++-	./makeso plugin-chkdns.c  -lbg -lbg-sysdeps 
+++	./makeso plugin-chkdns.c  -lbg -lresolv
++ 
++ plugin-sqlog.so: makeso plugin-sqlog.c sqllib.so mailfront.h responses.h constants.h
++ 	./makeso plugin-sqlog.c ${CONFMODULES}/sqllib.so -lbg -lbg-sysdeps
++ 
++ plugin-authres.so: makeso plugin-authres.c mailfront.h responses.h constants.h
++-	./makeso plugin-authres.c -lbg -lbg-sysdeps -lspf2 -lopendkim -lopendmarc
+++	./makeso plugin-authres.c -lbg -lspf2 -lopendkim -lopendmarc
++ 
++ plugin-arlog.so: makeso plugin-arlog.c sqllib.so mailfront.h responses.h constants.h
++ 	./makeso plugin-arlog.c ${CONFMODULES}/sqllib.so -lbg -lbg-sysdeps \
++@@ -47,5 +48,19 @@
++ 	bg-installer -v <INSTHIER.local
++ 	bg-installer -c <INSTHIER.local
++ 
+++conf_qmail.c: conf-qmail
+++	head -n 1 conf-qmail | \
+++	  sed -e 's/"/\\"/g' \
+++	      -e 's/^/const char conf_qmail[] = "/' \
+++	      -e 's/$$/";/' >conf_qmail.c
+++
+++makeso: conf-ccso conf-ld
+++	( echo '#!/bin/sh'; \
+++	  echo 'source=$$1; shift'; \
+++	  echo 'base=`echo "$$source" | sed -e s:\\\\.c$$::`'; \
+++	  echo exec `head -n 1 conf-ccso` -DSHARED -I. -L. '-o $${base}.so $$source $${1+"$$@"}'; \
+++	) >makeso
+++	chmod 755 makeso
+++
++ clean: TARGETS.local
++ 	rm -f `cat TARGETS.local`
++diff -u mailfront-addons-src/backend-qmailsump.c mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/backend-qmailsump.c
++--- mailfront-addons-src/backend-qmailsump.c	2013-05-31 17:14:21.000000000 +0200
+++++ mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/backend-qmailsump.c	2018-04-10 08:55:48.965938102 +0200
++@@ -5,15 +5,15 @@
++  * SUMPADDR: address of the sump
++  * RBLSMTPD: failure message for sump faux failure
++  */
++-#include <sysdeps.h>
+++#include <bglibs/sysdeps.h>
++ #include <stdlib.h>
++ #include <string.h>
++ #include <sys/stat.h>
++ #include <sys/wait.h>
++ #include <unistd.h>
++-#include <misc/misc.h>
++-#include <msg/msg.h>
++-#include <unix/sig.h>
+++#include <bglibs/misc.h>
+++#include <bglibs/msg.h>
+++#include <bglibs/sig.h>
++ #include "mailfront.h"
++ #include "conf_qmail.c"
++ 
++diff -u mailfront-addons-src/plugin-arlog.c mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/plugin-arlog.c
++--- mailfront-addons-src/plugin-arlog.c	2013-05-31 17:14:21.000000000 +0200
+++++ mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/plugin-arlog.c	2018-04-10 09:03:13.240388027 +0200
++@@ -48,9 +48,9 @@
++ #include <string.h>
++ #include "mailfront.h"
++ #include "conf_qmail.c"
++-#include <iobuf/ibuf.h>
++-#include <iobuf/obuf.h>
++-#include <msg/msg.h>
+++#include <bglibs/ibuf.h>
+++#include <bglibs/obuf.h>
+++#include <bglibs/msg.h>
++ /* HACK HACK */
++ #undef CLOCK_REALTIME
++ #undef CLOCK_MONOTONIC
++diff -u mailfront-addons-src/plugin-authres.c mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/plugin-authres.c
++--- mailfront-addons-src/plugin-authres.c	2013-05-31 17:14:21.000000000 +0200
+++++ mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/plugin-authres.c	2018-04-10 14:03:05.018744074 +0200
++@@ -15,12 +15,11 @@
++ #include <string.h>
++ #include "mailfront.h"
++ #include "conf_qmail.c"
++-#include <iobuf/ibuf.h>
++-#include <iobuf/obuf.h>
++-#include <msg/msg.h>
++-#include <str/str.h>
++-#include <dict/dict.h>
++-#include <dict/load.h>
+++#include <bglibs/ibuf.h>
+++#include <bglibs/obuf.h>
+++#include <bglibs/msg.h>
+++#include <bglibs/str.h>
+++#include <bglibs/dict.h>
++ 
++ #include <opendkim/dkim.h>
++ 
++@@ -29,8 +28,8 @@
++ # include <netinet/in.h>   /* inet_ functions / structs */
++ # include <arpa/inet.h> /* in_addr struct */
++ 
++-#include <spf2/spf.h>
++ #include <opendmarc/dmarc.h>
+++#include <spf2/spf.h>
++ 
++ static str arstr = {0,0,0};		/* authentication results header */
++ 
++diff -u mailfront-addons-src/plugin-batv.c mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/plugin-batv.c
++--- mailfront-addons-src/plugin-batv.c	2013-05-31 17:14:21.000000000 +0200
+++++ mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/plugin-batv.c	2018-04-10 09:20:36.192066300 +0200
++@@ -14,12 +14,11 @@
++ #include <ctype.h>
++ #include "mailfront.h"
++ #include "conf_qmail.c"
++-#include <iobuf/ibuf.h>
++-#include <dict/dict.h>
++-#include <dict/load.h>
++-#include <msg/msg.h>
+++#include <bglibs/ibuf.h>
+++#include <bglibs/dict.h>
+++#include <bglibs/msg.h>
++ #include <openssl/md5.h>
++-#include <sys/time.h>
+++#include <bglibs/systime.h>
++ #include <string.h>
++ 
++ #define BATVLEN 3		/* number of bytes */
++diff -u mailfront-addons-src/plugin-chkdns.c mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/plugin-chkdns.c
++--- mailfront-addons-src/plugin-chkdns.c	2013-05-31 17:14:21.000000000 +0200
+++++ mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/plugin-chkdns.c	2018-04-10 09:21:01.448203351 +0200
++@@ -18,7 +18,7 @@
++ #include <arpa/nameser.h>
++ #include <resolv.h>
++ 
++-#include <msg/msg.h>
+++#include <bglibs/msg.h>
++ 
++ static RESPONSE(badfrom,553,"5.1.8 Invalid sender domain.");
++ static response resp_baddbl = { 553, "???" };
++diff -u mailfront-addons-src/plugin-dcc.c mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/plugin-dcc.c
++--- mailfront-addons-src/plugin-dcc.c	2013-05-31 17:14:21.000000000 +0200
+++++ mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/plugin-dcc.c	2018-04-10 09:09:47.985543592 +0200
++@@ -6,10 +6,10 @@
++ #include <unistd.h>
++ #include <string.h>
++ #include "mailfront.h"
++-#include <net/socket.h>
++-#include <iobuf/ibuf.h>
++-#include <iobuf/obuf.h>
++-#include <msg/msg.h>
+++#include <bglibs/socket.h>
+++#include <bglibs/ibuf.h>
+++#include <bglibs/obuf.h>
+++#include <bglibs/msg.h>
++ 
++ static str dccsender;
++ static str dccrecips;
++diff -u mailfront-addons-src/plugin-greylist.c mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/plugin-greylist.c
++--- mailfront-addons-src/plugin-greylist.c	2013-05-31 17:14:21.000000000 +0200
+++++ mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/plugin-greylist.c	2018-04-10 09:01:08.293702468 +0200
++@@ -10,7 +10,7 @@
++ #include <unistd.h>
++ 
++ #include "mailfront.h"
++-#include <net/socket.h>
+++#include <bglibs/socket.h>
++ 
++ static str greymsg;
++ static int hasgreyrcpt = 0;
++diff -u mailfront-addons-src/plugin-sauser.c mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/plugin-sauser.c
++--- mailfront-addons-src/plugin-sauser.c	2013-05-31 17:14:21.000000000 +0200
+++++ mailfront-addons-build/mailfront-addons-2467b672b84aaf13b61905885c7ffa185cd86ae8-src/plugin-sauser.c	2018-04-10 09:13:16.592678750 +0200
++@@ -9,13 +9,13 @@
++ #include <unistd.h>
++ #include <string.h>
++ #include "mailfront.h"
++-#include <net/socket.h>
++-#include <iobuf/ibuf.h>
++-#include <iobuf/obuf.h>
++-#include <msg/msg.h>
+++#include <bglibs/socket.h>
+++#include <bglibs/ibuf.h>
+++#include <bglibs/obuf.h>
+++#include <bglibs/msg.h>
++ #include "conf_qmail.c"
++-#include <dict/dict.h>
++-#include <dict/load.h>
+++#include <bglibs/dict.h>
+++//#include <bglibs/load.h>
++ 
++ static dict sanf;
++ static str sasender;
+diff --git a/pkgs/tools/networking/mailfront/authres.patch b/pkgs/tools/networking/mailfront/authres.patch
+new file mode 100644
+index 00000000000..171f9dad6e2
+--- /dev/null
++++ b/pkgs/tools/networking/mailfront/authres.patch
+@@ -0,0 +1,55 @@
++diff -ru mailfront-addons-orig/plugin-authres.c mailfront-addons-build/plugin-authres.c
++--- mailfront-addons-orig/plugin-authres.c	2018-04-11 08:25:38.104345911 +0200
+++++ mailfront-addons-build/plugin-authres.c	2018-04-12 20:24:50.879188589 +0200
++@@ -6,6 +6,7 @@
++  * Check SPF, too
++  * env DMARCREJECT=y means actually do reject
++  * file control/nodmarcpolicy lists domains not to reject
+++ * Check is skipped if RELAYCLIENT is set or user is authenticated.
++  *
++ */
++ 
++@@ -52,6 +53,9 @@
++ 	ip = getprotoenv("REMOTEIP");
++ 	if(!ip) return 0;		/* can't tell IP, no SPF */
++ 
+++	if (session_getenv("RELAYCLIENT") != 0 || session_getnum("authenticated", 0))
+++		return 0;
+++
++ 	spf_server = SPF_server_new(SPF_DNS_CACHE, 0);
++ 	if(!spf_server) return 0;
++ 	spf_request = SPF_request_new(spf_server);
++@@ -71,7 +75,12 @@
++ 	str_cat2s(&arstr, "; spf=", SPF_strresult(SPF_response_result(spf_response)));
++ 
++ 	str_cat4s(&arstr, " spf.mailfrom=", sender->s, " spf.helo=", helo);
++-	
+++
+++	session_setenv("PLUGIN_AUTHRES_SPF_RESULT",
+++		SPF_strresult(SPF_response_result(spf_response)), 1);
+++	session_setenv("PLUGIN_AUTHRES_SPF_MAILFROM", sender->s, 1);
+++	session_setenv("PLUGIN_AUTHRES_SPF_HELO", helo, 1);
+++
++ 	/* for DMARC later */
++ 	if(!spf_domain.s) str_init(&spf_domain);
++ 	str_copys(&spf_domain, sender->s);
++@@ -123,6 +132,9 @@
++ 	str fromdom;             /* from domain name */
++ 	const char *qh;
++ 
+++	if (session_getenv("RELAYCLIENT") != 0 || session_getnum("authenticated", 0))
+++		return 0;
+++
++ 	if(!authservid) authservid = getprotoenv("LOCALHOST");
++ 	if(!authservid) authservid = "localhost";
++ 
++@@ -275,6 +287,9 @@
++ 				  " policy=",dmpol);
++ 
++ 			msg6("dmarc: ",dmres," for ", fromdom.s, " policy=",dmpol);
+++			session_setenv("PLUGIN_AUTHRES_DMARC_RESULT", dmres, 1);
+++			session_setenv("PLUGIN_AUTHRES_DMARC_HEADER_FROM", fromdom.s, 1);
+++			session_setenv("PLUGIN_AUTHRES_DMARC_POLICY", dmpol, 1);
++ 		}
++ 
++ 		/* do this only so many percent */
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index e618d9912a7..22d82b44200 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -3223,6 +3223,8 @@ with pkgs;
+ 
+   mailfront = callPackage ../tools/networking/mailfront { };
+ 
++  mailfront-addons = callPackage ../tools/networking/mailfront/addons.nix { };
++
+   mailutils = callPackage ../tools/networking/mailutils {
+     guile = guile_2_0;  # compilation fails with guile 2.2
+     sasl = gsasl;

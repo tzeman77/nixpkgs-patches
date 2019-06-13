@@ -1,0 +1,28 @@
+diff --git a/pkgs/development/interpreters/php/default.nix b/pkgs/development/interpreters/php/default.nix
+index c05607aec0f..7116398c955 100644
+--- a/pkgs/development/interpreters/php/default.nix
++++ b/pkgs/development/interpreters/php/default.nix
+@@ -226,6 +226,11 @@ let
+     };
+ 
+ in {
++   php56 = generic {
++     version = "5.6.36";
++     sha256 = "0ahp9vk33dpsqgld0gg4npff67v0l39hs3wk5dm6h3lablzhwsk2";
++   };
++
+   php71 = generic {
+     version = "7.1.26";
+     sha256 = "1riaaizyl0jv9p6b8sm8xxj8iqz4p4dddwdag03n1r67dfl1qdav";
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 822d9cba7db..c66d8ad6e9e 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -7689,6 +7689,7 @@ with pkgs;
+   };
+ 
+   inherit (callPackages ../development/interpreters/php { })
++    php56
+     php71
+     php72;
+ 

@@ -1,0 +1,69 @@
+ccollect: (pseudo) incremental backup with different exclude lists using hardlinks and rsync
+
+diff --git a/pkgs/tools/backup/ccollect/default.nix b/pkgs/tools/backup/ccollect/default.nix
+new file mode 100644
+index 00000000000..ff98b55f84c
+--- /dev/null
++++ b/pkgs/tools/backup/ccollect/default.nix
+@@ -0,0 +1,48 @@
++{
++  fetchurl, stdenv, openssh, rsync,
++  asciidoc, libxml2, docbook_xml_dtd_45, libxslt, docbook_xml_xslt # man pages
++}:
++
++let
++
++  pkg = "ccollect";
++  ver = "2.3";
++  web = https://nico.schottelius.org/software/ccollect;
++
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++  src = fetchurl {
++    url = "${web}/download/${pkg}-${ver}.tar.bz2";
++    sha256 = "04mx0l2rmfi6agi3iar70aq6cikwn73iy0imiqa4r33p6d15hq4g";
++  };
++
++  propagatedBuildInputs = [ openssh rsync ];
++  buildInputs = [ asciidoc libxml2 docbook_xml_dtd_45 libxslt docbook_xml_xslt ];
++
++  installPhase = ''
++    make install-script install-man prefix=$out
++    for i in ccollect_add_source \
++    ccollect_analyse_logs \
++    ccollect_archive_config \
++    ccollect_check_config \
++    ccollect_delete_source \
++    ccollect_list_intervals \
++    ccollect_logwrapper \
++    ccollect_push \
++    ccollect_stats; do
++      install -m 755 tools/$i $out/bin
++    done
++    ddir=$out/share/doc
++    mkdir -p $ddir
++    cp README $ddir
++    cp doc/ccollect.text $ddir
++  '';
++
++  meta = {
++    description = "(pseudo) incremental backup with different exclude lists using hardlinks and rsync";
++    homepage = web;
++    license = stdenv.lib.licenses.gpl2;
++  };
++}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index fe2af172316..76c33890c86 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -1546,6 +1546,8 @@ with pkgs;
+ 
+   ccid = callPackage ../tools/security/ccid { };
+ 
++  ccollect = callPackage ../tools/backup/ccollect { };
++
+   ccrypt = callPackage ../tools/security/ccrypt { };
+ 
+   ccze = callPackage ../tools/misc/ccze { };
