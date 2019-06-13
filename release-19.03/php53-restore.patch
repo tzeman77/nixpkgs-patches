@@ -99,7 +99,7 @@ index 00000000000..3b78f9b309b
 +   fi
 diff --git a/pkgs/development/interpreters/php/5.3.nix b/pkgs/development/interpreters/php/5.3.nix
 new file mode 100644
-index 00000000000..0ef6cd55e9c
+index 00000000000..f36ba810fbc
 --- /dev/null
 +++ b/pkgs/development/interpreters/php/5.3.nix
 @@ -0,0 +1,401 @@
@@ -192,7 +192,7 @@ index 00000000000..0ef6cd55e9c
 +    ++ optional bz2Support bzip2;
 +
 +  # need to include the C++ standard library when compiling on darwin
-+  NIX_LDFLAGS = stdenv.lib.optionalString stdenv.isDarwin "-lstdc++";
++  NIX_LDFLAGS = "-lstdc++";
 +
 +  # need to specify where the dylib for icu is stored
 +  DYLD_LIBRARY_PATH = stdenv.lib.optionalString stdenv.isDarwin "${icu}/lib";
