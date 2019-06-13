@@ -4,11 +4,11 @@ sslserver and sslclient are command-line tools for building SSL client-server
 applications.They conform to the UNIX Client-Server Program Interface, UCSPI.
 diff --git a/pkgs/tools/networking/ucspi-ssl/default.nix b/pkgs/tools/networking/ucspi-ssl/default.nix
 new file mode 100644
-index 0000000..beaf261
+index 00000000000..57dba6531f1
 --- /dev/null
 +++ b/pkgs/tools/networking/ucspi-ssl/default.nix
 @@ -0,0 +1,54 @@
-+{ stdenv, fetchurl, openssl_1_1_0, ucspi-tcp }:
++{ stdenv, fetchurl, openssl_1_1, ucspi-tcp }:
 +
 +let
 +  pkg = "ucspi-ssl";
@@ -23,7 +23,7 @@ index 0000000..beaf261
 +  };
 +  sourceRoot = "host/superscript.com/net/${pkg}-${ver}";
 +
-+  buildInputs = [openssl_1_1_0];
++  buildInputs = [openssl_1_1];
 +
 +  configurePhase = ''
 +    echo /etc/ssl/certs > conf-cadir
@@ -63,10 +63,10 @@ index 0000000..beaf261
 +
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index b52099b..773354a 100644
+index 377301fc432..9eeca695ee1 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -4727,6 +4727,8 @@ with pkgs;
+@@ -6022,6 +6022,8 @@ in
  
    ucl = callPackage ../development/libraries/ucl { };
  
