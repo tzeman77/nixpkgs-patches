@@ -33,17 +33,17 @@ index 00000000000..1fd5bbef3da
 +  };
 +}
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 9a76440b46d..128ed34ef3c 100644
+index c594878aca0..96029cf4641 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -7132,6 +7132,10 @@ with pkgs;
-     };
-   };
+@@ -8066,6 +8066,10 @@ in
+     php = php73-unit;
+   });
  
-+  php_fpm53_apc = callPackage ../development/libraries/php-apc {
-+    php = php_fpm53;
++  php53_apc = callPackage ../development/libraries/php-apc {
++    php = php53;
 +  };
 +
    inherit (callPackages ../development/interpreters/php { })
-     php56
-     php70
+     php71
+     php72

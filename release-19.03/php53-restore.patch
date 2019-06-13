@@ -589,25 +589,18 @@ index 00000000000..02f2c9c6c93
 +    if test -z "$GETTEXT_DIR"; then
 +      { echo "configure: error: Cannot locate header file libintl.h" 1>&2; exit 1; }
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 86e3915b7b8..431ce905b05 100644
+index 86e3915b7b8..c594878aca0 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -6693,6 +6693,14 @@ in
+@@ -6693,7 +6693,6 @@ in
  
    grml-zsh-config = callPackage ../shells/zsh/grml-zsh-config { };
  
-+#  php_fpm53 = callPackage ../development/interpreters/php/5.3.nix {};
-+#    config = config // {
-+#      php = (config.php or {}) // {
-+#        fpm = true;
-+#        apxs2 = false;
-+#      };
-+#    };
-+#  };
- 
+-
    ### DEVELOPMENT / COMPILERS
  
-@@ -8118,6 +8126,9 @@ in
+   abcl = callPackage ../development/compilers/abcl {};
+@@ -8118,6 +8117,9 @@ in
      config.php.fpm = false;
    };
  
