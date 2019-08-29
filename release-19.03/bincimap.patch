@@ -96,7 +96,7 @@ index 00000000000..8dba16fd9b3
 +       
 diff --git a/pkgs/servers/mail/bincimap/default.nix b/pkgs/servers/mail/bincimap/default.nix
 new file mode 100644
-index 00000000000..867c845d164
+index 00000000000..8e183f75c24
 --- /dev/null
 +++ b/pkgs/servers/mail/bincimap/default.nix
 @@ -0,0 +1,35 @@
@@ -110,8 +110,8 @@ index 00000000000..867c845d164
 +  name = "${pkg}-${ver}";
 +
 +  src = fetchurl {
-+    url = "ftp://ftp.linux.org.tr/gentoo/distfiles/bincimap-1.2.13final.tar.bz2";
-+    sha256 = "0a25ms7nj0ns18danrpp1jxvicaddkrpz8mq0qh1lljacyhnh8qm";
++    url = "mirror://sourceforge/project/bincimap/bincimap-1.2.13final.tar.gz";
++    sha256 = "1xf65ypmqf1sgkgl6h5mznbi3xa5l0ryf40g4cpy7qc6v92wrljs";
 +  };
 +
 +  buildInputs = [openssl];
@@ -136,10 +136,10 @@ index 00000000000..867c845d164
 +# vim: et ts=2 sw=2 
 +
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index e2c78f091a3..52adabad31f 100644
+index bea13e39420..f3b0e38f071 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -13580,6 +13580,8 @@ in
+@@ -13597,6 +13597,8 @@ in
  
    bftpd = callPackage ../servers/ftp/bftpd {};
  
