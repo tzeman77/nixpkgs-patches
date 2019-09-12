@@ -65,63 +65,44 @@ index b97c37b0cf5..1a6b90ba82e 100644
 +    sha256 = "1riw0a1mzc5ymaj02rni57l5pyfkxl0ygf1l39q7ksnz7aa9x5k1";
 +  };
  }
-diff --git a/pkgs/development/libraries/pcre2/default.nix b/pkgs/development/libraries/pcre2/default.nix
-index 9603e45a8b4..89649f0bf30 100644
---- a/pkgs/development/libraries/pcre2/default.nix
-+++ b/pkgs/development/libraries/pcre2/default.nix
-@@ -1,11 +1,11 @@
--{ stdenv, fetchurl, fetchpatch }:
-+{ stdenv, fetchurl }:
- 
- stdenv.mkDerivation rec {
-   name = "pcre2-${version}";
--  version = "10.23";
-+  version = "10.32";
-   src = fetchurl {
--    url = "ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/${name}.tar.bz2";
--    sha256 = "0vn5g0mkkp99mmzpissa06hpyj6pk9s4mlwbjqrjvw3ihy8rpiyz";
-+    url = "https://ftp.pcre.org/pub/pcre/${name}.tar.bz2";
-+    sha256 = "0bkwp2czcckvvbdls7b331cad11rxsm020aqhrbz84z8bp68k7pj";
-   };
- 
-   configureFlags = [
-@@ -14,32 +14,10 @@ stdenv.mkDerivation rec {
-     "--enable-jit"
-   ];
- 
--  patches = [
--    (fetchpatch {
--      name = "CVE-2017-7186-part1.patch";
--      url = "https://vcs.pcre.org/pcre2/code/trunk/src/pcre2_ucd.c?view=patch&r1=316&r2=670&sortby=date";
--      sha256 = "10yzglvbn7h06hg7zffr5zh378i5jihvx7d5gggkynws79vgwvfr";
--      stripLen = 2;
--      extraPrefix = "";
--    })
--    (fetchpatch {
--      name = "CVE-2017-7186-part2.patch";
--      url = "https://vcs.pcre.org/pcre2/code/trunk/src/pcre2_internal.h?view=patch&r1=600&r2=670&sortby=date";
--      sha256 = "1bggk7vd5hg0bjg96lj4h1lacmr6grq68dm6iz1n7vg3zf7virjn";
--      stripLen = 2;
--      extraPrefix = "";
--    })
--    (fetchpatch {
--      name = "CVE-2017-8786.patch";
--      url = "https://vcs.pcre.org/pcre2/code/trunk/src/pcre2test.c?r1=692&r2=697&view=patch";
--      sha256 = "1c629nzrk4il2rfclwyc1a373q58m4q9ys9wr91zhl4skfk7x19b";
--      stripLen = 2;
--      extraPrefix = "";
--    })
--  ];
--
-   outputs = [ "bin" "dev" "out" "doc" "man" "devdoc" ];
- 
-+  doCheck = false; # fails 1 out of 3 tests, looks like a bug
+diff --git a/pkgs/development/libraries/pcre2/10_32.nix b/pkgs/development/libraries/pcre2/10_32.nix
+new file mode 100644
+index 00000000000..06cf0130f0d
+--- /dev/null
++++ b/pkgs/development/libraries/pcre2/10_32.nix
+@@ -0,0 +1,30 @@
++{ stdenv, fetchurl, fetchpatch }:
 +
-   postFixup = ''
-     moveToOutput bin/pcre2-config "$dev"
-   '';
++stdenv.mkDerivation rec {
++  name = "pcre2-${version}";
++  version = "10.32";
++  src = fetchurl {
++    url = "ftp://ftp.csx.cam.ac.uk/pub/software/programming/pcre/${name}.tar.bz2";
++    sha256 = "0bkwp2czcckvvbdls7b331cad11rxsm020aqhrbz84z8bp68k7pj";
++  };
++
++  configureFlags = [
++    "--enable-pcre2-16"
++    "--enable-pcre2-32"
++    "--enable-jit"
++  ];
++
++  outputs = [ "bin" "dev" "out" "doc" "man" "devdoc" ];
++
++  postFixup = ''
++    moveToOutput bin/pcre2-config "$dev"
++  '';
++
++  meta = with stdenv.lib; {
++    description = "Perl Compatible Regular Expressions";
++    homepage = http://www.pcre.org/;
++    license = licenses.bsd3;
++    maintainers = with maintainers; [ ttuegel ];
++    platforms = platforms.all;
++  };
++}
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index dc1ddf2f84d..169a3c77032 100644
+index dc1ddf2f84d..376532f61dc 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
 @@ -7141,6 +7141,10 @@ with pkgs;
@@ -135,13 +116,23 @@ index dc1ddf2f84d..169a3c77032 100644
    php_fpm53 = callPackage ../development/interpreters/php/5.3.nix {
      config = config // {
        php = (config.php or {}) // {
-@@ -7158,7 +7162,8 @@ with pkgs;
-     php56
+@@ -7159,6 +7163,11 @@ with pkgs;
      php70
      php71
--    php72;
-+    php72
-+    php73;
+     php72;
++    #php73;
++
++  php73 = callPackage ../development/interpreters/php {
++    pcre2 = pcre2_10_32;
++  };
  
    php-embed = php72-embed;
+ 
+@@ -10935,6 +10944,7 @@ with pkgs;
+   pcre-cpp = self.pcre.override { variant = "cpp"; };
+ 
+   pcre2 = callPackage ../development/libraries/pcre2 { };
++  pcre2_10_32 = callPackage ../development/libraries/pcre2/10_32.nix { };
+ 
+   pdf2xml = callPackage ../development/libraries/pdf2xml {} ;
  
