@@ -1,7 +1,7 @@
 php 7.3 
 
 diff --git a/pkgs/development/interpreters/php/default.nix b/pkgs/development/interpreters/php/default.nix
-index b97c37b0cf5..1a6b90ba82e 100644
+index b97c37b0cf5..3bcd855584d 100644
 --- a/pkgs/development/interpreters/php/default.nix
 +++ b/pkgs/development/interpreters/php/default.nix
 @@ -2,9 +2,11 @@
@@ -9,7 +9,7 @@ index b97c37b0cf5..1a6b90ba82e 100644
  { lib, stdenv, fetchurl, composableDerivation, autoconf, automake, flex, bison
  , mysql, libxml2, readline, zlib, curl, postgresql, gettext
 -, openssl, pcre, pkgconfig, sqlite, config, libjpeg, libpng, freetype
-+, openssl, pcre, pcre2, pkgconfig, sqlite, config, libjpeg, libpng, freetype
++, openssl, pcre, pcre2_10_32, pkgconfig, sqlite, config, libjpeg, libpng, freetype
  , libxslt, libmcrypt, bzip2, icu, openldap, cyrus_sasl, libmhash, freetds
 -, uwimap, pam, gmp, apacheHttpd, libiconv, systemd, libsodium }:
 +, uwimap, pam, gmp, apacheHttpd, libiconv, systemd, libsodium, libargon2
@@ -50,7 +50,7 @@ index b97c37b0cf5..1a6b90ba82e 100644
 -        "--with-pcre-regex=${pcre.dev} PCRE_LIBDIR=${pcre}"
 -      ] ++ lib.optional stdenv.isDarwin "--with-iconv=${libiconv}"
 +      ] ++ lib.optional (lib.versionOlder version "7.3") "--with-pcre-regex=${pcre.dev} PCRE_LIBDIR=${pcre}"
-+        ++ lib.optional (lib.versionAtLeast version "7.3") "--with-pcre-regex=${pcre2.dev} PCRE_LIBDIR=${pcre2}"
++        ++ lib.optional (lib.versionAtLeast version "7.3") "--with-pcre-regex=${pcre2_10_32.dev} PCRE_LIBDIR=${pcre2_10_32}"
 +        ++ lib.optional stdenv.isDarwin "--with-iconv=${libiconv}"
          ++ lib.optional stdenv.isLinux  "--with-fpm-systemd";
  
@@ -102,7 +102,7 @@ index 00000000000..06cf0130f0d
 +  };
 +}
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index dc1ddf2f84d..376532f61dc 100644
+index dc1ddf2f84d..e3c31022653 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
 @@ -7141,6 +7141,10 @@ with pkgs;
@@ -116,19 +116,17 @@ index dc1ddf2f84d..376532f61dc 100644
    php_fpm53 = callPackage ../development/interpreters/php/5.3.nix {
      config = config // {
        php = (config.php or {}) // {
-@@ -7159,6 +7163,11 @@ with pkgs;
+@@ -7158,7 +7162,8 @@ with pkgs;
+     php56
      php70
      php71
-     php72;
-+    #php73;
-+
-+  php73 = callPackage ../development/interpreters/php {
-+    pcre2 = pcre2_10_32;
-+  };
+-    php72;
++    php72
++    php73;
  
    php-embed = php72-embed;
  
-@@ -10935,6 +10944,7 @@ with pkgs;
+@@ -10935,6 +10940,7 @@ with pkgs;
    pcre-cpp = self.pcre.override { variant = "cpp"; };
  
    pcre2 = callPackage ../development/libraries/pcre2 { };
