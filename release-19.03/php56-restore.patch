@@ -1,28 +1,53 @@
 diff --git a/pkgs/development/interpreters/php/default.nix b/pkgs/development/interpreters/php/default.nix
-index c05607aec0f..7116398c955 100644
+index 8947dc79722..9172cb31c27 100644
 --- a/pkgs/development/interpreters/php/default.nix
 +++ b/pkgs/development/interpreters/php/default.nix
-@@ -226,6 +226,11 @@ let
+@@ -18,6 +18,7 @@ let
+   , ldapSupport ? config.php.ldap or true
+   , mhashSupport ? config.php.mhash or true
+   , mysqlndSupport ? config.php.mysqlnd or true
++  , mysqlSupport ? config.php.mysql or false
+   , mysqliSupport ? config.php.mysqli or true
+   , pdo_mysqlSupport ? config.php.pdo_mysql or true
+   , libxml2Support ? config.php.libxml2 or true
+@@ -92,6 +93,7 @@ let
+         ++ optional pdo_odbcSupport unixODBC
+         ++ optional pdo_pgsqlSupport postgresql
+         ++ optional pdo_mysqlSupport mysqlBuildInputs
++        ++ optional mysqlSupport mysqlBuildInputs
+         ++ optional mysqliSupport mysqlBuildInputs
+         ++ optional gmpSupport gmp
+         ++ optional gettextSupport gettext
+@@ -146,6 +148,7 @@ let
+       ++ optional pdo_odbcSupport "--with-pdo-odbc=unixODBC,${unixODBC}"
+       ++ optional pdo_pgsqlSupport "--with-pdo-pgsql=${postgresql}"
+       ++ optional pdo_mysqlSupport "--with-pdo-mysql=${if mysqlndSupport then "mysqlnd" else mysql.connector-c}"
++      ++ optional mysqlSupport "--with-mysql"
+       ++ optionals mysqliSupport [
+         "--with-mysqli=${if mysqlndSupport then "mysqlnd" else "${mysql.connector-c}/bin/mysql_config"}"
+       ]
+@@ -247,6 +250,12 @@ let
      };
  
  in {
-+   php56 = generic {
-+     version = "5.6.36";
-+     sha256 = "0ahp9vk33dpsqgld0gg4npff67v0l39hs3wk5dm6h3lablzhwsk2";
-+   };
++  php56 = generic {
++    version = "5.6.37";
++    sha256 = "08wbg1qbbr80wcpv0l24vfyd9w8cxanils928gjs6knr0lyxcsl8";
++    mysqlSupport = true;
++  };
 +
    php71 = generic {
-     version = "7.1.26";
-     sha256 = "1riaaizyl0jv9p6b8sm8xxj8iqz4p4dddwdag03n1r67dfl1qdav";
+     version = "7.1.32";
+     sha256 = "0ymbkj8117pakcs40rkkrsrvcc2rn9nrd7ilcdzw2nn7vnns3iyp";
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 822d9cba7db..c66d8ad6e9e 100644
+index 86c45fb2373..371b13ea02e 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -7689,6 +7689,7 @@ with pkgs;
+@@ -8084,6 +8084,7 @@ in
    };
  
    inherit (callPackages ../development/interpreters/php { })
 +    php56
      php71
-     php72;
- 
+     php72
+     php73;
