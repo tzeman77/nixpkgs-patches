@@ -1,2 +1,62 @@
 fehQlibs: State-of-the-art C routines provided as easy-to-use library for Internet services.
 
+diff --git a/pkgs/development/libraries/fehqlibs/default.nix b/pkgs/development/libraries/fehqlibs/default.nix
+new file mode 100644
+index 00000000000..b7278b8ca26
+--- /dev/null
++++ b/pkgs/development/libraries/fehqlibs/default.nix
+@@ -0,0 +1,41 @@
++{ fetchurl, lib, libtool, perl, stdenv, which }:
++
++let
++  pkg = "fehqlibs";
++  homepage = "https://www.fehcom.de/ipnet/qlibs.html";
++  version = "13";
++
++in stdenv.mkDerivation rec {
++
++  name = "${pkg}-${version}";
++
++  src = fetchurl {
++    url = "https://www.fehcom.de/ipnet/fehQlibs/fehQlibs-${version}.tgz";
++    sha256 = "1c2jf1c6p1ysr6wbgx5077c6c3xlkpyvvcsvfsgqhbmxkfiipfim";
++  };
++
++  #buildInputs = [libtool which perl];
++
++  #patches = [ ./bglibs2.patch ];
++
++  configurePhase = ''
++    echo "LIBDIR=$out/lib" >> conf-build
++    echo "HDRDIR=$out/include" >> conf-build
++  '';
++
++  postInstall = ''
++    mkdir -p $out/man/man3
++    cp man/* $out/man/man3/
++  '';
++
++  meta = {
++    description = "State-of-the-art C routines provided as easy-to-use library for Internet services.";
++    homepage = homepage;
++    license = stdenv.lib.licenses.publicDomain.fullName;
++    platforms = stdenv.lib.platforms.gnu;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++
++}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index b79c95c4ee6..d7cd45b8b40 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -1429,6 +1429,8 @@ in
+ 
+   fdroidserver = python3Packages.callPackage ../development/tools/fdroidserver { };
+ 
++  fehqlibs = callPackage ../development/libraries/fehqlibs { };
++
+   filebench = callPackage ../tools/misc/filebench {
+     bison = bison2;
+   };
