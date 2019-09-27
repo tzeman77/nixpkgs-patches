@@ -43,3 +43,4 @@ zabbix-scripts.patch
 manual-xslt-recursion-fix.patch
 pywhois.patch
 mailfront-tls.patch
+fehqlibs.patch
