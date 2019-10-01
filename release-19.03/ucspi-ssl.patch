@@ -4,35 +4,36 @@ sslserver and sslclient are command-line tools for building SSL client-server
 applications.They conform to the UNIX Client-Server Program Interface, UCSPI.
 diff --git a/pkgs/tools/networking/ucspi-ssl/default.nix b/pkgs/tools/networking/ucspi-ssl/default.nix
 new file mode 100644
-index 00000000000..57dba6531f1
+index 00000000000..73157d4d3aa
 --- /dev/null
 +++ b/pkgs/tools/networking/ucspi-ssl/default.nix
-@@ -0,0 +1,54 @@
-+{ stdenv, fetchurl, openssl_1_1, ucspi-tcp }:
+@@ -0,0 +1,55 @@
++{ stdenv, fetchurl, openssl_1_1, ucspi-tcp, fehqlibs }:
 +
 +let
 +  pkg = "ucspi-ssl";
-+  ver = "0.99d";
++  ver = "0.10.11";
 +  web = "https://www.fehcom.de/ipnet/ucspi-ssl";
 +in stdenv.mkDerivation rec {
 +  name = "${pkg}-${ver}";
 +
 +  src = fetchurl {
 +    url = "${web}/${pkg}-${ver}.tgz";
-+    sha256 = "0sbz7vj28jpbm4i6xgmh94dsb1k3vj58qz6rrlin2fglajwxwmph";
++    sha256 = "16bk19z6m9jd1ybr58iw0v9wrkr1dk1lnx2kjjnilqmwqic8kfgz";
 +  };
 +  sourceRoot = "host/superscript.com/net/${pkg}-${ver}";
 +
-+  buildInputs = [openssl_1_1];
++  buildInputs = [openssl_1_1 fehqlibs];
 +
 +  configurePhase = ''
 +    echo /etc/ssl/certs > conf-cadir
 +    echo /etc/ssl/pem/dh1024.pem > conf-dhfile
 +    echo > conf-ssl
 +    echo ${ucspi-tcp}/bin > conf-tcpbin
-+    substituteInPlace src/https\@.sh --replace HOME/command/sslclient $out/bin/sslclient
-+    substituteInPlace src/sslcat.sh --replace HOME/command/sslclient $out/bin/sslclient
-+    substituteInPlace src/sslconnect.sh --replace HOME/command/sslclient $out/bin/sslclient
++    echo $out > conf-home
++    substituteInPlace src/sslclient.c --replace 'log(WHO' 'logmsg(WHO,0,LOG'
++    substituteInPlace src/sslserver.c --replace 'log(WHO' 'logmsg(WHO,0,LOG'
++    substituteInPlace src/sslhandle.c --replace 'log(who' 'logmsg(who,0,LOG'
 +  '';
 +
 +  buildPhase = "./package/compile base";
@@ -63,10 +64,10 @@ index 00000000000..57dba6531f1
 +
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 377301fc432..9eeca695ee1 100644
+index 10db781bb24..a13247fd449 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -6022,6 +6022,8 @@ in
+@@ -6026,6 +6026,8 @@ in
  
    ucl = callPackage ../development/libraries/ucl { };
  
