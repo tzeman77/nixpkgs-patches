@@ -2,7 +2,7 @@ pywhois: Python whois library
 
 diff --git a/pkgs/development/python-modules/pywhois/default.nix b/pkgs/development/python-modules/pywhois/default.nix
 new file mode 100644
-index 00000000000..a4bdefb02e1
+index 00000000000..2741aa434aa
 --- /dev/null
 +++ b/pkgs/development/python-modules/pywhois/default.nix
 @@ -0,0 +1,22 @@
@@ -10,31 +10,31 @@ index 00000000000..a4bdefb02e1
 +
 +buildPythonPackage rec {
 +  pname = "pywhois"; # -${version}";
-+  version = "2018-06-15";
++  version = "2019-09-07";
 +
 +  doCheck = false; # fails to pass because it tries to run in home directory
 +
 +  src = fetchurl {
-+    url = "https://bitbucket.org/richardpenman/pywhois/get/ee41ee047aba.zip";
-+    sha256 = "13c9vzh7dhl5bmp4xbhai4rc86jcrzns44x8a6ygil4jq3v1rasx";
++    url = "https://github.com/richardpenman/pywhois/archive/c6b441a3e9ae7d66d34166ba801009f00f72291c.zip";
++    sha256 = "0yr7yp0hzdysaxrzky2f5nv0kngjxw4i5ynkmbygvhj6jh9skd0q";
 +  };
 +
 +  propagatedBuildInputs = [ future ];
 +
 +  meta = with stdenv.lib; {
 +    description = "Python WHOIS library";
-+    homepage = https://bitbucket.org/richardpenman/pywhois;
++    homepage = https://github.com/richardpenman/pywhois;
 +  };
 +}
 +
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/python-packages.nix b/pkgs/top-level/python-packages.nix
-index f24627383d5..9291a782552 100644
+index 1891003dc8a..f924bfff6b9 100644
 --- a/pkgs/top-level/python-packages.nix
 +++ b/pkgs/top-level/python-packages.nix
-@@ -17279,6 +17279,8 @@ EOF
-     inherit python;
-   })).python;
+@@ -5388,6 +5388,8 @@ in {
+ 
+   casttube = callPackage ../development/python-modules/casttube { };
  
 +  pywhois = callPackage ../development/python-modules/pywhois { };
 +
