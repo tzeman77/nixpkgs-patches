@@ -2,30 +2,24 @@ Zabbix scripts
 
 diff --git a/pkgs/servers/monitoring/zabbix/scripts.nix b/pkgs/servers/monitoring/zabbix/scripts.nix
 new file mode 100644
-index 00000000000..f842737bd81
+index 00000000000..97885f9780d
 --- /dev/null
 +++ b/pkgs/servers/monitoring/zabbix/scripts.nix
-@@ -0,0 +1,33 @@
+@@ -0,0 +1,27 @@
 +{ stdenv, fetchurl, unzip }:
 +
 +let
 +
-+  version = "2018-08-16";
++  version = "2018-12-11";
 +
 +
 +in stdenv.mkDerivation {
 +
 +  name = "zabbix-scripts-${version}";
 +
-+# src = fetchhg {
-+#   url = "https://bitbucket.org/tzeman/zabbix-scripts";
-+#   rev = "338ee0353bf1";
-+#   sha256 = "0423nscm868i6jz2hk0xf7hkfv3x14prmr8f7icp6yx86fp6g1qv";
-+# };
-+
 +  src = fetchurl {
-+    url = "https://bitbucket.org/tzeman/zabbix-scripts/get/b685225d4966.zip";
-+    sha256 = "0579x1m7bmbbyq0yj58yfpm6zzmxbp6xfshhg09d54mhccl1508v";
++    url = "https://bitbucket.org/tzeman/zabbix-scripts/get/1eada2e65e7a.zip";
++    sha256 = "10z18ir5dr5nrcdl71wy0jq992mpr636xarabjh62jnfzxwjbjm7";
 +  };
 +
 +  buildInputs = [ unzip ];
@@ -40,14 +34,14 @@ index 00000000000..f842737bd81
 +}
 +
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 32c6f22d2c4..60c7c2a3e9d 100644
+index 4a7e513fc0d..d35c04e9c86 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -12958,6 +12958,7 @@ with pkgs;
-     mysqlPackage = mysql57.client;
-   });
+@@ -13433,6 +13433,7 @@ in
+     inherit (gnome2) libsoup;
+   };
  
 +  zabbix-scripts = callPackage ../servers/monitoring/zabbix/scripts.nix { };
  
-   ### OS-SPECIFIC
+   ### DEVELOPMENT / LIBRARIES / JAVASCRIPT
  
