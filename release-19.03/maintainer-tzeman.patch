@@ -1,15 +1,15 @@
 Added tzeman to maintainer list
 
 diff --git a/maintainers/maintainer-list.nix b/maintainers/maintainer-list.nix
-index 181873314f3..59f0ed05bbf 100644
+index 94b38bf493c..9e5b7351006 100644
 --- a/maintainers/maintainer-list.nix
 +++ b/maintainers/maintainer-list.nix
-@@ -3616,6 +3616,11 @@
-     github = "twey";
-     name = "James ‘Twey’ Kay";
+@@ -4858,6 +4858,11 @@
+     github = "udono";
+     name = "Udo Spallek";
    };
 +  tzeman = {
-+    email = "tzeman@volny.cz";
++    email = "tzeman@functionals.cz";
 +    github = "tzeman77";
 +    name = "Tomas Zeman";
 +  };
