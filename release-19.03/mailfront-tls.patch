@@ -320,7 +320,7 @@ index 00000000000..e84e978383d
 +
 diff --git a/pkgs/tools/networking/mailfront/Add-ucspitls.h-and-ucspitls.c-in-Makefile-and-ucspit.patch b/pkgs/tools/networking/mailfront/Add-ucspitls.h-and-ucspitls.c-in-Makefile-and-ucspit.patch
 new file mode 100644
-index 00000000000..45e999b2549
+index 00000000000..2a741a38711
 --- /dev/null
 +++ b/pkgs/tools/networking/mailfront/Add-ucspitls.h-and-ucspitls.c-in-Makefile-and-ucspit.patch
 @@ -0,0 +1,69 @@
@@ -378,7 +378,7 @@ index 00000000000..45e999b2549
 ++ucspitls.o: compile ucspitls.c
 ++	./compile ucspitls.c
 ++
-+ programs: dns-responder mailfront imapfront-auth pop3front-maildir pop3front-auth testcvm qmqpfront-echo smtpfront-echo qmtpfront-qmail qmtpfront-echo qmqpfront-qmail smtpfront-qmail
++ programs: mailfront imapfront-auth pop3front-maildir pop3front-auth testcvm qmqpfront-echo smtpfront-echo qmtpfront-qmail qmtpfront-echo qmqpfront-qmail smtpfront-qmail
 + 
 + protocol-qmqp.so: makeso protocol-qmqp.c mailfront.h responses.h constants.h qmtp.h qmtp-respond.c netstring.c
 +diff --git a/TARGETS b/TARGETS
@@ -386,15 +386,15 @@ index 00000000000..45e999b2549
 +--- a/TARGETS
 ++++ b/TARGETS
 +@@ -59,3 +59,4 @@ socket.lib
-+ testcvm
 + testcvm.o
 + timeout.o
++ tls.lib
 ++ucspitls.o
 +-- 
 +1.8.3.3
 +
 diff --git a/pkgs/tools/networking/mailfront/default.nix b/pkgs/tools/networking/mailfront/default.nix
-index 74c2117a453..a9f2dda21cf 100644
+index fb4435f719c..0d760bcaa60 100644
 --- a/pkgs/tools/networking/mailfront/default.nix
 +++ b/pkgs/tools/networking/mailfront/default.nix
 @@ -14,6 +14,12 @@ in stdenv.mkDerivation rec {
