@@ -4,7 +4,6 @@ cvm.patch
 mailfront.patch
 bincimap.patch
 vmailmgr.patch
-checkvpw-dovecot-wrapper.patch
 djbdns.patch
 qmail.patch
 ipsvd.patch
