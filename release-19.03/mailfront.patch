@@ -2,7 +2,7 @@ mailfront: Mail server protocol front-ends
 
 diff --git a/pkgs/tools/networking/mailfront/default.nix b/pkgs/tools/networking/mailfront/default.nix
 new file mode 100644
-index 00000000000..22680672057
+index 00000000000..dd50b3659bf
 --- /dev/null
 +++ b/pkgs/tools/networking/mailfront/default.nix
 @@ -0,0 +1,37 @@
@@ -10,14 +10,14 @@ index 00000000000..22680672057
 +
 +let
 +  pkg = "mailfront";
-+  ver = "2.13";
++  ver = "2.22";
 +  web = http://untroubled.org;
 +in stdenv.mkDerivation rec {
 +  name = "${pkg}-${ver}";
 +
 +  src = fetchurl {
 +    url = "${web}/${pkg}/archive/${pkg}-${ver}.tar.gz";
-+    sha256 = "0qslrcw3iapf8l7g1cspzslkndf3dwb1lqbw59nima3n9kg2br7f";
++    sha256 = "0gsjdajwsqcd814r5ylfrb2cmhvdnkkm02vnvag8pl7dvkjyv02v";
 +  };
 +
 +  buildInputs = [cvm bglibs];
@@ -44,10 +44,10 @@ index 00000000000..22680672057
 +
 +# vim: et ts=2 sw=2 
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 9850e7eece7..75f5111e8e3 100644
+index d571bd44454..22b6006fc71 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -3508,6 +3508,8 @@ with pkgs;
+@@ -4191,6 +4191,8 @@ in
  
    mailpile = callPackage ../applications/networking/mailreaders/mailpile { };
  
