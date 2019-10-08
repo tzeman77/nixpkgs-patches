@@ -1,0 +1,70 @@
+clamav upgrade
+
+diff --git a/pkgs/tools/security/clamav/default.nix b/pkgs/tools/security/clamav/default.nix
+index 1f36d54..0f3ce8b 100644
+--- a/pkgs/tools/security/clamav/default.nix
++++ b/pkgs/tools/security/clamav/default.nix
+@@ -1,17 +1,32 @@
+-{ stdenv, fetchurl, zlib, bzip2, libiconv, libxml2, openssl, ncurses, curl
+-, libmilter }:
++{ stdenv, fetchurl, pkgconfig
++, zlib, bzip2, libiconv, libxml2, openssl, ncurses, curl, libmilter, pcre2
++, libmspack
++}:
++
+ stdenv.mkDerivation rec {
+-  name = "clamav-${version}";
+-  version = "0.98.7";
++  pname = "clamav";
++  version = "0.101.4";
++  name = "${pname}-${version}";
+ 
+   src = fetchurl {
+-    url = "mirror://sourceforge/clamav/clamav-${version}.tar.gz";
+-    sha256 = "0wp2ad8km4cqmlndni5ljv7q3lfxm6y4r3giv0yf23bl0yvif918";
++    url = "https://www.clamav.net/downloads/production/${pname}-${version}.tar.gz";
++    sha256 = "1kdw0b49hbvja6xn589v4f0q334wav16pmi1hibql5cxj7q99w0b";
+   };
+ 
+-  buildInputs = [ zlib bzip2 libxml2 openssl ncurses curl libiconv libmilter ];
++  # don't install sample config files into the absolute sysconfdir folder
++  postPatch = ''
++    substituteInPlace Makefile.in --replace ' etc ' ' '
++  '';
++
++  nativeBuildInputs = [ pkgconfig ];
++  buildInputs = [
++    zlib bzip2 libxml2 openssl ncurses curl libiconv libmilter pcre2 libmspack
++  ];
+ 
+   configureFlags = [
++    "--libdir=$(out)/lib"
++    "--sysconfdir=/etc/clamav"
++    "--disable-llvm" # enabling breaks the build at the moment
+     "--with-zlib=${zlib}"
+     "--with-libbz2-prefix=${bzip2}"
+     "--with-iconv-dir=${libiconv}"
+@@ -19,15 +34,20 @@ stdenv.mkDerivation rec {
+     "--with-openssl=${openssl}"
+     "--with-libncurses-prefix=${ncurses}"
+     "--with-libcurl=${curl}"
++    "--with-system-libmspack"
+     "--enable-milter"
+-    "--disable-clamav"
+   ];
+ 
++  postInstall = ''
++    mkdir $out/etc
++    cp etc/*.sample $out/etc
++  '';
++
+   meta = with stdenv.lib; {
+-    homepage = http://www.clamav.net;
++    homepage = https://www.clamav.net;
+     description = "Antivirus engine designed for detecting Trojans, viruses, malware and other malicious threats";
+     license = licenses.gpl2;
+-    maintainers = with maintainers; [ phreedom robberer qknight ];
++    maintainers = with maintainers; [ phreedom robberer qknight fpletz globin ];
+     platforms = platforms.linux;
+   };
+ }
