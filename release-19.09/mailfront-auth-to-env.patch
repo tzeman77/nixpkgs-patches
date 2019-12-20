@@ -1,0 +1,52 @@
+diff --git a/pkgs/tools/networking/mailfront/auth-to-env.patch b/pkgs/tools/networking/mailfront/auth-to-env.patch
+new file mode 100644
+index 00000000000..34435d098bf
+--- /dev/null
++++ b/pkgs/tools/networking/mailfront/auth-to-env.patch
+@@ -0,0 +1,31 @@
++diff -ru mailfront-orig/plugin-cvm-authenticate.c mailfront-build/plugin-cvm-authenticate.c
++--- mailfront-orig/plugin-cvm-authenticate.c	2015-02-12 15:10:37.000000000 +0100
+++++ mailfront-build/plugin-cvm-authenticate.c	2018-04-11 12:28:48.546472322 +0200
++@@ -31,16 +31,24 @@
++   }
++   else {
++     session_setnum("authenticated", 1);
+++    session_setenv("PLUGIN_CVM_AUTH_AUTHENTICATED", "1", 0);
++     session_delstr("helo_domain");
++     session_setstr("auth_user", cvm_fact_username);
+++    session_setenv("PLUGIN_CVM_AUTH_USER", cvm_fact_username, 0);
++     session_setnum("auth_uid", cvm_fact_userid);
++     session_setnum("auth_gid", cvm_fact_groupid);
++-    if (cvm_fact_realname != 0)
+++    if (cvm_fact_realname != 0) {
++       session_setstr("auth_realname", cvm_fact_realname);
++-    if (cvm_fact_domain != 0)
+++      session_setenv("PLUGIN_CVM_AUTH_REALNAME", cvm_fact_realname, 0);
+++    }
+++    if (cvm_fact_domain != 0) {
++       session_setstr("auth_domain", cvm_fact_domain);
++-    if (cvm_fact_mailbox != 0)
+++      session_setenv("PLUGIN_CVM_AUTH_DOMAIN", cvm_fact_domain, 0);
+++    }
+++    if (cvm_fact_mailbox != 0) {
++       session_setstr("auth_mailbox", cvm_fact_mailbox);
+++      session_setenv("PLUGIN_CVM_AUTH_MAILBOX", cvm_fact_mailbox, 0);
+++    }
++     respond(&resp_authenticated);
++   }
++   return 1;
+diff --git a/pkgs/tools/networking/mailfront/default.nix b/pkgs/tools/networking/mailfront/default.nix
+index 5ab427e056b..deb8c2d81b0 100644
+--- a/pkgs/tools/networking/mailfront/default.nix
++++ b/pkgs/tools/networking/mailfront/default.nix
+@@ -12,6 +12,10 @@ in stdenv.mkDerivation rec {
+     sha256 = "0vfa1pwca0ngppp8fsd62j6gpnddwijyrhwqbywzlg8a30pfpqx3";
+   };
+ 
++  patches = [
++    ./auth-to-env.patch
++  ];
++
+   buildInputs = [cvm bglibs] ++ stdenv.lib.optional (luaPackage != null) luaPackage;
+   inherit bglibs;
+ 

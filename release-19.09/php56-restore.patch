@@ -1,0 +1,66 @@
+diff --git a/pkgs/development/interpreters/php/default.nix b/pkgs/development/interpreters/php/default.nix
+index 87f6faa4efc..76e808cf420 100644
+--- a/pkgs/development/interpreters/php/default.nix
++++ b/pkgs/development/interpreters/php/default.nix
+@@ -19,6 +19,7 @@ let
+   , ldapSupport ? config.php.ldap or true
+   , mhashSupport ? config.php.mhash or false
+   , mysqlndSupport ? config.php.mysqlnd or true
++  , mysqlSupport ? config.php.mysql or false
+   , mysqliSupport ? config.php.mysqli or true
+   , pdo_mysqlSupport ? config.php.pdo_mysql or true
+   , libxml2Support ? config.php.libxml2 or true
+@@ -95,6 +96,7 @@ let
+         ++ optional pdo_odbcSupport unixODBC
+         ++ optional pdo_pgsqlSupport postgresql
+         ++ optional pdo_mysqlSupport mysqlBuildInputs
++        ++ optional mysqlSupport mysqlBuildInputs
+         ++ optional mysqliSupport mysqlBuildInputs
+         ++ optional gmpSupport gmp
+         ++ optional gettextSupport gettext
+@@ -150,6 +152,7 @@ let
+       ++ optional pdo_odbcSupport "--with-pdo-odbc=unixODBC,${unixODBC}"
+       ++ optional pdo_pgsqlSupport "--with-pdo-pgsql=${postgresql}"
+       ++ optional pdo_mysqlSupport "--with-pdo-mysql=${if mysqlndSupport then "mysqlnd" else mysql.connector-c}"
++      ++ optional mysqlSupport "--with-mysql"
+       ++ optionals mysqliSupport [
+         "--with-mysqli=${if mysqlndSupport then "mysqlnd" else "${mysql.connector-c}/bin/mysql_config"}"
+       ]
+@@ -253,6 +256,18 @@ let
+     };
+ 
+ in {
++
++  php56 = generic {
++    version = "5.6.40";
++    sha256 = "005s7w167dypl41wlrf51niryvwy1hfv53zxyyr3lm938v9jbl7z";
++    mysqlSupport = true;
++    curlSupport = false;
++    imapSupport = false;
++    ldapSupport = false;
++    postgresqlSupport = false;
++    pdo_pgsqlSupport = false;
++  };
++
+   php72 = generic {
+     version = "7.2.24";
+     sha256 = "00znhjcn6k4mbxz6jqlqf6bzr4cqdf8pnbmxkg6bns1hnr6r6yd0";
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 2fffdccf7ce..cd8cef316ca 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -8774,6 +8774,14 @@ in
+     php72
+     php73;
+ 
++  php56 = (callPackages ../development/interpreters/php {
++    openssl = openssl_1_0_2;
++    icu = icu59;
++    mysql = mysql57.override {
++      openssl = openssl_1_0_2;
++    };
++  }).php56;
++
+   php-embed = php73-embed;
+ 
+   php72-embed = php72.override {

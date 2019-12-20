@@ -1,0 +1,21 @@
+nginx exec script wrapped
+
+diff --git a/nixos/modules/services/web-servers/nginx/default.nix b/nixos/modules/services/web-servers/nginx/default.nix
+index 2816273..1024772 100644
+--- a/nixos/modules/services/web-servers/nginx/default.nix
++++ b/nixos/modules/services/web-servers/nginx/default.nix
+@@ -357,6 +357,14 @@ in
+   };
+ 
+   config = mkIf cfg.enable {
++    environment.etc."nginx_wrapper" = {
++      text = ''
++        #!/bin/sh
++        ${cfg.package}/bin/nginx -c ${configFile} -p ${cfg.stateDir} $@
++      '';
++      mode = "0755";
++    };
++
+     # TODO: test user supplied config file pases syntax test
+ 
+     systemd.services.nginx = {

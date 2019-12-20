@@ -1,0 +1,58 @@
+mailfront: Mail server protocol front-ends
+
+diff --git a/pkgs/tools/networking/mailfront/default.nix b/pkgs/tools/networking/mailfront/default.nix
+new file mode 100644
+index 00000000000..dd50b3659bf
+--- /dev/null
++++ b/pkgs/tools/networking/mailfront/default.nix
+@@ -0,0 +1,37 @@
++{ stdenv, fetchurl, bglibs, cvm }:
++
++let
++  pkg = "mailfront";
++  ver = "2.22";
++  web = http://untroubled.org;
++in stdenv.mkDerivation rec {
++  name = "${pkg}-${ver}";
++
++  src = fetchurl {
++    url = "${web}/${pkg}/archive/${pkg}-${ver}.tar.gz";
++    sha256 = "0gsjdajwsqcd814r5ylfrb2cmhvdnkkm02vnvag8pl7dvkjyv02v";
++  };
++
++  buildInputs = [cvm bglibs];
++  inherit bglibs;
++
++  configurePhase = ''
++    echo "gcc -W -Wall -Wshadow -O -g -I$bglibs/include -I$cvm/include" > conf-cc
++    echo "gcc -s -L$bglibs/lib -L$cvm/lib" > conf-ld
++    echo "gcc -W -Wall -Wshadow -O -g -I$bglibs/include -I$cvm/include -fPIC -shared" > conf-ccso
++    echo $out/bin > conf-bin
++    echo $out/include > conf-include
++    echo $out/lib/mailfront > conf-modules
++  '';
++
++  meta = {
++    description = "Mail server network protocol front-ends";
++    homepage = "${web}/${pkg}";
++    license = stdenv.lib.licenses.gpl2Plus.fullName;
++    platforms = stdenv.lib.platforms.gnu;
++    maintainers = with stdenv.lib.maintainers; [ tzeman ];
++  };
++
++}
++
++# vim: et ts=2 sw=2 
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index d571bd44454..22b6006fc71 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -4191,6 +4191,8 @@ in
+ 
+   mailpile = callPackage ../applications/networking/mailreaders/mailpile { };
+ 
++  mailfront = callPackage ../tools/networking/mailfront { };
++
+   mailutils = callPackage ../tools/networking/mailutils {
+     guile = guile_2_0;  # compilation fails with guile 2.2
+     sasl = gsasl;

@@ -1,0 +1,40 @@
+Zabbix 3.4
+diff --git a/pkgs/servers/monitoring/zabbix/versions.nix b/pkgs/servers/monitoring/zabbix/versions.nix
+index b3ca45910ae..35fb97b8e7e 100644
+--- a/pkgs/servers/monitoring/zabbix/versions.nix
++++ b/pkgs/servers/monitoring/zabbix/versions.nix
+@@ -18,4 +18,9 @@ generic: {
+     version = "3.0.28";
+     sha256 = "16966danf5ww4lhjg5gx5bnpid8abxh2ymdg6k5mymrman5bcdjj";
+   };
++
++  v34 = generic {
++    version = "3.4.15";
++    sha256 = "1agi68gcayq5cxh1wcw621nkbr7hlaph3l2iplz4pyzplc1wck05";
++  };
+ }
+diff --git a/pkgs/servers/monitoring/zabbix/web.nix b/pkgs/servers/monitoring/zabbix/web.nix
+index c4cf5d044da..c185ad51150 100644
+--- a/pkgs/servers/monitoring/zabbix/web.nix
++++ b/pkgs/servers/monitoring/zabbix/web.nix
+@@ -16,6 +16,8 @@ import ./versions.nix ({ version, sha256 }:
+     ?>
+     '';
+ 
++    phases = "unpackPhase installPhase";
++
+     installPhase = ''
+       mkdir -p $out/share/zabbix/
+       cp -a frontends/php/. $out/share/zabbix/
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 76f245a2314..6b99e140884 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -15337,6 +15337,7 @@ in
+   zabbix42 = zabbixFor "v42";
+   zabbix40 = zabbixFor "v40";
+   zabbix30 = zabbixFor "v30";
++  zabbix34 = zabbixFor "v34";
+ 
+   zabbix = zabbix42;
+ 

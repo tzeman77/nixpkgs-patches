@@ -1,0 +1,412 @@
+STARTTLS for imap
+
+diff --git a/pkgs/tools/networking/mailfront/Add-STARTTLS-support-in-imapfront-auth.c.patch b/pkgs/tools/networking/mailfront/Add-STARTTLS-support-in-imapfront-auth.c.patch
+new file mode 100644
+index 00000000000..c2681d0a7a1
+--- /dev/null
++++ b/pkgs/tools/networking/mailfront/Add-STARTTLS-support-in-imapfront-auth.c.patch
+@@ -0,0 +1,102 @@
++From a695968b4b54643864b3986cdfafee86dc6b9dbb Mon Sep 17 00:00:00 2001
++From: Giam Teck Choon <giamteckchoon@gmail.com>
++Date: Thu, 25 Apr 2013 19:46:34 +0800
++Subject: [PATCH 4/8] Add STARTTLS support in imapfront-auth.c
++
++This is a port to imapfront-auth.c according to the patch at:
++http://www.suspectclass.com/sgifford/ucspi-tls/files/mailfront-0.96-ucspitls-0.1.patch
++
++Signed-off-by: Giam Teck Choon <giamteckchoon@gmail.com>
++---
++ imapfront-auth.c | 33 ++++++++++++++++++++++++++++++++-
++ 1 file changed, 32 insertions(+), 1 deletion(-)
++
++diff --git a/imapfront-auth.c b/imapfront-auth.c
++index 56b3671..5656cf5 100644
++--- a/imapfront-auth.c
+++++ b/imapfront-auth.c
++@@ -32,6 +32,7 @@
++ #include <cvm/v2client.h>
++ #include <bglibs/iobuf.h>
++ #include <bglibs/str.h>
+++#include "ucspitls.h"
++ 
++ const char program[] = "imapfront-auth";
++ const int msg_show_pid = 1;
++@@ -60,6 +61,9 @@ static int auth_max;
++ 
++ static struct sasl_auth saslauth = { .prefix = "+ " };
++ 
+++static int tls_available = 0;
+++static int auth_available = 1;
+++
++ void log_start(const char* tagstr)
++ {
++   obuf_puts(&errbuf, program);
++@@ -233,6 +237,10 @@ void cmd_capability(void)
++ 
++   respond_start(NOTAG);
++   respond_str("CAPABILITY IMAP4rev1");
+++  if (tls_available)
+++    respond_str(" STARTTLS");
+++  if (!auth_available)
+++    respond_str(" LOGINDISABLED");
++   if (*capability != 0) {
++     respond_str(" ");
++     respond_str(capability);
++@@ -303,7 +311,9 @@ void do_exec(void)
++ void cmd_login(int argc, str* argv)
++ {
++   int cr;
++-  if (argc != 2)
+++  if (!auth_available)
+++    respond(0,"BAD LOGIN command disabled without SSL/TLS");
+++  else if (argc != 2)
++     respond(0, "BAD LOGIN command requires exactly two arguments");
++   else {
++     if ((cr = cvm_authenticate_password(cvm, argv[0].s, domain,
++@@ -339,6 +349,22 @@ void cmd_authenticate(int argc, str* argv)
++       exit(0);
++ }
++ 
+++void cmd_starttls(void)
+++{
+++  if (!tls_available) {
+++    respond(0, "BAD STARTTLS not availale");
+++    return;
+++  }
+++
+++  respond(0,"OK starting TLS negotiation");
+++  if (!ucspitls())
+++    exit(1);
+++
+++  /* FIX - Reset state? */
+++  tls_available = 0;
+++  auth_available = 1;
+++}
+++
++ struct command
++ {
++   const char* name;
++@@ -352,6 +378,7 @@ struct command commands[] = {
++   { "LOGOUT",      cmd_logout,     0 },
++   { "LOGIN",       0, cmd_login },
++   { "AUTHENTICATE", 0, cmd_authenticate },
+++  { "STARTTLS"   , cmd_starttls,   0 },
++   { 0, 0, 0 }
++ };
++ 
++@@ -414,6 +441,10 @@ extern void set_timeout(void);
++ 
++ int main(int argc, char* argv[])
++ {
+++  if (getenv("UCSPITLS"))
+++    tls_available = 1;
+++  if (getenv("AUTH_REQUIRES_TLS"))
+++    auth_available = 0;
++   set_timeout();
++   if (!startup(argc, argv)) return 0;
++   respond(NOTAG, "OK imapfront ready.");
++-- 
++1.8.3.3
++
+diff --git a/pkgs/tools/networking/mailfront/Add-STLS-support-in-pop3front-auth.c.patch b/pkgs/tools/networking/mailfront/Add-STLS-support-in-pop3front-auth.c.patch
+new file mode 100644
+index 00000000000..66644fe08c0
+--- /dev/null
++++ b/pkgs/tools/networking/mailfront/Add-STLS-support-in-pop3front-auth.c.patch
+@@ -0,0 +1,112 @@
++From e4eac1f395a13495245c16b2a9ffa1b933314199 Mon Sep 17 00:00:00 2001
++From: Giam Teck Choon <giamteckchoon@gmail.com>
++Date: Mon, 29 Apr 2013 23:05:18 +0800
++Subject: [PATCH 6/8] Add STLS support in pop3front-auth.c
++
++This is a port to pop3front-auth.c according to the patch at:
++http://www.suspectclass.com/sgifford/ucspi-tls/files/mailfront-0.96-ucspitls-0.1.patch
++
++Signed-off-by: Giam Teck Choon <giamteckchoon@gmail.com>
++---
++ pop3-capa.c      |  2 ++
++ pop3front-auth.c | 30 +++++++++++++++++++++++++++++-
++ 2 files changed, 31 insertions(+), 1 deletion(-)
++
++diff --git a/pop3-capa.c b/pop3-capa.c
++index 51a090c..11d8853 100644
++--- a/pop3-capa.c
+++++ b/pop3-capa.c
++@@ -26,12 +26,14 @@
++ #include <iobuf/obuf.h>
++ #include <str/str.h>
++ #include <cvm/sasl.h>
+++#include "ucspitls.h"
++ #include "pop3.h"
++ 
++ static const char caps[] =
++   "PIPELINING\r\n"
++   "TOP\r\n"
++   "UIDL\r\n"
+++  "STLS\r\n"
++   "USER\r\n";
++ 
++ static str auth_resp;
++diff --git a/pop3front-auth.c b/pop3front-auth.c
++index 0548242..eeb531e 100644
++--- a/pop3front-auth.c
+++++ b/pop3front-auth.c
++@@ -30,6 +30,7 @@
++ #include <str/iter.h>
++ #include <str/str.h>
++ #include <cvm/sasl.h>
+++#include "ucspitls.h"
++ #include "pop3.h"
++ 
++ const char program[] = "pop3front-auth";
++@@ -48,6 +49,9 @@ static unsigned auth_max;
++ 
++ static struct sasl_auth saslauth = { .prefix = "+ " };
++ 
+++static int tls_available = 0;
+++static int auth_available = 1;
+++
++ static void do_exec(void)
++ {
++   if (!cvm_setugid() || !cvm_setenv())
++@@ -60,6 +64,23 @@ static void do_exec(void)
++   _exit(1);
++ }
++ 
+++static void cmd_stls(void)
+++{
+++  if (!tls_available) {
+++    respond("-ERR STLS not available");
+++    return;
+++  }
+++
+++  respond("+OK starting TLS negotiation");
+++  if (!ucspitls())
+++    exit(1);
+++
+++  tls_available = 0;
+++  auth_available = 1;
+++  /* reset state */
+++  str_truncate(&user, 0);
+++}
+++
++ static void cmd_auth_none(void)
++ {
++   static str auth_resp;
++@@ -108,7 +129,9 @@ static void cmd_user(const str* s)
++     respond("-ERR Too many USER commands issued");
++     exit(0);
++   }
++-  if (!str_copy(&user, s))
+++  if (!auth_available)
+++    respond("-ERR Authentication not allowed without SSL/TLS");
+++  else if (!str_copy(&user, s))
++     respond(err_internal);
++   else
++     respond(ok);
++@@ -145,6 +168,7 @@ command commands[] = {
++   { "PASS", 0,             cmd_pass, "PASS XXXXXXXX" },
++   { "QUIT", cmd_quit,      0,        0 },
++   { "USER", 0,             cmd_user, 0 },
+++  { "STLS", cmd_stls ,0,        0 },
++   { 0,      0,             0,        0 }
++ };
++ 
++@@ -162,6 +186,10 @@ int startup(int argc, char* argv[])
++     obuf_putsflush(&errbuf, usage);
++     return 0;
++   }
+++  if (getenv("UCSPITLS"))
+++    tls_available = 1;
+++  if (getenv("AUTH_REQUIRES_TLS"))
+++    auth_available = 0;
++   cvm = argv[1];
++   nextcmd = argv+2;
++   if (!sasl_auth_init(&saslauth)) {
++-- 
++1.8.3.3
++
+diff --git a/pkgs/tools/networking/mailfront/Add-ucspitls.c-and-ucspitls.h-with-fix-CVE-2011-0411.patch b/pkgs/tools/networking/mailfront/Add-ucspitls.c-and-ucspitls.h-with-fix-CVE-2011-0411.patch
+new file mode 100644
+index 00000000000..e84e978383d
+--- /dev/null
++++ b/pkgs/tools/networking/mailfront/Add-ucspitls.c-and-ucspitls.h-with-fix-CVE-2011-0411.patch
+@@ -0,0 +1,86 @@
++From dd7161737e63d0ca763cc10ec54a99d1f754c1ec Mon Sep 17 00:00:00 2001
++From: Giam Teck Choon <giamteckchoon@gmail.com>
++Date: Thu, 25 Apr 2013 18:46:54 +0800
++Subject: [PATCH 3/8] Add ucspitls.c and ucspitls.h with fix CVE-2011-0411
++
++The above two files are extracted from a patch at:
++http://www.suspectclass.com/sgifford/ucspi-tls/files/mailfront-0.96-ucspitls-0.1.patch
++
++Shamelessly copy from plugin-starttls-ucspi.c to fix CVE-2011-0411 in
++ucspitls.c
++
++Signed-off-by: Giam Teck Choon <giamteckchoon@gmail.com>
++---
++ ucspitls.c | 49 +++++++++++++++++++++++++++++++++++++++++++++++++
++ ucspitls.h |  1 +
++ 2 files changed, 50 insertions(+)
++ create mode 100644 ucspitls.c
++ create mode 100644 ucspitls.h
++
++diff --git a/ucspitls.c b/ucspitls.c
++new file mode 100644
++index 0000000..cc0c513
++--- /dev/null
+++++ b/ucspitls.c
++@@ -0,0 +1,49 @@
+++#include <unistd.h>
+++#include <stdlib.h>
+++#include <bglibs/iobuf.h>
+++
+++int ucspitls(void)
+++{
+++  int fd;
+++  char *fdstr;
+++  int extrachars = 0;
+++  char c;
+++
+++  /* STARTTLS must be the last command in a pipeline, otherwise we can
+++   * create a security risk (see CVE-2011-0411).  Close input and
+++   * check for any extra pipelined commands, so we can give an error
+++   * message.  Note that this will cause an error on the filehandle,
+++   * since we have closed it. */
+++  close(0);
+++
+++  while (!ibuf_eof(&inbuf) && !ibuf_error(&inbuf)) {
+++    if (ibuf_getc(&inbuf, &c))
+++      ++extrachars;
+++  }
+++
+++  if (!(fdstr=getenv("SSLCTLFD")))
+++    return 0;
+++  fd = atoi(fdstr);
+++  if (write(fd, "y", 1) < 1)
+++    return 0;
+++
+++  if (!(fdstr=getenv("SSLREADFD")))
+++    return 0;
+++  fd = atoi(fdstr);
+++  if (dup2(fd,0) == -1)
+++    return 0;
+++
+++  if (!(fdstr=getenv("SSLWRITEFD")))
+++    return 0;
+++  fd = atoi(fdstr);
+++  if (dup2(fd,1) == -1)
+++    return 0;
+++
+++  /* Re-initialize stdin and clear input buffer */
+++  ibuf_init(&inbuf,0,0,IOBUF_NEEDSCLOSE, 4096);
+++
+++  if (extrachars)
+++    return 0; /* Unexpected pipelined commands following STARTTLS */
+++
+++  return 1;
+++}
++\ No newline at end of file
++diff --git a/ucspitls.h b/ucspitls.h
++new file mode 100644
++index 0000000..6066892
++--- /dev/null
+++++ b/ucspitls.h
++@@ -0,0 +1 @@
+++int ucspitls(void);
++\ No newline at end of file
++-- 
++1.8.3.3
++
+diff --git a/pkgs/tools/networking/mailfront/Add-ucspitls.h-and-ucspitls.c-in-Makefile-and-ucspit.patch b/pkgs/tools/networking/mailfront/Add-ucspitls.h-and-ucspitls.c-in-Makefile-and-ucspit.patch
+new file mode 100644
+index 00000000000..2a741a38711
+--- /dev/null
++++ b/pkgs/tools/networking/mailfront/Add-ucspitls.h-and-ucspitls.c-in-Makefile-and-ucspit.patch
+@@ -0,0 +1,69 @@
++From d693ee217e7515b1e5f07a1ac55f88f9e39730b6 Mon Sep 17 00:00:00 2001
++From: Giam Teck Choon <giamteckchoon@gmail.com>
++Date: Wed, 17 Apr 2013 23:59:47 +0800
++Subject: [PATCH 5/8] Add ucspitls.h and ucspitls.c in Makefile and ucspitls.o
++ in TARGETS
++
++This is a port from the patch at:
++http://www.suspectclass.com/sgifford/ucspi-tls/files/mailfront-0.96-ucspitls-0.1.patch
++
++Signed-off-by: Giam Teck Choon <giamteckchoon@gmail.com>
++---
++ Makefile | 15 +++++++++------
++ TARGETS  |  1 +
++ 2 files changed, 10 insertions(+), 6 deletions(-)
++
++diff --git a/Makefile b/Makefile
++index 53da461..48cff43 100644
++--- a/Makefile
+++++ b/Makefile
++@@ -62,10 +62,10 @@ docs:
++ getprotoenv.o: compile getprotoenv.c mailfront.h responses.h constants.h
++ 	./compile getprotoenv.c
++ 
++-imapfront-auth: imapfront-auth.o load timeout.o socket.lib
++-	./load imapfront-auth timeout.o -lcvm-sasl -lcvm-v2client -lbg `cat socket.lib`
+++imapfront-auth: imapfront-auth.o ucspitls.o load timeout.o socket.lib
+++	./load imapfront-auth ucspitls.o timeout.o -lcvm-sasl -lcvm-v2client -lbg `cat socket.lib`
++ 
++-imapfront-auth.o: compile imapfront-auth.c
+++imapfront-auth.o: compile imapfront-auth.c ucspitls.h
++ 	./compile imapfront-auth.c
++ 
++ install: INSTHIER conf-bin conf-modules conf-include
++@@ -163,10 +163,10 @@ pop3-response.o: compile pop3-response.c pop3.h constants.h
++ pop3.a: makelib iobytes.o timeout.o pop3-capa.o pop3-mainloop.o pop3-response.o
++ 	./makelib pop3.a iobytes.o timeout.o pop3-capa.o pop3-mainloop.o pop3-response.o
++ 
++-pop3front-auth: pop3front-auth.o load pop3.a socket.lib
++-	./load pop3front-auth pop3.a -lcvm-sasl -lcvm-v2client -lbg `cat socket.lib`
+++pop3front-auth: pop3front-auth.o load ucspitls.o pop3.a socket.lib
+++	./load pop3front-auth ucspitls.o pop3.a -lcvm-sasl -lcvm-v2client -lbg `cat socket.lib`
++ 
++-pop3front-auth.o: compile pop3front-auth.c pop3.h constants.h
+++pop3front-auth.o: compile pop3front-auth.c pop3.h ucspitls.h constants.h
++ 	./compile pop3front-auth.c
++ 
++ pop3front-maildir: pop3front-maildir.o load pop3.a
++@@ -183,6 +183,9 @@ pop3front-maildir: pop3front-maildir.o load pop3.a
++ pop3front-maildir.o: compile pop3front-maildir.c pop3.h constants.h
++ 	./compile pop3front-maildir.c
++ 
+++ucspitls.o: compile ucspitls.c
+++	./compile ucspitls.c
+++
++ programs: mailfront imapfront-auth pop3front-maildir pop3front-auth testcvm qmqpfront-echo smtpfront-echo qmtpfront-qmail qmtpfront-echo qmqpfront-qmail smtpfront-qmail
++ 
++ protocol-qmqp.so: makeso protocol-qmqp.c mailfront.h responses.h constants.h qmtp.h qmtp-respond.c netstring.c
++diff --git a/TARGETS b/TARGETS
++index 01a8238..7f9e7ac 100644
++--- a/TARGETS
+++++ b/TARGETS
++@@ -59,3 +59,4 @@ socket.lib
++ testcvm.o
++ timeout.o
++ tls.lib
+++ucspitls.o
++-- 
++1.8.3.3
++
+diff --git a/pkgs/tools/networking/mailfront/default.nix b/pkgs/tools/networking/mailfront/default.nix
+index fb4435f719c..0d760bcaa60 100644
+--- a/pkgs/tools/networking/mailfront/default.nix
++++ b/pkgs/tools/networking/mailfront/default.nix
+@@ -14,6 +14,12 @@ in stdenv.mkDerivation rec {
+ 
+   patches = [
+     ./auth-to-env.patch
++    # http://choonrpms.choon.net/sl/6x/choonrpms/SRPMS/mailfront-2.01-1.choon.sl6.src.rpm
++    # https://github.com/giamteckchoon/mailfront/commits/2.01
++    ./Add-ucspitls.c-and-ucspitls.h-with-fix-CVE-2011-0411.patch
++    ./Add-STARTTLS-support-in-imapfront-auth.c.patch # minor fix of include <bglibs/...>
++    ./Add-ucspitls.h-and-ucspitls.c-in-Makefile-and-ucspit.patch
++    ./Add-STLS-support-in-pop3front-auth.c.patch
+   ];
+ 
+   buildInputs = [cvm bglibs] ++ stdenv.lib.optional (luaPackage != null) luaPackage;

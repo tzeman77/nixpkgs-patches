@@ -1,0 +1,77 @@
+clamd service
+
+diff --git a/nixos/modules/module-list.nix b/nixos/modules/module-list.nix
+index dc26853..aaa773d 100644
+--- a/nixos/modules/module-list.nix
++++ b/nixos/modules/module-list.nix
+@@ -372,6 +372,7 @@
+   ./services/search/elasticsearch.nix
+   ./services/search/solr.nix
+   ./services/security/clamav.nix
++  ./services/security/clamd.nix
+   ./services/security/fail2ban.nix
+   ./services/security/fprintd.nix
+   ./services/security/fprot.nix
+diff --git a/nixos/modules/services/security/clamd.nix b/nixos/modules/services/security/clamd.nix
+new file mode 100644
+index 0000000..e85eda8
+--- /dev/null
++++ b/nixos/modules/services/security/clamd.nix
+@@ -0,0 +1,57 @@
++{ config, pkgs, lib, ... }:
++
++with lib;
++
++let
++
++  cfg = config.services.clamd;
++  stateDir = "/var/lib/clamav"; # synchronize w/ clamav.nix
++
++in
++
++{
++  ###### interface
++  options = {
++    services.clamd = {
++      enable = mkOption {
++        default = false;
++        description = "Whether to enable clamd(8) service.";
++      };
++
++      config = mkOption {
++        default = "";
++        description = "clamd(8) configuration which will be appended to clamd.conf(5).";
++      };
++
++    };
++  };
++  
++  ###### implementation
++
++  config = mkIf cfg.enable {
++
++    environment.systemPackages = [ pkgs.clamav ];
++
++    services.clamd.config = ''
++      DatabaseDirectory ${stateDir}
++      Foreground yes
++    '';
++
++    environment.etc."clamd.conf".text = cfg.config;
++
++    systemd.services.clamd = {
++      description = "clamd(8) service";
++      wantedBy = [ "multi-user.target" ];
++
++      serviceConfig = {
++        ExecStart = ''
++          ${pkgs.clamav}/sbin/clamd --config-file=/etc/clamd.conf
++        '';
++        Restart = "always";
++        Type = "simple";
++      };
++    };
++  };
++}
++
++# vim: et ts=2 sw=2

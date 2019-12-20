@@ -1,0 +1,18 @@
+Added tzeman to maintainer list
+
+diff --git a/maintainers/maintainer-list.nix b/maintainers/maintainer-list.nix
+index 94b38bf493c..9e5b7351006 100644
+--- a/maintainers/maintainer-list.nix
++++ b/maintainers/maintainer-list.nix
+@@ -4858,6 +4858,11 @@
+     github = "udono";
+     name = "Udo Spallek";
+   };
++  tzeman = {
++    email = "tzeman@functionals.cz";
++    github = "tzeman77";
++    name = "Tomas Zeman";
++  };
+   unode = {
+     email = "alves.rjc@gmail.com";
+     github = "unode";

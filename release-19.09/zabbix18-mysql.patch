@@ -1,0 +1,148 @@
+mysql suport for zabbix 1.8
+
+diff --git a/nixos/modules/services/monitoring/zabbix-server.nix b/nixos/modules/services/monitoring/zabbix-server.nix
+index 5f9fc12832f..2e033b8fbe4 100644
+--- a/nixos/modules/services/monitoring/zabbix-server.nix
++++ b/nixos/modules/services/monitoring/zabbix-server.nix
+@@ -25,9 +25,9 @@ let
+         DBHost = ${cfg.dbServer}
+       ''}
+ 
+-      DBName = zabbix
++      DBName = ${cfg.dbName}
+ 
+-      DBUser = zabbix
++      DBUser = ${cfg.dbUser}
+ 
+       ${optionalString (cfg.dbPassword != "") ''
+         DBPassword = ${cfg.dbPassword}
+@@ -36,7 +36,10 @@ let
+       ${config.services.zabbixServer.extraConfig}
+     '';
+ 
+-  useLocalPostgres = cfg.dbServer == "localhost" || cfg.dbServer == "";
++  zbx = cfg.package;
++
++  useLocalPostgres = !cfg.mysql && (cfg.dbServer == "localhost" || cfg.dbServer == "");
++  useLocalMysql = cfg.mysql && (cfg.dbServer == "localhost" || cfg.dbServer == "");
+ 
+ in
+ 
+@@ -63,6 +66,22 @@ in
+       '';
+     };
+ 
++    services.zabbixServer.dbName = mkOption {
++      default = "zabbix";
++      type = types.str;
++      description = ''
++        Database name.
++      '';
++    };
++
++    services.zabbixServer.dbUser = mkOption {
++      default = "zabbix";
++      type = types.str;
++      description = ''
++        Database user.
++      '';
++    };
++
+     services.zabbixServer.dbPassword = mkOption {
+       default = "";
+       type = types.str;
+@@ -77,6 +96,17 @@ in
+       '';
+     };
+ 
++    services.zabbixServer.mysql = mkOption {
++      default = false;
++      description = "Use MySQL backend";
++    };
++
++    services.zabbixServer.package = mkOption {
++      type = types.package;
++      default = pkgs.zabbix.server;
++      description = "Zabbix package to use";
++    };
++
+   };
+ 
+   ###### implementation
+@@ -84,6 +114,7 @@ in
+   config = mkIf cfg.enable {
+ 
+     services.postgresql.enable = useLocalPostgres;
++    services.mysql.enable = useLocalMysql;
+ 
+     users.users = singleton
+       { name = "zabbix";
+@@ -101,6 +132,7 @@ in
+           ''
+             mkdir -m 0755 -p ${stateDir} ${logDir} ${libDir}
+             chown zabbix ${stateDir} ${logDir} ${libDir}
++            exit
+ 
+             if ! test -e "${libDir}/db-created"; then
+                 ${pkgs.su}/bin/su -s "$SHELL" ${config.services.postgresql.superUser} -c '${pkgs.postgresql}/bin/createuser --no-superuser --no-createdb --no-createrole zabbix' || true
+@@ -114,7 +146,7 @@ in
+ 
+         path = [ pkgs.nettools ];
+ 
+-        serviceConfig.ExecStart = "@${pkgs.zabbix.server}/sbin/zabbix_server zabbix_server --config ${configFile}";
++        serviceConfig.ExecStart = "@${zbx}/sbin/zabbix_server zabbix_server --config ${configFile}";
+         serviceConfig.Type = "forking";
+         serviceConfig.Restart = "always";
+         serviceConfig.RestartSec = 2;
+diff --git a/pkgs/servers/monitoring/zabbix/default.nix b/pkgs/servers/monitoring/zabbix/default.nix
+index 4b6bd5e0b25..71dbe9db1e1 100644
+--- a/pkgs/servers/monitoring/zabbix/default.nix
++++ b/pkgs/servers/monitoring/zabbix/default.nix
+@@ -1,4 +1,4 @@
+-{ stdenv, fetchurl, pkgconfig, postgresql, curl, openssl, zlib }:
++{ stdenv, fetchurl, pkgconfig, postgresql, curl, openssl, zlib, mysql ? null }:
+ 
+ let
+ 
+@@ -18,6 +18,10 @@ let
+         ''}
+     '';
+ 
++  withDb = if mysql == null then "--with-pgsql" else "--with-mysql";
++
++  inputDb = if mysql == null then postgresql else mysql;
++
+ in
+ 
+ {
+@@ -30,12 +34,12 @@ in
+     configureFlags = [
+       "--enable-agent"
+       "--enable-server"
+-      "--with-pgsql"
+       "--with-libcurl"
++      withDb
+     ];
+ 
+-  nativeBuildInputs = [ pkgconfig ];
+-    buildInputs = [ postgresql curl openssl zlib ];
++    nativeBuildInputs = [ pkgconfig ];
++    buildInputs = [ curl openssl zlib inputDb ];
+ 
+     postInstall =
+       ''
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 3929183e6fc..1cacdcd219e 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -13757,6 +13757,10 @@ with pkgs;
+ 
+   zabbix = recurseIntoAttrs (callPackages ../servers/monitoring/zabbix {});
+ 
++  zabbix18_mysql = recurseIntoAttrs (callPackage ../servers/monitoring/zabbix {
++    mysql = mysql55;
++  });
++
+   zabbix20 = callPackage ../servers/monitoring/zabbix/2.0.nix { };
+   zabbix22 = callPackage ../servers/monitoring/zabbix/2.2.nix { };
+   zabbix34 = callPackage ../servers/monitoring/zabbix/3.4.nix { };

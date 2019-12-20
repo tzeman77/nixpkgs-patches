@@ -1,0 +1,47 @@
+Zabbix scripts
+
+diff --git a/pkgs/servers/monitoring/zabbix/scripts.nix b/pkgs/servers/monitoring/zabbix/scripts.nix
+new file mode 100644
+index 00000000000..97885f9780d
+--- /dev/null
++++ b/pkgs/servers/monitoring/zabbix/scripts.nix
+@@ -0,0 +1,27 @@
++{ stdenv, fetchurl, unzip }:
++
++let
++
++  version = "2018-12-11";
++
++
++in stdenv.mkDerivation {
++
++  name = "zabbix-scripts-${version}";
++
++  src = fetchurl {
++    url = "https://bitbucket.org/tzeman/zabbix-scripts/get/1eada2e65e7a.zip";
++    sha256 = "10z18ir5dr5nrcdl71wy0jq992mpr636xarabjh62jnfzxwjbjm7";
++  };
++
++  buildInputs = [ unzip ];
++
++  phases = "unpackPhase installPhase";
++
++  installPhase = ''
++    mkdir -p $out
++    cp -prvd . $out
++    patchShebangs $out
++  '';
++}
++
+diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
+index 4a7e513fc0d..d35c04e9c86 100644
+--- a/pkgs/top-level/all-packages.nix
++++ b/pkgs/top-level/all-packages.nix
+@@ -13433,6 +13433,7 @@ in
+     inherit (gnome2) libsoup;
+   };
+ 
++  zabbix-scripts = callPackage ../servers/monitoring/zabbix/scripts.nix { };
+ 
+   ### DEVELOPMENT / LIBRARIES / JAVASCRIPT
+ 
