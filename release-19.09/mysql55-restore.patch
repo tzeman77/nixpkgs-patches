@@ -1,5 +1,17 @@
 mysql55 restore/backport
 
+diff --git a/nixos/modules/services/databases/mysql.nix b/nixos/modules/services/databases/mysql.nix
+index 9f7727bb89f..096b03fa261 100644
+--- a/nixos/modules/services/databases/mysql.nix
++++ b/nixos/modules/services/databases/mysql.nix
+@@ -296,6 +296,7 @@ in
+           # Needed for the mysql_install_db command in the preStart script
+           # which calls the hostname command.
+           pkgs.nettools
++	  pkgs.gawk
+         ];
+ 
+         preStart = ''
 diff --git a/pkgs/servers/sql/mysql/5.5.x.nix b/pkgs/servers/sql/mysql/5.5.x.nix
 new file mode 100644
 index 00000000000..5ba6f4f81ef
