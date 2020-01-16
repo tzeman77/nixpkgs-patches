@@ -96,14 +96,15 @@ index 00000000000..5ba6f4f81ef
 +  };
 +}; in self
 diff --git a/pkgs/top-level/all-packages.nix b/pkgs/top-level/all-packages.nix
-index 3036107ad4b..f45c52cc08a 100644
+index 3036107ad4b..07e3ab7af3f 100644
 --- a/pkgs/top-level/all-packages.nix
 +++ b/pkgs/top-level/all-packages.nix
-@@ -15001,6 +15001,11 @@ in
+@@ -15001,6 +15001,12 @@ in
  
    influxdb = callPackage ../servers/nosql/influxdb { };
  
 +  mysql55 = callPackage ../servers/sql/mysql/5.5.x.nix {
++    openssl = openssl_1_0_2;
 +    inherit (darwin) cctools;
 +    inherit (darwin.apple_sdk.frameworks) CoreServices;
 +  };
