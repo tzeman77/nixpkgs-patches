@@ -44,3 +44,4 @@ zabbix-scripts.patch
 pywhois.patch
 mailfront-tls.patch
 mysql55-restore.patch
+mariadb55-backport.patch
